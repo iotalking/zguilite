@@ -1,7 +1,4 @@
-pub const int = u32;
-pub const uint = i32;
-pub const ulong = u64;
-
+pub const types = @import("./types.zig");
 pub const REAL_TIME_TASK_CYCLE_MS = 50;
 pub fn MAX(a: type, b: type) @TypeOf(a) {
     return @max(a, b);
@@ -9,28 +6,28 @@ pub fn MAX(a: type, b: type) @TypeOf(a) {
 pub fn MIN(a: type, b: type) @TypeOf(a) {
     return @min(a, b);
 }
-pub fn GL_ARGB(a: int, r: int, g: int, b: int) int {
+pub fn GL_ARGB(a: types.int, r: types.int, g: types.int, b: types.int) types.int {
     return ((((a)) << 24) | (((r)) << 16) | (((g)) << 8) | ((b)));
 }
-pub fn GL_ARGB_A(rgb: int) int {
+pub fn GL_ARGB_A(rgb: types.int) types.int {
     return ((rgb >> 24) & 0xFF);
 }
-pub fn GL_RGB(r: int, g: int, b: int) int {
+pub fn GL_RGB(r: types.int, g: types.int, b: types.int) types.int {
     return ((0xFF << 24) | (((r)) << 16) | (((g)) << 8) | ((b)));
 }
-pub fn GL_RGB_R(rgb: int) int {
+pub fn GL_RGB_R(rgb: types.int) types.int {
     return ((((rgb)) >> 16) & 0xFF);
 }
-pub fn GL_RGB_G(rgb: int) int {
+pub fn GL_RGB_G(rgb: types.int) types.int {
     return ((((rgb)) >> 8) & 0xFF);
 }
-pub fn GL_RGB_B(rgb: int) int {
+pub fn GL_RGB_B(rgb: types.int) types.int {
     return (((rgb)) & 0xFF);
 }
-pub fn GL_RGB_32_to_16(rgb: int) u16 {
+pub fn GL_RGB_32_to_16(rgb: types.int) u16 {
     return @truncate(((((rgb)) & 0xFF) >> 3) | ((((rgb)) & 0xFC00) >> 5) | ((((rgb)) & 0xF80000) >> 8));
 }
-pub fn GL_RGB_16_to_32(rgb: int) int {
+pub fn GL_RGB_16_to_32(rgb: types.int) types.int {
     return ((0xFF << 24) | ((((rgb)) & 0x1F) << 3) | ((((rgb)) & 0x7E0) << 5) | ((((rgb)) & 0xF800) << 8));
 }
 
@@ -54,11 +51,11 @@ pub const T_TIME = struct {
     second: u16,
 };
 
-pub fn register_debug_function(my_assert: *const fn (file: [*]const u8, line: int) void, my_log_out: *const fn (log: [*]const u8) void) void {
+pub fn register_debug_function(my_assert: *const fn (file: [*]const u8, line: types.int) void, my_log_out: *const fn (log: [*]const u8) void) void {
     _ = my_assert;
     _ = my_log_out;
 }
-pub fn _assert(file: [*]const u8, line: int) void {
+pub fn _assert(file: [*]const u8, line: types.int) void {
     _ = file;
     _ = line;
 }
@@ -91,25 +88,25 @@ pub fn get_time() T_TIME {
 pub fn start_real_timer(func: *const fn (arg: *anyopaque) void) void {
     _ = func;
 }
-pub fn register_timer(milli_second: int, func: *const fn (param: *anyopaque) void, param: *anyopaque) void {
+pub fn register_timer(milli_second: types.int, func: *const fn (param: *anyopaque) void, param: *anyopaque) void {
     _ = milli_second;
     _ = func;
     _ = param;
 }
 
-pub fn get_cur_thread_id() uint {
+pub fn get_cur_thread_id() types.uint {
     return 0;
 }
-pub fn create_thread(thread_id: ulong, attr: *anyopaque, start_routine: *const fn (*anyopaque) *anyopaque, arg: *anyopaque) void {
+pub fn create_thread(thread_id: types.ulong, attr: *anyopaque, start_routine: *const fn (*anyopaque) *anyopaque, arg: *anyopaque) void {
     _ = thread_id;
     _ = attr;
     _ = start_routine;
     _ = arg;
 }
-pub fn thread_sleep(milli_seconds: uint) void {
+pub fn thread_sleep(milli_seconds: types.uint) void {
     _ = milli_seconds;
 }
-pub fn build_bmp(filename: [*]const u8, width: uint, height: uint, data: [*]const u8) int {
+pub fn build_bmp(filename: [*]const u8, width: types.uint, height: types.uint, data: [*]const u8) types.int {
     _ = filename;
     _ = width;
     _ = height;
@@ -123,20 +120,20 @@ pub const c_fifo = struct {
     pub fn init() c_fifo {
         return .{};
     }
-    fn read(_: c_fifo, buf: *anyopaque, len: int) int {
+    fn read(_: c_fifo, buf: *anyopaque, len: types.int) types.int {
         _ = buf;
         _ = len;
         return 0;
     }
 
-    fn write(_: c_fifo, buf: *anyopaque, len: int) int {
+    fn write(_: c_fifo, buf: *anyopaque, len: types.int) types.int {
         _ = buf;
         _ = len;
         return 0;
     }
     m_buf: [FIFO_BUFFER_LEN]u8,
-    m_head: int,
-    m_tail: int,
+    m_head: types.int,
+    m_tail: types.int,
     m_read_sem: *anyopaque,
     m_write_mutex: *anyopaque,
 };
@@ -151,17 +148,17 @@ pub const c_rect = struct {
             .m_bottom = -1,
         };
     }
-    pub fn init2(left: int, top: int, _width: int, _height: int) c_rect {
+    pub fn init2(left: types.int, top: types.int, _width: types.int, _height: types.int) c_rect {
         var rect = c_rect{};
         rect.set_rect(left, top, _width, _height);
         return rect;
     }
     pub fn set_rect(
         this: *c_rect,
-        left: int,
-        top: int,
-        _width: int,
-        _height: int,
+        left: types.int,
+        top: types.int,
+        _width: types.int,
+        _height: types.int,
     ) void {
         ASSERT(_width > 0 and _height > 0);
         this.m_left = left;
@@ -169,7 +166,7 @@ pub const c_rect = struct {
         this.m_right = left + _width - 1;
         this.m_bottom = top + _height - 1;
     }
-    pub fn pt_in_rect(this: c_rect, x: int, y: int) bool {
+    pub fn pt_in_rect(this: c_rect, x: types.int, y: types.int) bool {
         return x >= this.m_left and x <= this.m_right and y >= this.m_top and y <= this.m_bottom;
     }
     pub fn eql(this: c_rect, rect: c_rect) bool {
@@ -178,15 +175,15 @@ pub const c_rect = struct {
             (this.m_right == rect.m_right) and //
             (this.m_bottom == rect.m_bottom);
     }
-    pub fn width(this: c_rect) int {
+    pub fn width(this: c_rect) types.int {
         return this.m_right - this.m_left + 1;
     }
-    pub fn height(this: c_rect) int {
+    pub fn height(this: c_rect) types.int {
         return this.m_bottom - this.m_top + 1;
     }
 
-    m_left: int,
-    m_top: int,
-    m_right: int,
-    m_bottom: int,
+    m_left: types.int,
+    m_top: types.int,
+    m_right: types.int,
+    m_bottom: types.int,
 };
