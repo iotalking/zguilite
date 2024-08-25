@@ -182,8 +182,8 @@ pub const c_rect = struct {
         return this.m_bottom - this.m_top + 1;
     }
 
-    m_left: types.int,
-    m_top: types.int,
-    m_right: types.int,
-    m_bottom: types.int,
+    m_left: types.int = -1,
+    m_top: types.int = -1,
+    m_right: types.int = -1,
+    m_bottom: types.int = -1,
 };
