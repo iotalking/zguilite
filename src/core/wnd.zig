@@ -38,14 +38,14 @@ pub const TOUCH_ACTION = enum(u16) {
 };
 
 pub const struct_wnd_tree = struct {
-    p_wnd: ?*c_wnd, //window instance
-    resource_id: u16, //ID
-    str: [*]const u8, //caption
-    x: i16, //position x
-    y: i16, //position y
-    width: i16,
-    height: i16,
-    p_child_tree: *struct_wnd_tree, //sub tree
+    p_wnd: ?*c_wnd = null, //window instance
+    resource_id: u16 = 0, //ID
+    str: ?[*]const u8 = null, //caption
+    x: i16 = 0, //position x
+    y: i16 = 0, //position y
+    width: i16 = 0,
+    height: i16 = 0,
+    p_child_tree: ?*struct_wnd_tree = null, //sub tree
 };
 pub const WND_TREE = struct_wnd_tree;
 
@@ -63,7 +63,7 @@ pub const c_wnd = struct {
         _ = this;
     }
     // 	virtual ~c_wnd() {};
-    pub fn connect_impl(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: [*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: *WND_TREE) int {
+    pub fn connect_impl(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?*WND_TREE) int {
         if (0 == resource_id) {
             api.ASSERT(false);
             return -1;
@@ -162,7 +162,7 @@ pub const c_wnd = struct {
         return this.m_attr;
     }
 
-    pub fn set_str(this: *c_wnd, str: [*]const u8) void {
+    pub fn set_str(this: *c_wnd, str: ?[*]const u8) void {
         this.m_str = str;
     }
     pub fn set_attr(this: *c_wnd, attr: WND_ATTRIBUTION) void {
@@ -451,7 +451,7 @@ pub const c_wnd = struct {
         _ = this;
     }
 
-    pub fn connect(this: *c_wnd, parent: *c_wnd, resource_id: u16, str: [*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: *WND_TREE) int {
+    pub fn connect(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?*WND_TREE) int {
         return this.m_vtable.connect(this, parent, resource_id, str, x, y, width, height, p_child_tree);
     }
     pub fn on_init_children(this: *c_wnd) void {
@@ -474,7 +474,7 @@ pub const c_wnd = struct {
     }
 
     pub const vtable = struct {
-        connect: *const fn (this: *c_wnd, parent: *c_wnd, resource_id: u16, str: [*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: *WND_TREE) int = connect_impl,
+        connect: *const fn (this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?*WND_TREE) int = connect_impl,
         on_init_children: *const fn (this: *c_wnd) void = on_init_children_impl,
         on_paint: *const fn (this: *c_wnd) void = on_paint_impl,
         on_touch: *const fn (this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void = on_touch_impl,

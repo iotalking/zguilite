@@ -22,6 +22,8 @@ pub fn main() !void {
     var w: my_wnd = .{};
     var pWnd = w.asWnd();
     pWnd.on_paint();
+    var top: guilite.WND_TREE = .{};
+    _ = pWnd.connect(null, 0, null, 0, 0, 10, 10, &top);
 }
 
 const my_wnd = struct {
