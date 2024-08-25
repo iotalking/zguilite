@@ -733,7 +733,7 @@ pub const c_surface = struct {
     m_height: int, //in pixels
     m_color_bytes: int, //16 bits, 32 bits for default
     m_fb: ?[*]u8, //frame buffer you could see
-    m_layers: [Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX]c_layer, //all graphic layers
+    m_layers: [@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX)]c_layer, //all graphic layers
     m_is_active: bool, //active flag
     m_max_zorder: Z_ORDER_LEVEL, //the highest graphic layer the surface will have
     m_top_zorder: Z_ORDER_LEVEL, //the current highest graphic layer the surface have

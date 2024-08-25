@@ -25,7 +25,8 @@ pub fn GL_RGB_B(rgb: types.int) types.int {
     return (((rgb)) & 0xFF);
 }
 pub fn GL_RGB_32_to_16(rgb: types.int) u16 {
-    return @truncate(((((rgb)) & 0xFF) >> 3) | ((((rgb)) & 0xFC00) >> 5) | ((((rgb)) & 0xF80000) >> 8));
+    const ret: i16 = @truncate(((((rgb)) & 0xFF) >> 3) | ((((rgb)) & 0xFC00) >> 5) | ((((rgb)) & 0xF80000) >> 8));
+    return @intCast(ret);
 }
 pub fn GL_RGB_16_to_32(rgb: types.int) types.int {
     return ((0xFF << 24) | ((((rgb)) & 0x1F) << 3) | ((((rgb)) & 0x7E0) << 5) | ((((rgb)) & 0xF800) << 8));
@@ -64,10 +65,10 @@ pub fn _assert(file: [*]const u8, line: types.int) void {
 // 	if(!(condition))_assert(__FILE__, __LINE__);\
 // 	}while(0)
 
-pub fn ASSERT(condition: bool) noreturn {
+pub fn ASSERT(condition: bool) void {
     if (!condition) {
         const loc = @src();
-        _assert(loc.fname, loc.line);
+        _assert(@ptrCast(loc.fn_name), loc.line);
     }
 }
 pub fn log_out(log: [*]const u8) void {

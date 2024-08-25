@@ -1,5 +1,5 @@
 const std = @import("std");
-const guilite = @import("./guilit.zig");
+const guilite = @import("./guilite.zig");
 
 pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
@@ -17,6 +17,7 @@ pub fn main() !void {
     try bw.flush(); // don't forget to flush!
 
     _ = guilite.GL_RGB_32_to_16(0xff);
+    _ = guilite.c_wnd.init();
 }
 
 test "simple test" {
