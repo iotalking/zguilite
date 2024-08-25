@@ -89,14 +89,14 @@ pub const c_wnd = struct {
         this.m_wnd_rect.m_right = (x + width - 1);
         this.m_wnd_rect.m_bottom = (y + height - 1);
 
-        this.pre_create_wnd(this);
+        this.pre_create_wnd();
 
         if (parent) |p| {
             p.add_child_2_tail(this);
         }
 
         if (this.load_child_wnd(p_child_tree) >= 0) {
-            this.on_init_children(this);
+            this.on_init_children();
         }
         return 0;
     }
@@ -187,7 +187,7 @@ pub const c_wnd = struct {
     pub fn set_font_type(this: *c_wnd, font_type: *LATTICE_FONT_INFO) void {
         this.m_font = font_type;
     }
-    pub fn get_font_type(this: *c_wnd) ?*anyopaque {
+    pub fn get_font_type(this: *c_wnd) ?*c_wnd {
         return this.m_font;
     }
     pub fn get_wnd_rect(this: *c_wnd, rect: *c_rect) void {
@@ -312,7 +312,7 @@ pub const c_wnd = struct {
 
         const priority_wnd = this.search_priority_sibling(this.m_top_child);
         if (priority_wnd) |_priority_wnd| {
-            return _priority_wnd.on_touch(this, x, y, action);
+            return _priority_wnd.on_touch(x, y, action);
         }
 
         var _child: ?*c_wnd = this.m_top_child;
@@ -321,7 +321,7 @@ pub const c_wnd = struct {
                 var rect = c_rect.init();
                 child.get_wnd_rect(&rect);
                 if (true == rect.pt_in_rect(x, y)) {
-                    return child.on_touch(this, x, y, action);
+                    return child.on_touch(x, y, action);
                 }
             }
             _child = child.m_next_sibling;
@@ -431,7 +431,7 @@ pub const c_wnd = struct {
         var _p_cur: [*]?*WND_TREE = @ptrCast(p_child_tree);
         while (_p_cur[0]) |p_cur| {
             if (p_cur.p_wnd) |p_wnd| {
-                _ = p_wnd.connect(this, this, p_cur.resource_id, p_cur.str, p_cur.x, p_cur.y, p_cur.width, p_cur.height, p_cur.p_child_tree);
+                _ = p_wnd.connect(this, p_cur.resource_id, p_cur.str, p_cur.x, p_cur.y, p_cur.width, p_cur.height, p_cur.p_child_tree);
             }
             _p_cur += 1;
             sum += 1;
@@ -451,15 +451,39 @@ pub const c_wnd = struct {
         _ = this;
     }
 
-    connect: *const fn (this: *c_wnd, parent: *c_wnd, resource_id: u16, str: [*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: *WND_TREE) int = connect_impl,
-    on_init_children: *const fn (this: *c_wnd) void = on_init_children_impl,
-    on_paint_impl: *const fn (this: *c_wnd) void = on_paint_impl,
-    on_touch: *const fn (this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void = on_touch_impl,
-    on_focus: *const fn (this: *c_wnd) void = on_focus_impl,
-    on_kill_focus: ?*const fn (this: *c_wnd) void = on_kill_focus_impl,
-    pre_create_wnd: *const fn (this: *c_wnd) void = pre_create_wnd_impl,
-    // protected:
+    pub fn connect(this: *c_wnd, parent: *c_wnd, resource_id: u16, str: [*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: *WND_TREE) int {
+        return this.m_vtable.connect(this, parent, resource_id, str, x, y, width, height, p_child_tree);
+    }
+    pub fn on_init_children(this: *c_wnd) void {
+        return this.m_vtable.on_init_children(this);
+    }
+    pub fn on_paint(this: *c_wnd) void {
+        this.m_vtable.on_paint(this);
+    }
+    pub fn on_touch(this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void {
+        this.m_vtable.on_touch(this, x, y, action);
+    }
+    pub fn on_focus(this: *c_wnd) void {
+        this.m_vtable.on_focus(this);
+    }
+    pub fn on_kill_focus(this: *c_wnd) void {
+        this.m_vtable.on_kill_focus(this);
+    }
+    pub fn pre_create_wnd(this: *c_wnd) void {
+        this.m_vtable.pre_create_wnd(this);
+    }
 
+    pub const vtable = struct {
+        connect: *const fn (this: *c_wnd, parent: *c_wnd, resource_id: u16, str: [*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: *WND_TREE) int = connect_impl,
+        on_init_children: *const fn (this: *c_wnd) void = on_init_children_impl,
+        on_paint: *const fn (this: *c_wnd) void = on_paint_impl,
+        on_touch: *const fn (this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void = on_touch_impl,
+        on_focus: *const fn (this: *c_wnd) void = on_focus_impl,
+        on_kill_focus: ?*const fn (this: *c_wnd) void = on_kill_focus_impl,
+        pre_create_wnd: *const fn (this: *c_wnd) void = pre_create_wnd_impl,
+    };
+    // protected:
+    m_vtable: vtable = .{},
     m_id: u16 = 0,
     m_status: WND_STATUS = .STATUS_DISABLED,
     m_attr: WND_ATTRIBUTION = .ATTR_UNKNOWN,
@@ -471,7 +495,7 @@ pub const c_wnd = struct {
     m_focus_child: ?*c_wnd = null, //current focused window
     m_str: ?[*]const u8 = null, //caption
 
-    m_font: ?*anyopaque = null, //font face
+    m_font: ?*c_wnd = null, //font face
     m_font_color: uint = 0,
     m_bg_color: uint = 0,
 
