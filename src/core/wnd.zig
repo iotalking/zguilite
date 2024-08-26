@@ -50,6 +50,7 @@ pub const struct_wnd_tree = struct {
 pub const WND_TREE = struct_wnd_tree;
 
 // typedef void (c_wnd::*WND_CALLBACK)(int, int);
+pub const WND_CALLBACK = *const fn (int, int) void;
 
 pub const c_wnd = struct {
     // public:
@@ -327,7 +328,7 @@ pub const c_wnd = struct {
             _child = child.m_next_sibling;
         }
     }
-    pub fn on_navigate(this: *c_wnd, key: NAVIGATION_KEY) void {
+    pub fn on_navigate_impl(this: *c_wnd, key: NAVIGATION_KEY) void {
         const priority_wnd = this.search_priority_sibling(this.m_top_child);
         if (priority_wnd == null) {
             return this.priority_wnd.on_navigate(key);
@@ -480,6 +481,7 @@ pub const c_wnd = struct {
         on_touch: *const fn (this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void = on_touch_impl,
         on_focus: *const fn (this: *c_wnd) void = on_focus_impl,
         on_kill_focus: ?*const fn (this: *c_wnd) void = on_kill_focus_impl,
+        on_navigate: ?*const fn (this: *c_wnd, key: NAVIGATION_KEY) void = on_navigate_impl,
         pre_create_wnd: *const fn (this: *c_wnd) void = pre_create_wnd_impl,
     };
     // protected:
