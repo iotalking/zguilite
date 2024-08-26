@@ -25,7 +25,10 @@ pub const DIALOG_ARRAY = struct {
 pub const c_dialog = struct {
     wnd: c_wnd,
     pub fn asWnd(this: *c_dialog) *c_wnd {
-        return &this.wnd;
+        const w = &this.wnd;
+        w.m_vtable.on_paint = this.on_paint;
+        w.m_vtable.pre_create_wnd = this.pre_create_wnd;
+        return w;
     }
     // public:
     pub fn open_dialog(p_dlg: *c_dialog, modal_mode: bool) int {
