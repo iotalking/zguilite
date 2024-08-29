@@ -1,3 +1,4 @@
+const std = @import("std");
 const api = @import("../core/api.zig");
 const wnd = @import("../core/wnd.zig");
 const resource = @import("../core/resource.zig");
@@ -14,18 +15,17 @@ const uint = types.uint;
 
 const WND_CALLBACK = wnd.WND_CALLBACK;
 const TOUCH_ACTION = wnd.TOUCH_ACTION;
-
 pub const c_button = struct {
-    wnd: wnd.c_wnd,
-    on_click: ?WND_CALLBACK,
+    wnd: wnd.c_wnd = .{},
+    on_click: ?WND_CALLBACK = null,
     pub fn asWnd(this: *c_button) *wnd.c_wnd {
         const w = &this.wnd;
-        w.m_vtable.on_paint = this.on_paint;
-        w.m_vtable.on_focus = this.on_focus;
-        w.m_vtable.on_kill_focus = this.on_kill_focus;
-        w.m_vtable.pre_create_wnd = this.pre_create_wnd;
-        w.m_vtable.on_touch = this.on_touch;
-        w.m_vtable.on_navigate = this.on_navigate;
+        w.m_vtable.on_paint = c_button.on_paint;
+        w.m_vtable.on_focus = c_button.on_focus;
+        w.m_vtable.on_kill_focus = c_button.on_kill_focus;
+        w.m_vtable.pre_create_wnd = c_button.pre_create_wnd;
+        w.m_vtable.on_touch = c_button.on_touch;
+        w.m_vtable.on_navigate = c_button.on_navigate;
         return &this.wnd;
     }
     // public:
@@ -35,28 +35,30 @@ pub const c_button = struct {
     }
     // protected:
     fn on_paint(w: *c_wnd) void {
+        std.log.debug("button on_paint", .{});
         // const this: *c_button = @fieldParentPtr("wnd", w);
-        const rect: c_rect = c_rect.init();
-        w.get_screen_rect(rect);
+        var rect: c_rect = c_rect.init();
+        w.get_screen_rect(&rect);
 
+        var surface = w.m_surface.?;
         switch (w.m_status) {
             .STATUS_NORMAL => {
-                w.m_surface.fill_rect(rect, c_theme.get_color(.COLOR_WND_NORMAL), w.m_z_order);
-                if (w.m_str) {
-                    c_word.draw_string_in_rect(w.m_surface, w.m_z_order, w.m_str, rect, w.m_font, w.m_font_color, c_theme.get_color(.COLOR_WND_NORMAL), .ALIGN_HCENTER | .ALIGN_VCENTER);
+                surface.fill_rect(rect, c_theme.get_color(.COLOR_WND_NORMAL), w.m_z_order);
+                if (w.m_str) |str| {
+                    c_word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font.?, w.m_font_color, c_theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                 }
             },
             .STATUS_FOCUSED => {
-                w.m_surface.fill_rect(rect, c_theme.get_color(.COLOR_WND_FOCUS), w.m_z_order);
-                if (w.m_str) {
-                    c_word.draw_string_in_rect(w.m_surface, w.m_z_order, w.m_str, rect, w.m_font, w.m_font_color, c_theme.get_color(.COLOR_WND_FOCUS), .ALIGN_HCENTER | .ALIGN_VCENTER);
+                surface.fill_rect(rect, c_theme.get_color(.COLOR_WND_FOCUS), w.m_z_order);
+                if (w.m_str) |str| {
+                    c_word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font.?, w.m_font_color, c_theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                 }
             },
             .STATUS_PUSHED => {
-                w.m_surface.fill_rect(rect, c_theme.get_color(.COLOR_WND_PUSHED), w.m_z_order);
-                w.m_surface.draw_rect(rect, c_theme.get_color(.COLOR_WND_BORDER), 2, w.m_z_order);
-                if (.m_str) {
-                    c_word.draw_string_in_rect(w.m_surface, w.m_z_order, w.m_str, rect, w.m_font, w.m_font_color, c_theme.get_color(.COLOR_WND_PUSHED), .ALIGN_HCENTER | .ALIGN_VCENTER);
+                surface.fill_rect(rect, c_theme.get_color(.COLOR_WND_PUSHED), w.m_z_order);
+                surface.draw_rect(rect, c_theme.get_color(.COLOR_WND_BORDER), 2, w.m_z_order);
+                if (w.m_str) |str| {
+                    c_word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font.?, w.m_font_color, c_theme.get_color(.COLOR_WND_PUSHED), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                 }
             },
             else => {
@@ -75,7 +77,7 @@ pub const c_button = struct {
     fn pre_create_wnd(w: *c_wnd) void {
         const this: *c_button = @fieldParentPtr("wnd", w);
         this.on_click = null;
-        w.m_attr = @as(wnd.WND_ATTRIBUTION, .ATTR_VISIBLE | .ATTR_FOCUS);
+        w.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
         w.m_font = c_theme.get_font(.FONT_DEFAULT);
         w.m_font_color = c_theme.get_color(.COLOR_WND_FONT);
     }
@@ -85,7 +87,7 @@ pub const c_button = struct {
         _ = y;
         const this: *c_button = @fieldParentPtr("wnd", w);
         if (action == .TOUCH_DOWN) {
-            w.m_parent.set_child_focus(w);
+            _ = w.m_parent.?.set_child_focus(w);
             w.m_status = .STATUS_PUSHED;
             w.on_paint();
         } else {
@@ -100,11 +102,11 @@ pub const c_button = struct {
     fn on_navigate(w: *c_wnd, key: wnd.NAVIGATION_KEY) void {
         switch (key) {
             .NAV_ENTER => {
-                on_touch(w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_DOWN);
-                on_touch(w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_UP);
+                on_touch(w, w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_DOWN);
+                on_touch(w, w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_UP);
             },
             .NAV_FORWARD, .NAV_BACKWARD => {},
         }
-        return c_wnd.on_navigate(key);
+        return c_wnd.on_navigate(w, key);
     }
 };

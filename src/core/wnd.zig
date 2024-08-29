@@ -17,7 +17,12 @@ pub const WND_ATTRIBUTION = enum(u32) {
     ATTR_VISIBLE = 0x40000000,
     ATTR_FOCUS = 0x20000000,
     ATTR_PRIORITY = 0x10000000, // Handle touch action at high priority
+    _,
 };
+
+pub const ATTR_VISIBLE: u32 = @intFromEnum(WND_ATTRIBUTION.ATTR_VISIBLE);
+pub const ATTR_FOCUS: u32 = @intFromEnum(WND_ATTRIBUTION.ATTR_FOCUS);
+pub const ATTR_PRIORITY: u32 = @intFromEnum(WND_ATTRIBUTION.ATTR_PRIORITY);
 
 pub const WND_STATUS = enum(u16) {
     STATUS_NORMAL, //
@@ -128,14 +133,12 @@ pub const c_wnd = struct {
         _ = this;
     }
     pub fn show_window(this: *c_wnd) void {
-        if (.ATTR_VISIBLE == (this.m_attr & .ATTR_VISIBLE)) {
+        if (ATTR_VISIBLE == (@intFromEnum(this.m_attr) & ATTR_VISIBLE)) {
             this.on_paint();
-            const child: ?*c_wnd = this.m_top_child;
-            if (null != child) {
-                while (child) {
-                    child.show_window();
-                    child = child.m_next_sibling;
-                }
+            var _child: ?*c_wnd = this.m_top_child;
+            while (_child) |child| {
+                child.show_window();
+                _child = child.m_next_sibling;
             }
         }
     }
@@ -196,24 +199,26 @@ pub const c_wnd = struct {
     }
 
     pub fn get_screen_rect(this: *c_wnd, rect: *c_rect) void {
-        const l = 0;
-        const t = 0;
-        this.wnd2screen(l, t);
+        var l: int = 0;
+        var t: int = 0;
+        this.wnd2screen(&l, &t);
         rect.set_rect(l, t, this.m_wnd_rect.width(), this.m_wnd_rect.height());
     }
 
-    pub fn set_child_focus(this: *c_wnd, focus_child: *c_wnd) ?*c_wnd {
-        api.ASSERT(null != focus_child);
-        api.ASSERT(focus_child.m_parent == this);
+    pub fn set_child_focus(this: *c_wnd, _focus_child: ?*c_wnd) ?*c_wnd {
+        api.ASSERT(null != _focus_child);
+        const focus_child = _focus_child.?;
+        api.ASSERT(focus_child.m_parent != null);
+        api.ASSERT(focus_child.m_parent.? == this);
 
-        var old_focus_child = this.m_focus_child;
+        const old_focus_child = this.m_focus_child;
         if (focus_child.is_focus_wnd()) {
             if (focus_child != old_focus_child) {
-                if (old_focus_child) {
-                    old_focus_child.on_kill_focus();
+                if (old_focus_child) |child| {
+                    child.on_kill_focus();
                 }
                 this.m_focus_child = focus_child;
-                this.m_focus_child.on_focus();
+                focus_child.on_focus();
             }
         }
         return this.m_focus_child;
@@ -330,50 +335,61 @@ pub const c_wnd = struct {
     }
     pub fn on_navigate_impl(this: *c_wnd, key: NAVIGATION_KEY) void {
         const priority_wnd = this.search_priority_sibling(this.m_top_child);
-        if (priority_wnd == null) {
-            return this.priority_wnd.on_navigate(key);
+        if (priority_wnd) |w| {
+            return w.on_navigate(key);
         }
 
         if (this.is_focus_wnd()) {
             return;
         }
         if (key != .NAV_BACKWARD and key != .NAV_FORWARD) {
-            if (this.m_focus_child) {
-                this.m_focus_child.on_navigate(key);
+            if (this.m_focus_child) |child| {
+                child.on_navigate(key);
             }
             return;
         }
 
         // Move focus
-        const old_focus_wnd = this.m_focus_child;
+        const _old_focus_wnd = this.m_focus_child;
         // No current focus wnd, new one.
-        if (old_focus_wnd == null) {
-            const child = this.m_top_child;
-            const new_focus_wnd = 0;
-            while (child != null) {
+        if (_old_focus_wnd == null) {
+            var _child = this.m_top_child;
+            var new_focus_wnd: ?*c_wnd = null;
+            while (_child) |child| {
                 if (child.is_focus_wnd()) {
                     new_focus_wnd = child;
-                    new_focus_wnd.m_parent.set_child_focus(new_focus_wnd);
-                    child = child.m_top_child;
+                    if (new_focus_wnd) |nw| {
+                        if (nw.m_parent) |parent| {
+                            _ = parent.set_child_focus(nw);
+                        }
+                    }
+                    _child = child.m_top_child;
                     continue;
                 }
-                child = child.m_next_sibling;
+                _child = child.m_next_sibling;
             }
             return;
         }
+        const old_focus_wnd = _old_focus_wnd.?;
         // Move focus from old wnd to next wnd
-        const next_focus_wnd: ?*c_wnd = if (key == .NAV_FORWARD) old_focus_wnd.m_next_sibling else old_focus_wnd.m_prev_sibling;
-        while (next_focus_wnd and (!next_focus_wnd.is_focus_wnd())) { // Search neighbor of old focus wnd
-            next_focus_wnd = if (key == .NAV_FORWARD) next_focus_wnd.m_next_sibling else next_focus_wnd.m_prev_sibling;
+        var _next_focus_wnd: ?*c_wnd = if (key == .NAV_FORWARD) old_focus_wnd.m_next_sibling else old_focus_wnd.m_prev_sibling;
+        while (_next_focus_wnd) |next_focus_wnd| { // Search neighbor of old focus wnd
+            if ((next_focus_wnd.is_focus_wnd())) {
+                break;
+            }
+            _next_focus_wnd = if (key == .NAV_FORWARD) next_focus_wnd.m_next_sibling else next_focus_wnd.m_prev_sibling;
         }
-        if (next_focus_wnd == null) { // Search whole brother wnd
-            next_focus_wnd = if (key == .NAV_FORWARD) old_focus_wnd.m_parent.m_top_child else old_focus_wnd.m_parent.get_last_child();
-            while (next_focus_wnd != null and (next_focus_wnd.is_focus_wnd() != null)) {
-                next_focus_wnd = if (key == .NAV_FORWARD) next_focus_wnd.m_next_sibling else next_focus_wnd.m_prev_sibling;
+        if (_next_focus_wnd == null) { // Search whole brother wnd
+            _next_focus_wnd = if (key == .NAV_FORWARD) old_focus_wnd.m_parent.?.m_top_child else old_focus_wnd.m_parent.?.get_last_child();
+            while (_next_focus_wnd) |next_focus_wnd| {
+                if (next_focus_wnd.is_focus_wnd()) {
+                    break;
+                }
+                _next_focus_wnd = if (key == .NAV_FORWARD) next_focus_wnd.m_next_sibling else next_focus_wnd.m_prev_sibling;
             }
         }
-        if (next_focus_wnd) {
-            next_focus_wnd.m_parent.set_child_focus(next_focus_wnd);
+        if (_next_focus_wnd) |next_focus_wnd| {
+            _ = next_focus_wnd.m_parent.?.set_child_focus(next_focus_wnd);
         }
     }
 
@@ -407,18 +423,18 @@ pub const c_wnd = struct {
     }
 
     pub fn wnd2screen(this: *c_wnd, x: *int, y: *int) void {
-        const parent = this.m_parent;
+        var _parent = this.m_parent;
         var rect = c_rect.init();
 
         x.* += this.m_wnd_rect.m_left;
         y.* += this.m_wnd_rect.m_top;
 
-        while (null != parent) {
+        while (_parent) |parent| {
             parent.get_wnd_rect(&rect);
             x.* += rect.m_left;
             y.* += rect.m_top;
 
-            parent = parent.m_parent;
+            _parent = parent.m_parent;
         }
     }
 
@@ -473,15 +489,17 @@ pub const c_wnd = struct {
     pub fn pre_create_wnd(this: *c_wnd) void {
         this.m_vtable.pre_create_wnd(this);
     }
-
+    pub fn on_navigate(this: *c_wnd, key: NAVIGATION_KEY) void {
+        this.m_vtable.on_navigate(this, key);
+    }
     pub const vtable = struct {
         connect: *const fn (this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?*WND_TREE) int = connect_impl,
         on_init_children: *const fn (this: *c_wnd) void = on_init_children_impl,
         on_paint: *const fn (this: *c_wnd) void = on_paint_impl,
         on_touch: *const fn (this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void = on_touch_impl,
         on_focus: *const fn (this: *c_wnd) void = on_focus_impl,
-        on_kill_focus: ?*const fn (this: *c_wnd) void = on_kill_focus_impl,
-        on_navigate: ?*const fn (this: *c_wnd, key: NAVIGATION_KEY) void = on_navigate_impl,
+        on_kill_focus: *const fn (this: *c_wnd) void = on_kill_focus_impl,
+        on_navigate: *const fn (this: *c_wnd, key: NAVIGATION_KEY) void = on_navigate_impl,
         pre_create_wnd: *const fn (this: *c_wnd) void = pre_create_wnd_impl,
     };
     // protected:
@@ -497,7 +515,7 @@ pub const c_wnd = struct {
     m_focus_child: ?*c_wnd = null, //current focused window
     m_str: ?[*]const u8 = null, //caption
 
-    m_font: ?*c_wnd = null, //font face
+    m_font: ?*anyopaque = null, //font face
     m_font_color: uint = 0,
     m_bg_color: uint = 0,
 

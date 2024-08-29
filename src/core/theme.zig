@@ -54,12 +54,13 @@ pub const c_theme = struct {
         return 0;
     }
 
-    pub fn get_font(this: c_theme, index: FONT_LIST) *anyopaque {
-        if (index >= .FONT_MAX) {
+    pub fn get_font(index: FONT_LIST) ?*anyopaque {
+        const uindex = @intFromEnum(index);
+        if (uindex >= @intFromEnum(FONT_LIST.FONT_MAX)) {
             api.ASSERT(false);
-            return 0;
+            return null;
         }
-        return this.s_font_map[index];
+        return c_theme.s_font_map[uindex];
     }
 
     pub fn add_image(this: c_theme, index: IMAGE_LIST, image_info: *anyopaque) types.int {
@@ -88,16 +89,17 @@ pub const c_theme = struct {
         return 0;
     }
 
-    pub fn get_color(this: c_theme, index: COLOR_LIST) types.uint {
-        if (index >= .COLOR_MAX) {
+    pub fn get_color(index: COLOR_LIST) types.uint {
+        const uindex = @intFromEnum(index);
+        if (uindex >= @intFromEnum(COLOR_LIST.COLOR_MAX)) {
             api.ASSERT(false);
             return 0;
         }
-        return this.s_color_map[index];
+        return s_color_map[uindex];
     }
 
     // private:
-    const s_font_map: [FONT_LIST.FONT_MAX]*anyopaque = undefined;
-    const s_image_map: [IMAGE_LIST.IMAGE_MAX]*anyopaque = undefined;
-    const s_color_map: [COLOR_LIST.COLOR_MAX]types.uint = undefined;
+    const s_font_map: [@intFromEnum(FONT_LIST.FONT_MAX)]*anyopaque = undefined;
+    const s_image_map: [@intFromEnum(IMAGE_LIST.IMAGE_MAX)]*anyopaque = undefined;
+    const s_color_map: [@intFromEnum(COLOR_LIST.COLOR_MAX)]types.uint = undefined;
 };

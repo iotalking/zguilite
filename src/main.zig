@@ -16,25 +16,53 @@ pub fn main() !void {
 
     try bw.flush(); // don't forget to flush!
 
-    _ = guilite.GL_RGB_32_to_16(0xff);
-    _ = guilite.c_wnd.init();
+    const color_bytes = 2;
+    const screen_width = 240;
+    const screen_height = 320;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    const fbuf = try allocator.alloc(u8, screen_width * screen_height * color_bytes);
+    defer {
+        allocator.free(fbuf);
+        _ = gpa.deinit();
+    }
+    var desktop = c_desktop{};
+    var btn: guilite.c_button = guilite.c_button{};
+    const ID_BTN = 1;
+    const ID_DESKTOP = 2;
+    var s_desktop_children = [_]guilite.WND_TREE{
+        .{
+            .p_wnd = btn.asWnd(), //
+            .resource_id = ID_BTN,
+            .str = null,
+            .x = 10,
+            .y = 10,
+            .width = 50,
+            .height = 50,
+            .p_child_tree = null,
+        },
+        .{},
+    };
 
-    var w: my_wnd = .{};
-    var pWnd = w.asWnd();
-    pWnd.on_paint();
-    var top: guilite.WND_TREE = .{};
-    _ = pWnd.connect(null, 0, null, 0, 0, 10, 10, &top);
+    var _display: guilite.c_display = .{};
+    try _display.init2(@ptrCast(@constCast(&fbuf[0])), screen_width, screen_height, screen_width, screen_height, color_bytes, 1, null);
+    const surface = try _display.alloc_surface(.Z_ORDER_LEVEL_1, guilite.c_rect.init2(0, 0, screen_width, screen_height));
+    surface.set_active(true);
+    desktop.asWnd().set_surface(surface);
+    _ = desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, &s_desktop_children[0]);
+    desktop.asWnd().show_window();
+    std.log.debug("main end", .{});
 }
 
-const my_wnd = struct {
+const c_desktop = struct {
     wnd: guilite.c_wnd = guilite.c_wnd.init(),
-    pub fn asWnd(this: *my_wnd) *guilite.c_wnd {
-        this.wnd.m_vtable.on_paint = my_wnd.on_paint;
-        return @ptrCast(this);
+    pub fn asWnd(this: *c_desktop) *guilite.c_wnd {
+        this.wnd.m_vtable.on_paint = c_desktop.on_paint;
+        return &this.wnd;
     }
     fn on_paint(this: *guilite.c_wnd) void {
         _ = this;
-        std.log.debug("my_wnd on paint", .{});
+        std.log.debug("c_desktop on paint", .{});
     }
 };
 test "simple test" {

@@ -16,7 +16,7 @@ pub const Z_ORDER_LEVEL = enum {
 
 pub const DISPLAY_DRIVER = struct {
     // void(*draw_pixel)(int x, int y, unsigned int rgb);
-    draw_pixel: ?*const fn (x: int, y: int) void,
+    draw_pixel: ?*const fn (x: int, y: int, rgb: int) void,
     // void(*fill_rect)(int x0, int y0, int x1, int y1, unsigned int rgb);
     fill_rect: ?*const fn (x0: int, y0: int, x1: int, y1: int, rgb: int) void,
 };
@@ -25,7 +25,7 @@ pub const DISPLAY_DRIVER = struct {
 pub const c_display = struct {
     // 	friend class c_surface;
     // public:
-    inline fn init1(phy_fb: *anyopaque, display_width: int, display_height: int, surface: *c_surface, driver: *DISPLAY_DRIVER) c_display {
+    pub inline fn init(phy_fb: *anyopaque, display_width: int, display_height: int, surface: *c_surface, driver: *DISPLAY_DRIVER) c_display {
         const this = c_display{};
         this.m_phy_fb = phy_fb;
         this.m_width = display_width;
@@ -41,8 +41,8 @@ pub const c_display = struct {
         surface.*.attach_display(this);
         return this;
     }
-    inline fn init2(phy_fb: *anyopaque, display_width: int, display_height: int, surface_width: int, surface_height: int, color_bytes: uint, surface_cnt: int, driver: *DISPLAY_DRIVER) c_display {
-        var this = c_display{
+    pub inline fn init2(this: *c_display, phy_fb: [*]u8, display_width: int, display_height: int, surface_width: int, surface_height: int, color_bytes: uint, surface_cnt: int, driver: ?*DISPLAY_DRIVER) !void {
+        this.* = c_display{
             .m_phy_fb = phy_fb,
             .m_width = display_width,
             .m_height = display_height,
@@ -55,13 +55,15 @@ pub const c_display = struct {
         };
         api.ASSERT(color_bytes == 2 or color_bytes == 4);
         api.ASSERT(this.m_surface_cnt <= SURFACE_CNT_MAX);
-        @memset(this.m_surface_group, 0);
+        @memset(&this.m_surface_group, null);
 
-        var i = 0;
+        var i: usize = 0;
         errdefer {
             while (i >= 0) {
-                const free_surface = this.m_surface_group[i];
-                core.allocator.free(free_surface);
+                const _free_surface = this.m_surface_group[i];
+                if (_free_surface) |free_surface| {
+                    core.allocator.destroy(free_surface);
+                }
             }
         }
         while (i < this.m_surface_cnt) : (i += 1) {
@@ -72,16 +74,17 @@ pub const c_display = struct {
             // 		m_surface_group[i]->attach_display(this);
             tmp_surface.attach_display(this);
         }
-        return this;
+        return;
     }
-    inline fn alloc_surface(this: *c_display, max_zorder: Z_ORDER_LEVEL, layer_rect: c_rect) *c_surface {
-        api.ASSERT(max_zorder < .Z_ORDER_LEVEL_MAX and this.m_surface_index < this.m_surface_cnt);
+    pub inline fn alloc_surface(this: *c_display, max_zorder: Z_ORDER_LEVEL, layer_rect: c_rect) !*c_surface {
+        api.ASSERT(@intFromEnum(max_zorder) < @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX) and this.m_surface_index < this.m_surface_cnt);
+        const m_surface_index: usize = @intCast(this.m_surface_index);
         if (layer_rect.eql(c_rect.init())) {
-            this.m_surface_group[this.m_surface_index].set_surface(max_zorder, c_rect.init2(0, 0, this.m_width, this.m_height));
+            try this.m_surface_group[m_surface_index].?.set_surface(max_zorder, c_rect.init2(0, 0, this.m_width, this.m_height));
         } else {
-            this.m_surface_group[this.m_surface_index].set_surface(max_zorder, layer_rect);
+            try this.m_surface_group[m_surface_index].?.set_surface(max_zorder, layer_rect);
         }
-        const ret = this.m_surface_group[this.m_surface_index];
+        const ret = this.m_surface_group[m_surface_index].?;
         this.m_surface_index += 1;
         return ret;
     }
@@ -232,60 +235,74 @@ pub const c_display = struct {
         if ((x >= this.m_width) or (y >= this.m_height)) {
             return;
         }
-
-        if (this.m_driver and this.m_driver.draw_pixel) {
-            return this.m_driver.draw_pixel(x, y, rgb);
+        if (null == this.m_driver) {
+            return;
+        }
+        const driver = this.m_driver.?;
+        if (driver.draw_pixel) |draw_pixel| {
+            return draw_pixel(x, y, rgb);
         }
 
         if (this.m_color_bytes == 2) {
-            this.m_phy_fb[y * this.m_width + x] = api.GL_RGB_32_to_16(rgb);
+            const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_phy_fb.?));
+            fb_u16[@intCast(y * @as(int, @intCast(this.m_width)) + x)] = api.GL_RGB_32_to_16(rgb);
         } else {
-            this.m_phy_fb[y * this.m_width + x] = rgb;
+            const fb_u32: [*]u32 = @ptrCast(@alignCast(this.m_phy_fb.?));
+            fb_u32[@intCast(y * this.m_width + x)] = @bitCast(rgb);
         }
     }
 
     fn fill_rect_impl(this: *c_display, x0: int, y0: int, x1: int, y1: int, rgb: uint) void {
-        if (this.m_driver != null and this.m_driver.fill_rect != null) {
-            return this.m_driver.fill_rect(x0, y0, x1, y1, rgb);
+        const ux0: usize = @intCast(x0);
+        const uy0: usize = @intCast(y0);
+        const ux1: usize = @intCast(x1);
+        const uy1: usize = @intCast(y1);
+
+        if (this.m_driver) |driver| {
+            if (driver.fill_rect) |fill_rect| {
+                return fill_rect(x0, y0, x1, y1, rgb);
+            }
         }
 
-        if (this.m_driver != null and this.m_driver.draw_pixel != null) {
+        if (this.m_driver) |driver| {
             // for (int y = y0; y <= y1; y++)
-            for (y0..(y1 + 1)) |y| {
-                // for (int x = x0; x <= x1; x++)
-                for (x0..(x1 + 1)) |x| {
-                    this.m_driver.draw_pixel(x, y, rgb);
+            if (driver.draw_pixel) |draw_pixel| {
+                for (uy0..(uy1 + 1)) |y| {
+                    // for (int x = x0; x <= x1; x++)
+                    for (ux0..(ux1 + 1)) |x| {
+                        draw_pixel(@intCast(x), @intCast(y), rgb);
+                    }
                 }
             }
             return;
         }
 
-        const _width = this.m_width;
+        const _width: usize = @intCast(@as(u32, @bitCast(this.m_width)));
         const _height = this.m_height;
         // 		int x, y;
+        const rgb_16 = api.GL_RGB_32_to_16(rgb);
         if (this.m_color_bytes == 2) {
             // 			unsigned short* phy_fb;
-            const rgb_16 = api.GL_RGB_32_to_16(rgb);
             // 			for (y = y0; y <= y1; y++)
-            for (y0..(y1 + 1)) |y| {
-                var phy_fb: [*]anyopaque = &this.m_phy_fb[y * _width + x0];
+            for (uy0..(uy1 + 1)) |y| {
+                var fb_u16: [*]u16 = @ptrCast(@alignCast(&this.m_phy_fb.?[y * @as(usize, @intCast(_width)) + @as(usize, @intCast(x0))]));
                 // 				for (x = x0; x <= x1; x++)
-                for (x0..(x1 + 1)) |x| {
+                for (ux0..(ux1 + 1)) |x| {
                     if ((x < _width) and (y < _height)) {
-                        phy_fb[0] = rgb_16;
-                        phy_fb += 1;
+                        fb_u16[0] = rgb_16;
+                        fb_u16 += 1;
                     }
                 }
             }
         } else {
             // 			unsigned int* phy_fb;
             // 			for (y = y0; y <= y1; y++)
-            for (y0..(y1 + 1)) |y| {
-                var phy_fb: [*]anyopaque = &this.m_phy_fb[y * _width + x0];
+            for (@intCast(y0)..@intCast(y1 + 1)) |y| {
+                var phy_fb: [*]u16 = @ptrCast(@alignCast(&this.m_phy_fb.?[y * _width + ux0]));
                 // 				for (x = x0; x <= x1; x++)
-                for (x0..(x1 + 1)) |x| {
+                for (ux0..(ux1 + 1)) |x| {
                     if ((x < _width) and (y < _height)) {
-                        phy_fb[0] = rgb;
+                        phy_fb[0] = rgb_16;
                         phy_fb += 1;
                     }
                 }
@@ -294,23 +311,28 @@ pub const c_display = struct {
     }
 
     fn flush_screen_impl(this: *c_display, left: int, top: int, right: int, bottom: int, fb: *anyopaque, fb_width: int) int {
-        if ((0 == this.m_phy_fb) or (0 == fb)) {
+        if ((null == this.m_phy_fb)) {
             return -1;
         }
+        const uleft: usize = @intCast(@as(u32, @bitCast(left)));
+        const utop: usize = @intCast(@as(u32, @bitCast(top)));
+        const uright: usize = @intCast(@as(u32, @bitCast(right)));
+        const ubottom: usize = @intCast(@as(u32, @bitCast(bottom)));
+        const _width: usize = @intCast(@as(u32, @bitCast(this.m_width)));
+        const _height: usize = @intCast(@as(u32, @bitCast(this.m_height)));
+        const color_bytes: usize = @intCast(@as(u32, @bitCast(this.m_height)));
+        const _left = if (uleft >= _width) (_width - 1) else uleft;
+        const _right = if (uright >= _width) (_width - 1) else uright;
+        const _top = if (utop >= _height) (_height - 1) else utop;
+        const _bottom = if (ubottom >= _height) (_height - 1) else ubottom;
 
-        const _width = this.m_width;
-        const _height = this.m_height;
-
-        const _left = if (left >= _width) (_width - 1) else left;
-        const _right = if (right >= _width) (_width - 1) else right;
-        const _top = if (top >= _height) (_height - 1) else top;
-        const _bottom = if (bottom >= _height) (_height - 1) else bottom;
-
+        const ufbwidth: usize = @intCast(@as(u32, @bitCast(fb_width)));
+        const _fb: [*]u8 = @ptrCast(fb);
         // // // for (int y = top; y < bottom; y++)
         for (_top.._bottom) |y| {
-            const count = (_right - _left) * this.m_color_bytes;
-            const s_addr: [count]anyopaque = fb + ((y * fb_width + _left) * this.m_color_bytes);
-            const d_addr: [count]anyopaque = this.m_phy_fb + ((y * _width + _left) * this.m_color_bytes);
+            const count = (_right - _left) * color_bytes;
+            const s_addr = (_fb + ((y * ufbwidth + _left) * color_bytes))[0..count];
+            const d_addr = (this.m_phy_fb.? + ((y * _width + _left) * color_bytes))[0..count];
             // memcpy(d_addr, s_addr, (right - left) * m_color_bytes);
             @memcpy(d_addr, s_addr);
         }
@@ -342,17 +364,17 @@ pub const c_display = struct {
         fb_width: int,
     ) int = flush_screen_impl,
 
-    m_width: int, //in pixels
-    m_height: int, //in pixels
-    m_color_bytes: int, //16/32 bits for default
-    m_phy_fb: ?[*]u8, //physical framebuffer for default
-    m_driver: ?*DISPLAY_DRIVER, //Rendering by external method without default physical framebuffer
+    m_width: int = 0, //in pixels
+    m_height: int = 0, //in pixels
+    m_color_bytes: int = 0, //16/32 bits for default
+    m_phy_fb: ?[*]u8 = null, //physical framebuffer for default
+    m_driver: ?*DISPLAY_DRIVER = null, //Rendering by external method without default physical framebuffer
 
-    m_phy_read_index: int,
-    m_phy_write_index: int,
-    m_surface_group: [SURFACE_CNT_MAX]*c_surface,
-    m_surface_cnt: int, //surface count
-    m_surface_index: int,
+    m_phy_read_index: int = 0,
+    m_phy_write_index: int = 0,
+    m_surface_group: [SURFACE_CNT_MAX]?*c_surface = undefined,
+    m_surface_cnt: int = 0, //surface count
+    m_surface_index: int = 0,
 };
 
 pub const c_layer = struct {
@@ -373,24 +395,26 @@ pub const c_surface = struct {
     // m_top_zorder(Z_ORDER_LEVEL_0), m_phy_write_index(0), m_display(0)
     {
         var this = try allocator.create(c_surface);
-        errdefer allocator.free(this);
-        this.m_width = width;
-        this.m_height = height;
-        this.m_color_bytes = color_bytes;
-        this.m_is_active = false;
-        this.m_top_zorder = .Z_ORDER_LEVEL_0;
-        this.m_phy_write_index = 0;
+        errdefer allocator.destroy(this);
+        this.* = .{
+            .m_width = width,
+            .m_height = height,
+            .m_color_bytes = color_bytes,
+            .m_is_active = false,
+            .m_top_zorder = .Z_ORDER_LEVEL_0,
+            .m_phy_write_index = null,
+        };
 
         // if(overlpa_rect.eql(.{})  set_surface(max_zorder, c_rect(0, 0, width, height)) : set_surface(max_zorder, overlpa_rect);
         if (overlpa_rect.eql(.{})) {
-            this.set_surface(max_zorder, c_rect.init2(0, 0, width, height));
+            _ = try this.set_surface(max_zorder, c_rect.init2(0, 0, width, height));
         } else {
-            this.set_surface(max_zorder, overlpa_rect);
+            _ = try this.set_surface(max_zorder, overlpa_rect);
         }
         return this;
     }
 
-    fn get_pixel(this: @This(), x: int, y: int, z_order: uint) !uint {
+    pub fn get_pixel(this: @This(), x: int, y: int, z_order: uint) !uint {
         if (x >= this.m_width or y >= this.m_height or x < 0 or y < 0 or z_order >= .Z_ORDER_LEVEL_MAX) {
             api.ASSERT(false);
             return 0;
@@ -411,30 +435,34 @@ pub const c_surface = struct {
         return 0;
     }
 
-    fn draw_pixel_impl(this: *c_display, x: int, y: int, rgb: uint, z_order: uint) void {
+    fn draw_pixel_impl(this: *c_surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void {
         if (x >= this.m_width or y >= this.m_height or x < 0 or y < 0) {
             return;
         }
-
-        if (z_order > this.m_max_zorder) {
+        const uz_order: usize = @intFromEnum(z_order);
+        if (uz_order > @intFromEnum(this.m_max_zorder)) {
             api.ASSERT(false);
             return;
         }
 
-        if (z_order > this.m_top_zorder) {
-            this.m_top_zorder = @enumFromInt(z_order);
+        if (uz_order > @intFromEnum(this.m_top_zorder)) {
+            this.m_top_zorder = z_order;
         }
 
-        if (z_order == this.m_max_zorder) {
+        if (uz_order == @intFromEnum(this.m_max_zorder)) {
             return this.draw_pixel_low_level(x, y, rgb);
         }
 
-        if (this.m_layers[z_order].rect.pt_in_rect(x, y)) {
-            const layer_rect = this.m_layers[z_order].rect;
+        if (this.m_layers[uz_order].rect.pt_in_rect(x, y)) {
+            const layer_rect = this.m_layers[uz_order].rect;
+            const idx: usize = @intCast(@as(u32, @bitCast((x - layer_rect.m_left) + (y - layer_rect.m_top) * layer_rect.width())));
+            const fb = this.m_layers[uz_order].fb.?;
             if (this.m_color_bytes == 2) {
-                ((this.m_layers[z_order].fb))[(x - layer_rect.m_left) + (y - layer_rect.m_top) * layer_rect.width()] = api.GL_RGB_32_to_16(rgb);
+                const fb_u16: [*]u16 = @ptrCast(@alignCast(fb));
+                fb_u16[idx] = api.GL_RGB_32_to_16(rgb);
             } else {
-                ((this.m_layers[z_order].fb))[(x - layer_rect.m_left) + (y - layer_rect.m_top) * layer_rect.width()] = rgb;
+                const fb_uint: [*]u32 = @ptrCast(@alignCast(fb));
+                fb_uint[idx] = @bitCast(rgb);
             }
         }
 
@@ -443,9 +471,9 @@ pub const c_surface = struct {
         }
 
         var be_overlapped = false;
-        var tmp_z_order = @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX) - 1;
+        var tmp_z_order: usize = @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX) - 1;
         // for (unsigned int tmp_z_order = Z_ORDER_LEVEL_MAX - 1; tmp_z_order > z_order; tmp_z_order--)
-        while (tmp_z_order > z_order) : (tmp_z_order -= 1) {
+        while (tmp_z_order > uz_order) : (tmp_z_order -= 1) {
             if (this.m_layers[tmp_z_order].active_rect.pt_in_rect(x, y)) {
                 be_overlapped = true;
                 break;
@@ -457,31 +485,33 @@ pub const c_surface = struct {
         }
     }
 
-    fn fill_rect_impl(this: c_surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint) void {
-        x0 = if (x0 < 0) 0 else x0;
-        y0 = if (y0 < 0) 0 else y0;
-        x1 = if (x1 > (this.m_width - 1)) (this.m_width - 1) else x1;
-        y1 = if (y1 > (this.m_height - 1)) (this.m_height - 1) else y1;
+    fn fill_rect_impl(this: *c_surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: uint, z_order: uint) void {
+        const x0 = if (_x0 < 0) 0 else _x0;
+        var y0 = if (_y0 < 0) 0 else _y0;
+        const x1 = if (_x1 > (this.m_width - 1)) (this.m_width - 1) else _x1;
+        const y1 = if (_y1 > (this.m_height - 1)) (this.m_height - 1) else _y1;
 
-        if (z_order == this.m_max_zorder) {
+        const ez_order: Z_ORDER_LEVEL = @enumFromInt(z_order);
+        const uz_order: usize = @intCast(z_order);
+        if (ez_order == this.m_max_zorder) {
             return this.fill_rect_low_level(x0, y0, x1, y1, rgb);
         }
 
-        if (z_order == this.m_top_zorder) {
-            const width = this.m_layers[z_order].rect.width();
-            const layer_rect = this.m_layers[z_order].rect;
+        if (ez_order == this.m_top_zorder) {
+            const width = this.m_layers[uz_order].rect.width();
+            const layer_rect = this.m_layers[uz_order].rect;
             const rgb_16 = api.GL_RGB_32_to_16(rgb);
             // 			for (int y = y0; y <= y1; y++)
-            for (y0..(y1 + 1)) |y| {
+            for (@intCast(y0)..@intCast(y1 + 1)) |y| {
                 // 				for (int x = x0; x <= x1; x++)
-                for (x0..(x1 + 1)) |x| {
-                    if (layer_rect.pt_in_rect(x, y)) {
+                for (@intCast(x0)..@intCast(x1 + 1)) |x| {
+                    if (layer_rect.pt_in_rect(@intCast(x), @intCast(y))) {
                         if (this.m_color_bytes == 2) {
-                            const fb_u16: [*]u16 = @ptrCast(this.m_layers[z_order].fb);
-                            fb_u16[(y - layer_rect.m_top) * width + (x - layer_rect.m_left)] = rgb_16;
+                            const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_layers[uz_order].fb));
+                            fb_u16[(y - @as(usize, @intCast(layer_rect.m_top))) * @as(usize, @as(u32, @bitCast(width))) + (x - @as(usize, @as(u32, @bitCast(layer_rect.m_left))))] = rgb_16;
                         } else {
-                            const fb_uint: [*]uint = @ptrCast(this.m_layers[z_order].fb);
-                            fb_uint[(y - layer_rect.m_top) * width + (x - layer_rect.m_left)] = rgb;
+                            const fb_uint: [*]uint = @ptrCast(@alignCast(this.m_layers[uz_order].fb));
+                            fb_uint[(y - @as(usize, @as(u32, @bitCast(layer_rect.m_top)))) * @as(usize, @as(u32, @bitCast(width))) + (x - @as(usize, @as(u32, @bitCast(layer_rect.m_left))))] = rgb;
                         }
                     }
                 }
@@ -495,21 +525,27 @@ pub const c_surface = struct {
         }
     }
 
-    fn draw_hline(this: c_surface, x0: int, x1: int, y: int, rgb: uint, z_order: uint) void {
+    fn draw_hline(this: *c_surface, _x0: int, _x1: int, y: int, rgb: uint, z_order: uint) void {
+        const x0: usize = @as(u32, @bitCast(_x0));
+        const x1: usize = @as(u32, @bitCast(_x1));
         // 		for (; x0 <= x1; x0++)
         for (x0..(x1 + 1)) |x| {
-            this.draw_pixel(x, y, rgb, z_order);
+            const ix: i32 = @intCast(x);
+            this.draw_pixel(ix, y, rgb, @enumFromInt(z_order));
         }
     }
 
-    fn draw_vline(this: c_surface, x: int, y0: int, y1: int, rgb: uint, z_order: uint) void {
+    fn draw_vline(this: *c_surface, x: int, y0: int, y1: int, rgb: uint, z_order: uint) void {
         // for (; y0 <= y1; y0++)
-        for (y0..(y1 + 1)) |y| {
-            this.draw_pixel(x, y, rgb, z_order);
+        const _y0: usize = @as(usize, @as(u32, @bitCast(y0)));
+        const _y1: usize = @as(usize, @as(u32, @bitCast(y1)));
+        for (_y0..(_y1 + 1)) |y| {
+            const iy: int = @truncate(@as(i64, @bitCast(y)));
+            this.draw_pixel(x, iy, rgb, @enumFromInt(z_order));
         }
     }
 
-    fn draw_line(this: c_surface, x1: int, y1: int, x2: int, y2: int, rgb: uint, z_order: uint) void {
+    fn draw_line(this: *c_surface, x1: int, y1: int, x2: int, y2: int, rgb: uint, z_order: uint) void {
         // int dx, dy, x, y, e;
         var dx: int = 0;
         var dy: int = 0;
@@ -560,9 +596,11 @@ pub const c_surface = struct {
         }
     }
 
-    fn draw_rect(this: c_surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint, size: uint) void {
+    pub fn draw_rect_pos(this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint, size: uint) void {
         // for (unsigned int offset = 0; offset < size; offset++)
-        for (0..size) |offset| {
+        const _usize: usize = @as(usize, @as(u32, @bitCast(size)));
+        for (0.._usize) |_offset| {
+            const offset: int = @bitCast(@as(u32, @truncate(_offset)));
             this.draw_hline(x0 + offset, x1 - offset, y0 + offset, rgb, z_order);
             this.draw_hline(x0 + offset, x1 - offset, y1 - offset, rgb, z_order);
             this.draw_vline(x0 + offset, y0 + offset, y1 - offset, rgb, z_order);
@@ -570,15 +608,11 @@ pub const c_surface = struct {
         }
     }
 
-    // fn draw_rect(this: c_surface, rect: c_rect, rgb: int, size: uint, z_order: uint) void {
-    //     this.draw_rect(rect.m_left, rect.m_top, rect.m_right, rect.m_bottom, rgb, z_order, size);
-    // }
-
-    fn fill_rect(this: c_surface, rect: c_rect, rgb: int, z_order: uint) void {
-        this.fill_rect(rect.m_left, rect.m_top, rect.m_right, rect.m_bottom, rgb, z_order);
+    pub fn draw_rect(this: *c_surface, rect: c_rect, rgb: int, size: uint, z_order: uint) void {
+        this.draw_rect_pos(rect.m_left, rect.m_top, rect.m_right, rect.m_bottom, rgb, z_order, size);
     }
 
-    fn flush_screen(this: c_surface, left: int, top: int, right: int, bottom: int) int {
+    pub fn flush_screen(this: *c_surface, left: int, top: int, right: int, bottom: int) int {
         if (!this.m_is_active) {
             return -1;
         }
@@ -630,41 +664,46 @@ pub const c_surface = struct {
         this.m_layers[active_z_order].active_rect = active_rect; //set the new acitve rect.
     }
 
-    fn set_active(this: c_surface, flag: bool) void {
+    pub fn set_active(this: *c_surface, flag: bool) void {
         this.m_is_active = flag;
     }
     // protected:
-    fn fill_rect_low_level_impl(this: c_surface, x0: int, y0: int, x1: int, y1: int, rgb: int) void { //fill rect on framebuffer of surface
+    fn fill_rect_low_level_impl(this: *c_surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: int) void { //fill rect on framebuffer of surface
+        const x0: usize = @as(u32, @bitCast(_x0));
+        const y0: usize = @as(u32, @bitCast(_y0));
+        const x1: usize = @as(u32, @bitCast(_x1));
+        const y1: usize = @as(u32, @bitCast(_y1));
+        const m_width: usize = @as(u32, @bitCast(this.m_width));
         // int x, y;
         if (this.m_color_bytes == 2) {
             var fb: ?[*]u16 = null;
             const rgb_16 = api.GL_RGB_32_to_16(rgb);
             // for (y = y0; y <= y1; y++)
             for (y0..(y1 + 1)) |y| {
-                fb = @ptrCast(this.m_fb);
-                fb = if (this.m_fb != null) &(fb)[y * this.m_width + x0] else null;
+                fb = @ptrCast(@alignCast(this.m_fb.?));
+                fb = if (this.m_fb != null) fb.? + y * m_width + x0 else null;
                 if (fb == null) {
                     break;
                 }
                 // for (x = x0; x <= x1; x++)
                 for (x0..(x1 + 1)) |_| {
-                    fb[0] = rgb_16;
-                    fb += 1;
+                    fb.?[0] = rgb_16;
+                    fb = fb.? + 1;
                 }
             }
         } else {
             var fb: ?[*]uint = null;
             // for (y = y0; y <= y1; y++)
             for (y0..(y1 + 1)) |y| {
-                fb = @ptrCast(this.m_fb);
-                fb = if (this.m_fb != null) &fb[y * this.m_width + x0] else null;
+                fb = @ptrCast(@alignCast(this.m_fb.?));
+                fb = if (this.m_fb != null) fb.? + y * m_width + x0 else null;
                 if (fb == null) {
                     break;
                 }
                 // for (x = x0; x <= x1; x++)
                 for (x0..(x1 + 1)) |_| {
-                    fb[0] = rgb;
-                    fb += 1;
+                    fb.?[0] = rgb;
+                    fb = fb.? + 1;
                 }
             }
         }
@@ -672,50 +711,54 @@ pub const c_surface = struct {
         if (this.m_is_active == false) {
             return;
         }
-        this.m_display.fill_rect(x0, y0, x1, y1, rgb);
-        this.m_phy_write_index.* = this.m_phy_write_index.* + 1;
+        this.m_display.?.fill_rect(this.m_display.?, _x0, _y0, _x1, _y1, rgb);
+        this.m_phy_write_index.?.* = this.m_phy_write_index.?.* + 1;
     }
 
-    fn draw_pixel_low_level_impl(this: c_surface, x: int, y: int, rgb: uint) void {
+    fn draw_pixel_low_level_impl(this: *c_surface, x: int, y: int, rgb: uint) void {
         if (this.m_fb != null) { //draw pixel on framebuffer of surface
-            const fb_u16: [*]u16 = @ptrCast(this.m_fb);
-            const fb_uint: [*]uint = @ptrCast(this.m_fb);
-            if (this.m_color_bytes == 2) fb_u16[y * this.m_width + x] = api.GL_RGB_32_to_16(rgb) else fb_uint[y * this.m_width + x] = rgb;
+            const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_fb));
+            const fb_uint: [*]uint = @ptrCast(@alignCast(this.m_fb));
+            const fb_idx: usize = @as(usize, @as(u32, @bitCast(y * this.m_width + x)));
+            if (this.m_color_bytes == 2) fb_u16[fb_idx] = api.GL_RGB_32_to_16(rgb) else fb_uint[fb_idx] = rgb;
         }
         if (this.m_is_active == false) {
             return;
         }
-        this.m_display.draw_pixel(x, y, rgb);
-        this.m_phy_write_index.* = this.m_phy_write_index.* + 1;
+        this.m_display.?.draw_pixel(this.m_display.?, x, y, rgb);
+        this.m_phy_write_index.?.* = this.m_phy_write_index.?.* + 1;
     }
 
-    fn attach_display(this: c_surface, display: *c_display) void {
-        this.ASSERT(display != null);
+    fn attach_display(this: *c_surface, display: *c_display) void {
         this.m_display = display;
         this.m_phy_write_index = &display.m_phy_write_index;
     }
 
     fn set_surface(this: *c_surface, max_z_order: Z_ORDER_LEVEL, layer_rect: c_rect) !void {
         this.m_max_zorder = max_z_order;
-        if (this.m_display and (this.m_display.m_surface_cnt > 1)) {
-            // m_fb = calloc(m_width * m_height, m_color_bytes);
-            this.m_fb = try core.allocator.alloc(u8, this.m_width * this.m_height, this.m_color_bytes);
+        if (this.m_display) |display| {
+            if (display.m_surface_cnt > 1) {
+                // m_fb = calloc(m_width * m_height, m_color_bytes);
+                this.m_fb = @ptrCast(try core.allocator.alloc(u8, @intCast(this.m_width * this.m_height * this.m_color_bytes)));
+            }
         }
-        var i = 0;
+        var i: usize = 0;
         errdefer {
             core.allocator.free(this.m_fb);
         }
 
+        const fb_size: usize = @intCast(layer_rect.width() * layer_rect.height() * this.m_color_bytes);
         errdefer {
             while (i >= 0) {
                 const layer = this.m_layers[i];
-                core.allocator.free(layer);
+                const fb_u8: [*]u8 = @ptrCast(@alignCast(layer.fb.?));
+                core.allocator.free(fb_u8[0..fb_size]);
             }
         }
         // 		for (int i = Z_ORDER_LEVEL_0; i < m_max_zorder; i++)
-        for (Z_ORDER_LEVEL.Z_ORDER_LEVEL_0..this.m_max_zorder) |j| {
+        for (@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_0)..@intFromEnum(this.m_max_zorder)) |j| {
             i = j; //Top layber fb always be 0
-            this.m_layers[i] = try core.allocator.alloc(u8, layer_rect.width() * layer_rect.height(), this.m_color_bytes);
+            this.m_layers[i].fb = @ptrCast(try core.allocator.alloc(u8, fb_size));
             // 			ASSERT(m_layers[i].fb = calloc(layer_rect.width() * layer_rect.height(), m_color_bytes));
             // 			m_layers[i].rect = layer_rect;
             this.m_layers[i].rect = layer_rect;
@@ -724,21 +767,39 @@ pub const c_surface = struct {
         // 		m_layers[Z_ORDER_LEVEL_0].active_rect = layer_rect;
     }
 
-    draw_pixel: *const fn (this: *c_display, x: int, y: int, rgb: uint, z_order: uint) void = draw_pixel_impl,
-    fill_rect_impl: *const fn (this: c_surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint) void = fill_rect_impl,
-    fill_rect_low_level: *const fn (this: c_surface, x0: int, y0: int, x1: int, y1: int, rgb: int) void = fill_rect_low_level_impl,
-    draw_pixel_low_level: *const fn (this: c_surface, x: int, y: int, rgb: uint) void = draw_pixel_low_level_impl,
+    pub fn draw_pixel(this: *c_surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void {
+        this.m_vtable.draw_pixel(this, x, y, rgb, z_order);
+    }
+    // pub fn fill_rect(this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint) void {
+    //     this.m_vtable.fill_rect(this, x0, y0, x1, y1, rgb, z_order);
+    // }
+    pub fn fill_rect(this: *c_surface, rect: c_rect, rgb: uint, z_order: uint) void {
+        this.m_vtable.fill_rect(this, rect.m_left, rect.m_top, rect.m_right, rect.m_bottom, rgb, z_order);
+    }
+    pub fn fill_rect_low_level(this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: int) void {
+        this.m_vtable.fill_rect_low_level(this, x0, y0, x1, y1, rgb);
+    }
+    pub fn draw_pixel_low_level(this: *c_surface, x: int, y: int, rgb: uint) void {
+        this.m_vtable.draw_pixel_low_level(this, x, y, rgb);
+    }
+    const VTable = struct {
+        draw_pixel: *const fn (this: *c_surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void = draw_pixel_impl,
+        fill_rect: *const fn (this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint) void = fill_rect_impl,
+        fill_rect_low_level: *const fn (this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: int) void = fill_rect_low_level_impl,
+        draw_pixel_low_level: *const fn (this: *c_surface, x: int, y: int, rgb: uint) void = draw_pixel_low_level_impl,
+    };
 
-    m_width: int, //in pixels
-    m_height: int, //in pixels
-    m_color_bytes: int, //16 bits, 32 bits for default
-    m_fb: ?[*]u8, //frame buffer you could see
-    m_layers: [@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX)]c_layer, //all graphic layers
+    m_vtable: VTable = .{},
+    m_width: int = 0, //in pixels
+    m_height: int = 0, //in pixels
+    m_color_bytes: int = 0, //16 bits, 32 bits for default
+    m_fb: ?[*]u8 = null, //frame buffer you could see
+    m_layers: [@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX)]c_layer = undefined, //all graphic layers
     m_is_active: bool, //active flag
-    m_max_zorder: Z_ORDER_LEVEL, //the highest graphic layer the surface will have
-    m_top_zorder: Z_ORDER_LEVEL, //the current highest graphic layer the surface have
-    m_phy_write_index: *int,
-    m_display: *c_display,
+    m_max_zorder: Z_ORDER_LEVEL = .Z_ORDER_LEVEL_0, //the highest graphic layer the surface will have
+    m_top_zorder: Z_ORDER_LEVEL = .Z_ORDER_LEVEL_0, //the current highest graphic layer the surface have
+    m_phy_write_index: ?*int = null,
+    m_display: ?*c_display = null,
 };
 
 // inline c_display::c_display(void* phy_fb, int display_width, int display_height, c_surface* surface, DISPLAY_DRIVER* driver) : m_phy_fb(phy_fb), m_width(display_width), m_height(display_height), m_driver(driver), m_phy_read_index(0), m_phy_write_index(0), m_surface_cnt(1), m_surface_index(0)

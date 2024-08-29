@@ -1,3 +1,4 @@
+const std = @import("std");
 pub const types = @import("./types.zig");
 pub const REAL_TIME_TASK_CYCLE_MS = 50;
 pub fn MAX(a: type, b: type) @TypeOf(a) {
@@ -13,7 +14,8 @@ pub fn GL_ARGB_A(rgb: types.int) types.int {
     return ((rgb >> 24) & 0xFF);
 }
 pub fn GL_RGB(r: types.int, g: types.int, b: types.int) types.int {
-    return ((0xFF << 24) | (((r)) << 16) | (((g)) << 8) | ((b)));
+    const ret = ((@as(usize, 0xFF) << 24) | ((@as(usize, @as(u32, @bitCast(r)))) << 16) | (((@as(usize, @as(u32, @bitCast(g))))) << 8) | ((@as(usize, @as(u32, @bitCast(b))))));
+    return @bitCast(@as(u32, @truncate(ret)));
 }
 pub fn GL_RGB_R(rgb: types.int) types.int {
     return ((((rgb)) >> 16) & 0xFF);
@@ -67,6 +69,8 @@ pub fn _assert(file: [*]const u8, line: types.int) void {
 
 pub fn ASSERT(condition: bool) void {
     if (!condition) {
+        std.debug.dumpCurrentStackTrace(null);
+        std.log.err("ASSERT", .{});
         const loc = @src();
         _assert(@ptrCast(loc.fn_name), loc.line);
     }
