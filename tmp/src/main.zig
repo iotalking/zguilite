@@ -14,6 +14,15 @@ pub fn main() !void {
     try stdout.print("Run `zig build test` to run the tests.\n", .{});
 
     try bw.flush(); // don't forget to flush!
+
+    const a: i32 = 0;
+    const b: i32 = 1;
+    const p = [_]*const i32{
+        &a,
+        &b,
+    };
+    const pp: [*]*i32 = @ptrCast(@constCast(&p[0]));
+    std.log.debug("p:{*},&p[0]:{*} [*]*i32:{*} pp[0]:{*}", .{ &p, &p[0], pp, pp[0] });
 }
 
 test "simple test" {

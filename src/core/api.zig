@@ -28,7 +28,7 @@ pub fn GL_RGB_B(rgb: types.int) types.int {
 }
 pub fn GL_RGB_32_to_16(rgb: types.int) u16 {
     const ret: i16 = @truncate(((((rgb)) & 0xFF) >> 3) | ((((rgb)) & 0xFC00) >> 5) | ((((rgb)) & 0xF80000) >> 8));
-    return @intCast(ret);
+    return @bitCast(ret);
 }
 pub fn GL_RGB_16_to_32(rgb: types.int) types.int {
     return ((0xFF << 24) | ((((rgb)) & 0x1F) << 3) | ((((rgb)) & 0x7E0) << 5) | ((((rgb)) & 0xF800) << 8));

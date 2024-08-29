@@ -16,7 +16,9 @@ const uint = types.uint;
 const WND_CALLBACK = wnd.WND_CALLBACK;
 const TOUCH_ACTION = wnd.TOUCH_ACTION;
 pub const c_button = struct {
-    wnd: wnd.c_wnd = .{},
+    wnd: wnd.c_wnd = .{
+        .m_class = "c_button",
+    },
     on_click: ?WND_CALLBACK = null,
     pub fn asWnd(this: *c_button) *wnd.c_wnd {
         const w = &this.wnd;

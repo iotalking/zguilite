@@ -30,8 +30,8 @@ pub fn main() !void {
     var btn: guilite.c_button = guilite.c_button{};
     const ID_BTN = 1;
     const ID_DESKTOP = 2;
-    var s_desktop_children = [_]guilite.WND_TREE{
-        .{
+    var s_desktop_children = [_]?*const guilite.WND_TREE{
+        &guilite.WND_TREE{
             .p_wnd = btn.asWnd(), //
             .resource_id = ID_BTN,
             .str = null,
@@ -41,21 +41,24 @@ pub fn main() !void {
             .height = 50,
             .p_child_tree = null,
         },
-        .{},
+        null,
     };
 
+    std.log.debug("s_desktop_children[0]:{*},s_desktop_children[0].resource_id:{d}", .{ s_desktop_children[0], s_desktop_children[0].?.resource_id });
     var _display: guilite.c_display = .{};
     try _display.init2(@ptrCast(@constCast(&fbuf[0])), screen_width, screen_height, screen_width, screen_height, color_bytes, 1, null);
     const surface = try _display.alloc_surface(.Z_ORDER_LEVEL_1, guilite.c_rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
     desktop.asWnd().set_surface(surface);
-    _ = desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, &s_desktop_children[0]);
+    _ = desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, &s_desktop_children);
     desktop.asWnd().show_window();
     std.log.debug("main end", .{});
 }
 
 const c_desktop = struct {
-    wnd: guilite.c_wnd = guilite.c_wnd.init(),
+    wnd: guilite.c_wnd = .{
+        .m_class = "c_desktop",
+    },
     pub fn asWnd(this: *c_desktop) *guilite.c_wnd {
         this.wnd.m_vtable.on_paint = c_desktop.on_paint;
         return &this.wnd;

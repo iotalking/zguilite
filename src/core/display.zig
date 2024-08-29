@@ -78,11 +78,16 @@ pub const c_display = struct {
     }
     pub inline fn alloc_surface(this: *c_display, max_zorder: Z_ORDER_LEVEL, layer_rect: c_rect) !*c_surface {
         api.ASSERT(@intFromEnum(max_zorder) < @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX) and this.m_surface_index < this.m_surface_cnt);
+        std.log.debug("alloc_surface", .{});
         const m_surface_index: usize = @intCast(this.m_surface_index);
         if (layer_rect.eql(c_rect.init())) {
-            try this.m_surface_group[m_surface_index].?.set_surface(max_zorder, c_rect.init2(0, 0, this.m_width, this.m_height));
+            if (this.m_surface_group[m_surface_index]) |surface| {
+                try surface.set_surface(max_zorder, c_rect.init2(0, 0, this.m_width, this.m_height));
+            }
         } else {
-            try this.m_surface_group[m_surface_index].?.set_surface(max_zorder, layer_rect);
+            if (this.m_surface_group[m_surface_index]) |surface| {
+                try surface.set_surface(max_zorder, layer_rect);
+            }
         }
         const ret = this.m_surface_group[m_surface_index].?;
         this.m_surface_index += 1;
@@ -493,6 +498,8 @@ pub const c_surface = struct {
 
         const ez_order: Z_ORDER_LEVEL = @enumFromInt(z_order);
         const uz_order: usize = @intCast(z_order);
+
+        std.log.debug("fill_rect_impl z_order:{d}", .{z_order});
         if (ez_order == this.m_max_zorder) {
             return this.fill_rect_low_level(x0, y0, x1, y1, rgb);
         }
@@ -674,6 +681,7 @@ pub const c_surface = struct {
         const x1: usize = @as(u32, @bitCast(_x1));
         const y1: usize = @as(u32, @bitCast(_y1));
         const m_width: usize = @as(u32, @bitCast(this.m_width));
+        std.log.debug("fill_rect_low_level_impl x0:{d} y0:{d} x1:{d} y1:{d} rgb:{d}", .{ x0, y0, x1, y1, rgb });
         // int x, y;
         if (this.m_color_bytes == 2) {
             var fb: ?[*]u16 = null;
@@ -681,14 +689,15 @@ pub const c_surface = struct {
             // for (y = y0; y <= y1; y++)
             for (y0..(y1 + 1)) |y| {
                 fb = @ptrCast(@alignCast(this.m_fb.?));
-                fb = if (this.m_fb != null) fb.? + y * m_width + x0 else null;
-                if (fb == null) {
+                // fb = if (this.m_fb != null) fb.? + y * m_width + x0 else null;
+                if (fb) |_fb16| {
+                    const _xfb = _fb16 + y * m_width + x0;
+                    // for (x = x0; x <= x1; x++)
+                    for (x0..(x1 + 1)) |x| {
+                        _xfb[x] = rgb_16;
+                    }
+                } else {
                     break;
-                }
-                // for (x = x0; x <= x1; x++)
-                for (x0..(x1 + 1)) |_| {
-                    fb.?[0] = rgb_16;
-                    fb = fb.? + 1;
                 }
             }
         } else {
@@ -696,14 +705,15 @@ pub const c_surface = struct {
             // for (y = y0; y <= y1; y++)
             for (y0..(y1 + 1)) |y| {
                 fb = @ptrCast(@alignCast(this.m_fb.?));
-                fb = if (this.m_fb != null) fb.? + y * m_width + x0 else null;
-                if (fb == null) {
+                // fb = if (this.m_fb != null) fb.? + y * m_width + x0 else null;
+                if (fb) |_fb| {
+                    const _xfb = _fb + y * m_width + x0;
+                    // for (x = x0; x <= x1; x++)
+                    for (x0..(x1 + 1)) |ix| {
+                        _xfb[ix] = rgb;
+                    }
+                } else {
                     break;
-                }
-                // for (x = x0; x <= x1; x++)
-                for (x0..(x1 + 1)) |_| {
-                    fb.?[0] = rgb;
-                    fb = fb.? + 1;
                 }
             }
         }
@@ -716,6 +726,7 @@ pub const c_surface = struct {
     }
 
     fn draw_pixel_low_level_impl(this: *c_surface, x: int, y: int, rgb: uint) void {
+        std.log.debug("draw_pixel_low_level_impl x:{d} y:{d} rgb:{d}", .{ x, y, rgb });
         if (this.m_fb != null) { //draw pixel on framebuffer of surface
             const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_fb));
             const fb_uint: [*]uint = @ptrCast(@alignCast(this.m_fb));
@@ -736,8 +747,11 @@ pub const c_surface = struct {
 
     fn set_surface(this: *c_surface, max_z_order: Z_ORDER_LEVEL, layer_rect: c_rect) !void {
         this.m_max_zorder = max_z_order;
+        // std.log.debug("surface.set_surface m_display:{*}", .{this.m_display});
+        // std.debug.dumpCurrentStackTrace(null);
         if (this.m_display) |display| {
-            if (display.m_surface_cnt > 1) {
+            std.log.debug("display.m_surface_cnt:{d}", .{display.m_surface_cnt});
+            if (display.m_surface_cnt > 0) {
                 // m_fb = calloc(m_width * m_height, m_color_bytes);
                 this.m_fb = @ptrCast(try core.allocator.alloc(u8, @intCast(this.m_width * this.m_height * this.m_color_bytes)));
             }

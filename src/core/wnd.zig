@@ -1,3 +1,4 @@
+const std = @import("std");
 const api = @import("./api.zig");
 const resource = @import("./resource.zig");
 const display = @import("./display.zig");
@@ -50,7 +51,7 @@ pub const struct_wnd_tree = struct {
     y: i16 = 0, //position y
     width: i16 = 0,
     height: i16 = 0,
-    p_child_tree: ?*struct_wnd_tree = null, //sub tree
+    p_child_tree: ?[]?*struct_wnd_tree = null, //sub tree
 };
 pub const WND_TREE = struct_wnd_tree;
 
@@ -69,12 +70,12 @@ pub const c_wnd = struct {
         _ = this;
     }
     // 	virtual ~c_wnd() {};
-    pub fn connect_impl(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?*WND_TREE) int {
+    pub fn connect_impl(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int {
         if (0 == resource_id) {
             api.ASSERT(false);
             return -1;
         }
-
+        std.log.debug("wnd.class:{s}", .{this.m_class});
         this.m_id = resource_id;
         this.set_str(str);
         this.m_parent = parent;
@@ -133,6 +134,7 @@ pub const c_wnd = struct {
         _ = this;
     }
     pub fn show_window(this: *c_wnd) void {
+        std.log.debug("show_window", .{});
         if (ATTR_VISIBLE == (@intFromEnum(this.m_attr) & ATTR_VISIBLE)) {
             this.on_paint();
             var _child: ?*c_wnd = this.m_top_child;
@@ -403,10 +405,12 @@ pub const c_wnd = struct {
 
     pub fn add_child_2_tail(this: *c_wnd, _child: ?*c_wnd) void {
         if (null == _child) return;
+        std.log.debug("add_child_2_tail _child:{*}", .{_child});
         const child = _child.?;
         if (child == this.get_wnd_ptr(child.m_id)) return;
 
         if (null == this.m_top_child) {
+            std.log.debug("m_top_child == null", .{});
             this.m_top_child = child;
             child.m_prev_sibling = null;
             child.m_next_sibling = null;
@@ -438,20 +442,30 @@ pub const c_wnd = struct {
         }
     }
 
-    pub fn load_child_wnd(this: *c_wnd, _p_child_tree: ?*WND_TREE) int {
-        if (null == _p_child_tree) {
-            return 0;
-        }
-        const p_child_tree = _p_child_tree.?;
+    pub fn load_child_wnd(this: *c_wnd, _p_child_tree: ?[]?*const WND_TREE) int {
+        // if (null == _p_child_tree) {
+        //     return 0;
+        // }
+        // const p_child_tree = _p_child_tree.?;
         var sum: int = 0;
 
-        var _p_cur: [*]?*WND_TREE = @ptrCast(p_child_tree);
-        while (_p_cur[0]) |p_cur| {
-            if (p_cur.p_wnd) |p_wnd| {
-                _ = p_wnd.connect(this, p_cur.resource_id, p_cur.str, p_cur.x, p_cur.y, p_cur.width, p_cur.height, p_cur.p_child_tree);
+        // std.log.debug("p_child_tree.resource_id:{d}", .{p_child_tree.resource_id});
+        // var _p_cur: [*]?*WND_TREE = @ptrCast(p_child_tree);
+
+        // std.log.debug("_p_child_tree:{*} p_child_tree:{*} _p_cur:{*}", .{ _p_child_tree, p_child_tree, _p_cur[0] });
+        // while (_p_child_tree[0]) |p_cur| {
+        if (_p_child_tree) |p_child_tree| {
+            for (p_child_tree, 0..) |op_cur, i| {
+                std.log.debug("class:{s} loop wnd i:{d}", .{ this.m_class, i });
+                if (op_cur) |p_cur| {
+                    std.log.debug("loop wnd tree resource_id:{d}", .{p_cur.resource_id});
+                    if (p_cur.p_wnd) |p_wnd| {
+                        _ = p_wnd.connect(this, p_cur.resource_id, p_cur.str, p_cur.x, p_cur.y, p_cur.width, p_cur.height, p_cur.p_child_tree);
+                    }
+                }
+                // _p_cur += 1;
+                sum += 1;
             }
-            _p_cur += 1;
-            sum += 1;
         }
         return sum;
     }
@@ -468,7 +482,7 @@ pub const c_wnd = struct {
         _ = this;
     }
 
-    pub fn connect(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?*WND_TREE) int {
+    pub fn connect(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int {
         return this.m_vtable.connect(this, parent, resource_id, str, x, y, width, height, p_child_tree);
     }
     pub fn on_init_children(this: *c_wnd) void {
@@ -493,7 +507,7 @@ pub const c_wnd = struct {
         this.m_vtable.on_navigate(this, key);
     }
     pub const vtable = struct {
-        connect: *const fn (this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?*WND_TREE) int = connect_impl,
+        connect: *const fn (this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int = connect_impl,
         on_init_children: *const fn (this: *c_wnd) void = on_init_children_impl,
         on_paint: *const fn (this: *c_wnd) void = on_paint_impl,
         on_touch: *const fn (this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void = on_touch_impl,
@@ -504,9 +518,10 @@ pub const c_wnd = struct {
     };
     // protected:
     m_vtable: vtable = .{},
+    m_class: []const u8 = "c_wnd",
     m_id: u16 = 0,
     m_status: WND_STATUS = .STATUS_DISABLED,
-    m_attr: WND_ATTRIBUTION = .ATTR_UNKNOWN,
+    m_attr: WND_ATTRIBUTION = .ATTR_VISIBLE,
     m_wnd_rect: c_rect = c_rect.init(), //position relative to parent window.
     m_parent: ?*c_wnd = null, //parent window
     m_top_child: ?*c_wnd = null, //the first sub window would be navigated
