@@ -12,13 +12,13 @@ pub const BITMAP_INFO = struct_bitmap_info;
 pub const struct_lattice = struct {
     utf8_code: types.uint,
     width: u8,
-    pixel_buffer: *u8,
+    pixel_buffer: []const u8,
 };
 pub const LATTICE = struct_lattice;
 
 pub const struct_lattice_font_info = struct {
     height: u8,
     count: types.uint,
-    lattice_array: *LATTICE,
+    lattice_array: []const LATTICE,
 };
 pub const LATTICE_FONT_INFO = struct_lattice_font_info;

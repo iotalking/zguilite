@@ -46,12 +46,14 @@ pub const COLOR_LIST = enum(u16) {
 
 pub const c_theme = struct {
     // public:
-    pub fn add_font(this: c_theme, index: FONT_LIST, font: *anyopaque) types.int {
-        if (index >= .FONT_MAX) {
+    pub fn add_font(index: FONT_LIST, font: *anyopaque) types.int {
+        std.log.debug("theme.add_font(index:{} font:{})", .{ index, font });
+        const uIdx: usize = @intFromEnum(index);
+        if (uIdx >= @intFromEnum(FONT_LIST.FONT_MAX)) {
             api.ASSERT(false);
             return -1;
         }
-        this.s_font_map[index] = font;
+        c_theme.s_font_map[uIdx] = font;
         return 0;
     }
 
@@ -61,6 +63,7 @@ pub const c_theme = struct {
             api.ASSERT(false);
             return null;
         }
+        std.log.debug("theme.get_font index:{any}", .{index});
         return c_theme.s_font_map[uindex];
     }
 
@@ -73,20 +76,22 @@ pub const c_theme = struct {
         return 0;
     }
 
-    pub fn get_image(this: c_theme, index: IMAGE_LIST) *anyopaque {
-        if (index >= .IMAGE_MAX) {
+    pub fn get_image(index: IMAGE_LIST) *anyopaque {
+        const uidx: usize = @intFromEnum(index);
+        if (uidx >= @intFromEnum(IMAGE_LIST.IMAGE_MAX)) {
             api.ASSERT(false);
             return 0;
         }
-        return this.s_image_map[index];
+        return s_image_map[uidx];
     }
 
-    pub fn add_color(this: c_theme, index: COLOR_LIST, color: types.uint) types.int {
-        if (index >= .COLOR_MAX) {
+    pub fn add_color(index: COLOR_LIST, color: types.uint) types.int {
+        const uidx: usize = @intFromEnum(index);
+        if (uidx >= @intFromEnum(COLOR_LIST.COLOR_MAX)) {
             api.ASSERT(false);
             return -1;
         }
-        this.s_color_map[index] = color;
+        c_theme.s_color_map[uidx] = color;
         return 0;
     }
 
@@ -103,7 +108,7 @@ pub const c_theme = struct {
     }
 
     // private:
-    const s_font_map = std.mem.zeroes([@intFromEnum(FONT_LIST.FONT_MAX)]?*anyopaque);
-    const s_image_map = std.mem.zeroes([@intFromEnum(IMAGE_LIST.IMAGE_MAX)]?*anyopaque);
-    const s_color_map = std.mem.zeroes([@intFromEnum(COLOR_LIST.COLOR_MAX)]?types.uint);
+    var s_font_map = std.mem.zeroes([@intFromEnum(FONT_LIST.FONT_MAX)]?*anyopaque);
+    var s_image_map = std.mem.zeroes([@intFromEnum(IMAGE_LIST.IMAGE_MAX)]?*anyopaque);
+    var s_color_map = std.mem.zeroes([@intFromEnum(COLOR_LIST.COLOR_MAX)]?types.uint);
 };

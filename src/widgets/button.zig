@@ -83,6 +83,7 @@ pub const c_button = struct {
         w.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
         w.m_font = c_theme.get_font(.FONT_DEFAULT);
         w.m_font_color = c_theme.get_color(.COLOR_WND_FONT);
+        std.log.debug("button pre_create_wnd font:{*} font_color:{any}", .{ w.m_font, w.m_font_color });
     }
 
     fn on_touch(w: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void {

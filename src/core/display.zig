@@ -730,8 +730,12 @@ pub const c_surface = struct {
         if (this.m_is_active == false) {
             return;
         }
-        this.m_display.?.draw_pixel(this.m_display.?, x, y, rgb);
-        this.m_phy_write_index.?.* = this.m_phy_write_index.?.* + 1;
+        if (this.m_display) |display| {
+            display.draw_pixel(display, x, y, rgb);
+        }
+        if (this.m_phy_write_index) |phy_write_index| {
+            phy_write_index.* = phy_write_index.* + 1;
+        }
     }
 
     fn attach_display(this: *c_surface, display: *c_display) void {

@@ -276,8 +276,8 @@ pub const c_lattice_font_op = struct {
         for (0..len) |y_| {
             // for (int x_ = 0; x_ < len; x_++)
             for (0..len) |x_| {
-                const diff = (x_ - y_);
-                const sum = (x_ + y_);
+                const diff = (x_ -% y_);
+                const sum = (x_ +| y_);
                 const ix: i32 = @truncate(@as(isize, @bitCast(x_)));
                 const iy: i32 = @truncate(@as(isize, @bitCast(y_)));
                 if (diff == 0 or diff == -1 or diff == 1 or sum == len or sum == (len - 1) or sum == (len + 1))
@@ -289,7 +289,7 @@ pub const c_lattice_font_op = struct {
         return len;
     }
 
-    fn draw_lattice(surface: *c_surface, z_order: int, x: int, y: int, width: int, height: int, _p_data: [*]u8, font_color: uint, bg_color: uint) void {
+    fn draw_lattice(surface: *c_surface, z_order: int, x: int, y: int, width: int, height: int, _p_data: [*]const u8, font_color: uint, bg_color: uint) void {
         var r: uint = 0;
         var g: uint = 0;
         var b: uint = 0;
@@ -332,13 +332,13 @@ pub const c_lattice_font_op = struct {
         }
     }
 
-    fn get_lattice(font: *LATTICE_FONT_INFO, utf8_code: uint) ?*LATTICE {
+    fn get_lattice(font: *LATTICE_FONT_INFO, utf8_code: uint) ?*const LATTICE {
         var first: usize = 0;
         var last: usize = @as(u32, @bitCast(font.count)) - 1;
         var middle: usize = @bitCast(@divTrunc(first + last, 2));
 
         while (first <= last) {
-            const lattice_array: [*]LATTICE = @ptrCast(font.lattice_array);
+            const lattice_array: []const LATTICE = font.lattice_array;
             if (lattice_array[middle].utf8_code < utf8_code) {
                 first = middle + 1;
             } else if (lattice_array[middle].utf8_code == utf8_code) {
