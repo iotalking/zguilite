@@ -139,6 +139,7 @@ pub const c_wnd = struct {
             this.on_paint();
             var _child: ?*c_wnd = this.m_top_child;
             while (_child) |child| {
+                std.log.debug("child:{*} font:{*}", .{ child, child.m_font });
                 child.show_window();
                 _child = child.m_next_sibling;
             }

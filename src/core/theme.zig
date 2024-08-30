@@ -1,3 +1,4 @@
+const std = @import("std");
 const types = @import("./types.zig");
 const api = @import("./api.zig");
 const resource = @import("./resource.zig");
@@ -95,11 +96,14 @@ pub const c_theme = struct {
             api.ASSERT(false);
             return 0;
         }
-        return s_color_map[uindex];
+        if (s_color_map[uindex]) |c| {
+            return c;
+        }
+        return 0;
     }
 
     // private:
-    const s_font_map: [@intFromEnum(FONT_LIST.FONT_MAX)]*anyopaque = undefined;
-    const s_image_map: [@intFromEnum(IMAGE_LIST.IMAGE_MAX)]*anyopaque = undefined;
-    const s_color_map: [@intFromEnum(COLOR_LIST.COLOR_MAX)]types.uint = undefined;
+    const s_font_map = std.mem.zeroes([@intFromEnum(FONT_LIST.FONT_MAX)]?*anyopaque);
+    const s_image_map = std.mem.zeroes([@intFromEnum(IMAGE_LIST.IMAGE_MAX)]?*anyopaque);
+    const s_color_map = std.mem.zeroes([@intFromEnum(COLOR_LIST.COLOR_MAX)]?types.uint);
 };

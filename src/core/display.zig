@@ -683,37 +683,27 @@ pub const c_surface = struct {
         const m_width: usize = @as(u32, @bitCast(this.m_width));
         std.log.debug("fill_rect_low_level_impl x0:{d} y0:{d} x1:{d} y1:{d} rgb:{d}", .{ x0, y0, x1, y1, rgb });
         // int x, y;
-        if (this.m_color_bytes == 2) {
-            var fb: ?[*]u16 = null;
-            const rgb_16 = api.GL_RGB_32_to_16(rgb);
-            // for (y = y0; y <= y1; y++)
-            for (y0..(y1 + 1)) |y| {
-                fb = @ptrCast(@alignCast(this.m_fb.?));
-                // fb = if (this.m_fb != null) fb.? + y * m_width + x0 else null;
-                if (fb) |_fb16| {
-                    const _xfb = _fb16 + y * m_width + x0;
+        if (this.m_fb) |_fb| {
+            if (this.m_color_bytes == 2) {
+                const fb: [*]u16 = @ptrCast(@alignCast(_fb));
+                const rgb_16 = api.GL_RGB_32_to_16(rgb);
+                // for (y = y0; y <= y1; y++)
+                for (y0..(y1 + 1)) |y| {
+                    const _xfb = fb + y * m_width + x0;
                     // for (x = x0; x <= x1; x++)
                     for (x0..(x1 + 1)) |x| {
                         _xfb[x] = rgb_16;
                     }
-                } else {
-                    break;
                 }
-            }
-        } else {
-            var fb: ?[*]uint = null;
-            // for (y = y0; y <= y1; y++)
-            for (y0..(y1 + 1)) |y| {
-                fb = @ptrCast(@alignCast(this.m_fb.?));
-                // fb = if (this.m_fb != null) fb.? + y * m_width + x0 else null;
-                if (fb) |_fb| {
-                    const _xfb = _fb + y * m_width + x0;
+            } else {
+                const fb: [*]uint = @ptrCast(@alignCast(_fb));
+                // for (y = y0; y <= y1; y++)
+                for (y0..(y1 + 1)) |y| {
+                    const _xfb = fb + y * m_width + x0;
                     // for (x = x0; x <= x1; x++)
                     for (x0..(x1 + 1)) |ix| {
                         _xfb[ix] = rgb;
                     }
-                } else {
-                    break;
                 }
             }
         }
@@ -721,8 +711,12 @@ pub const c_surface = struct {
         if (this.m_is_active == false) {
             return;
         }
-        this.m_display.?.fill_rect(this.m_display.?, _x0, _y0, _x1, _y1, rgb);
-        this.m_phy_write_index.?.* = this.m_phy_write_index.?.* + 1;
+        if (this.m_display) |display| {
+            display.fill_rect(display, _x0, _y0, _x1, _y1, rgb);
+        }
+        if (this.m_phy_write_index) |m_phy_write_index| {
+            m_phy_write_index.* = m_phy_write_index.* + 1;
+        }
     }
 
     fn draw_pixel_low_level_impl(this: *c_surface, x: int, y: int, rgb: uint) void {
@@ -751,7 +745,8 @@ pub const c_surface = struct {
         // std.debug.dumpCurrentStackTrace(null);
         if (this.m_display) |display| {
             std.log.debug("display.m_surface_cnt:{d}", .{display.m_surface_cnt});
-            if (display.m_surface_cnt > 0) {
+            //why display.m_surface_cnt > 1 in guilite code
+            if (display.m_surface_cnt > 1) {
                 // m_fb = calloc(m_width * m_height, m_color_bytes);
                 this.m_fb = @ptrCast(try core.allocator.alloc(u8, @intCast(this.m_width * this.m_height * this.m_color_bytes)));
             }

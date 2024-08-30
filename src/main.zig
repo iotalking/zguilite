@@ -28,13 +28,14 @@ pub fn main() !void {
     }
     var desktop = c_desktop{};
     var btn: guilite.c_button = guilite.c_button{};
+    std.log.debug("btn.font:{*}", .{btn.wnd.m_font});
     const ID_BTN = 1;
     const ID_DESKTOP = 2;
     var s_desktop_children = [_]?*const guilite.WND_TREE{
         &guilite.WND_TREE{
             .p_wnd = btn.asWnd(), //
             .resource_id = ID_BTN,
-            .str = null,
+            .str = "hello",
             .x = 10,
             .y = 10,
             .width = 50,
