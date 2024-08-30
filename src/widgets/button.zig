@@ -42,6 +42,7 @@ pub const c_button = struct {
         // const this: *c_button = @fieldParentPtr("wnd", w);
         var rect: c_rect = c_rect.init();
         w.get_screen_rect(&rect);
+        std.log.debug("screen ({},{},{},{})", .{ rect.m_left, rect.m_top, rect.width(), rect.height() });
 
         var surface = w.m_surface.?;
         switch (w.m_status) {

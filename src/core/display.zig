@@ -237,21 +237,22 @@ pub const c_display = struct {
 
     // protected:
     fn draw_pixel_impl(this: *c_display, x: int, y: int, rgb: uint) void {
+        std.log.debug("display draw_pixel_impl({},{},{})", .{ x, y, rgb });
         if ((x >= this.m_width) or (y >= this.m_height)) {
             return;
         }
-        if (null == this.m_driver) {
-            return;
-        }
-        const driver = this.m_driver.?;
-        if (driver.draw_pixel) |draw_pixel| {
-            return draw_pixel(x, y, rgb);
+
+        if (this.m_driver) |driver| {
+            if (driver.draw_pixel) |draw_pixel| {
+                return draw_pixel(x, y, rgb);
+            }
         }
 
         if (this.m_color_bytes == 2) {
             const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_phy_fb.?));
             fb_u16[@intCast(y * @as(int, @intCast(this.m_width)) + x)] = api.GL_RGB_32_to_16(rgb);
         } else {
+            std.log.debug("({},{}) m_width:{}", .{ x, y, this.m_width });
             const fb_u32: [*]u32 = @ptrCast(@alignCast(this.m_phy_fb.?));
             fb_u32[@intCast(y * this.m_width + x)] = @bitCast(rgb);
         }
@@ -285,30 +286,31 @@ pub const c_display = struct {
         const _width: usize = @intCast(@as(u32, @bitCast(this.m_width)));
         const _height = this.m_height;
         // 		int x, y;
-        const rgb_16 = api.GL_RGB_32_to_16(rgb);
         if (this.m_color_bytes == 2) {
             // 			unsigned short* phy_fb;
             // 			for (y = y0; y <= y1; y++)
+            const rgb_16 = api.GL_RGB_32_to_16(rgb);
+            var fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_phy_fb.?));
             for (uy0..(uy1 + 1)) |y| {
-                var fb_u16: [*]u16 = @ptrCast(@alignCast(&this.m_phy_fb.?[y * @as(usize, @intCast(_width)) + @as(usize, @intCast(x0))]));
                 // 				for (x = x0; x <= x1; x++)
                 for (ux0..(ux1 + 1)) |x| {
                     if ((x < _width) and (y < _height)) {
-                        fb_u16[0] = rgb_16;
-                        fb_u16 += 1;
+                        fb_u16[y * _width + x] = rgb_16;
                     }
                 }
             }
         } else {
             // 			unsigned int* phy_fb;
             // 			for (y = y0; y <= y1; y++)
+            const rgb_32: u32 = @bitCast(rgb);
+            // std.log.debug("this.m_phy_fb:{*}", .{this.m_phy_fb});
+            const phy_fb: [*]u32 = @alignCast(@ptrCast(this.m_phy_fb.?));
             for (@intCast(y0)..@intCast(y1 + 1)) |y| {
-                var phy_fb: [*]u16 = @ptrCast(@alignCast(&this.m_phy_fb.?[y * _width + ux0]));
                 // 				for (x = x0; x <= x1; x++)
                 for (ux0..(ux1 + 1)) |x| {
                     if ((x < _width) and (y < _height)) {
-                        phy_fb[0] = rgb_16;
-                        phy_fb += 1;
+                        // std.log.debug("phy_fb:{*},_width:{} ({},{})={}", .{ phy_fb, _width, x, y, rgb_32 });
+                        phy_fb[y * _width + x] = rgb_32;
                     }
                 }
             }
@@ -319,13 +321,15 @@ pub const c_display = struct {
         if ((null == this.m_phy_fb)) {
             return -1;
         }
+        const m_phy_fb = this.m_phy_fb.?;
+
         const uleft: usize = @intCast(@as(u32, @bitCast(left)));
         const utop: usize = @intCast(@as(u32, @bitCast(top)));
         const uright: usize = @intCast(@as(u32, @bitCast(right)));
         const ubottom: usize = @intCast(@as(u32, @bitCast(bottom)));
         const _width: usize = @intCast(@as(u32, @bitCast(this.m_width)));
         const _height: usize = @intCast(@as(u32, @bitCast(this.m_height)));
-        const color_bytes: usize = @intCast(@as(u32, @bitCast(this.m_height)));
+        const color_bytes: usize = @intCast(@as(u32, @bitCast(this.m_color_bytes)));
         const _left = if (uleft >= _width) (_width - 1) else uleft;
         const _right = if (uright >= _width) (_width - 1) else uright;
         const _top = if (utop >= _height) (_height - 1) else utop;
@@ -334,12 +338,14 @@ pub const c_display = struct {
         const ufbwidth: usize = @intCast(@as(u32, @bitCast(fb_width)));
         const _fb: [*]u8 = @ptrCast(fb);
         // // // for (int y = top; y < bottom; y++)
+        const count = (_right - _left) * color_bytes;
         for (_top.._bottom) |y| {
-            const count = (_right - _left) * color_bytes;
-            const s_addr = (_fb + ((y * ufbwidth + _left) * color_bytes))[0..count];
-            const d_addr = (this.m_phy_fb.? + ((y * _width + _left) * color_bytes))[0..count];
+            // std.log.debug("_right:{},_left:{},color_bytes:{} y:{} count:{}", .{ _right, _left, color_bytes, y, count });
+            const s_addr: []u8 = (_fb + ((y * ufbwidth + _left) * color_bytes))[0..count];
+            const d_addr: []u8 = (m_phy_fb + ((y * _width + _left) * color_bytes))[0..count];
             // memcpy(d_addr, s_addr, (right - left) * m_color_bytes);
-            @memcpy(d_addr, s_addr);
+            // @memcpy(d_addr, s_addr);
+            std.mem.copyForwards(u8, d_addr, s_addr);
         }
         return 0;
     }
@@ -441,6 +447,7 @@ pub const c_surface = struct {
     }
 
     fn draw_pixel_impl(this: *c_surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void {
+        std.log.debug("surface draw_pixel_impl(this:{*},x:{},y:{},rgb:{},z_order:{})", .{ this, x, y, rgb, z_order });
         if (x >= this.m_width or y >= this.m_height or x < 0 or y < 0) {
             return;
         }
@@ -532,7 +539,7 @@ pub const c_surface = struct {
         }
     }
 
-    fn draw_hline(this: *c_surface, _x0: int, _x1: int, y: int, rgb: uint, z_order: uint) void {
+    pub fn draw_hline(this: *c_surface, _x0: int, _x1: int, y: int, rgb: uint, z_order: uint) void {
         const x0: usize = @as(u32, @bitCast(_x0));
         const x1: usize = @as(u32, @bitCast(_x1));
         // 		for (; x0 <= x1; x0++)
@@ -542,7 +549,7 @@ pub const c_surface = struct {
         }
     }
 
-    fn draw_vline(this: *c_surface, x: int, y0: int, y1: int, rgb: uint, z_order: uint) void {
+    pub fn draw_vline(this: *c_surface, x: int, y0: int, y1: int, rgb: uint, z_order: uint) void {
         // for (; y0 <= y1; y0++)
         const _y0: usize = @as(usize, @as(u32, @bitCast(y0)));
         const _y1: usize = @as(usize, @as(u32, @bitCast(y1)));
@@ -552,7 +559,7 @@ pub const c_surface = struct {
         }
     }
 
-    fn draw_line(this: *c_surface, x1: int, y1: int, x2: int, y2: int, rgb: uint, z_order: uint) void {
+    pub fn draw_line(this: *c_surface, x1: int, y1: int, x2: int, y2: int, rgb: uint, z_order: uint) void {
         // int dx, dy, x, y, e;
         var dx: int = 0;
         var dy: int = 0;
@@ -681,7 +688,7 @@ pub const c_surface = struct {
         const x1: usize = @as(u32, @bitCast(_x1));
         const y1: usize = @as(u32, @bitCast(_y1));
         const m_width: usize = @as(u32, @bitCast(this.m_width));
-        std.log.debug("fill_rect_low_level_impl x0:{d} y0:{d} x1:{d} y1:{d} rgb:{d}", .{ x0, y0, x1, y1, rgb });
+        std.log.debug("fill_rect_low_level_impl x0:{d} y0:{d} x1:{d} y1:{d} rgb:{d} m_color_bytes:{} m_fb:{*}", .{ x0, y0, x1, y1, rgb, this.m_color_bytes, this.m_fb });
         // int x, y;
         if (this.m_fb) |_fb| {
             if (this.m_color_bytes == 2) {
@@ -693,16 +700,18 @@ pub const c_surface = struct {
                     // for (x = x0; x <= x1; x++)
                     for (x0..(x1 + 1)) |x| {
                         _xfb[x] = rgb_16;
+                        std.log.debug("({},{}) = {}", .{ x, y, rgb_16 });
                     }
                 }
             } else {
                 const fb: [*]uint = @ptrCast(@alignCast(_fb));
+                std.log.debug("_fb:{*} fb:{*}", .{ _fb, fb });
                 // for (y = y0; y <= y1; y++)
                 for (y0..(y1 + 1)) |y| {
-                    const _xfb = fb + y * m_width + x0;
                     // for (x = x0; x <= x1; x++)
                     for (x0..(x1 + 1)) |ix| {
-                        _xfb[ix] = rgb;
+                        fb[y * m_width + ix] = rgb;
+                        // std.log.debug("({},{}) = {}", .{ ix, y, rgb });
                     }
                 }
             }
@@ -750,7 +759,7 @@ pub const c_surface = struct {
         if (this.m_display) |display| {
             std.log.debug("display.m_surface_cnt:{d}", .{display.m_surface_cnt});
             //why display.m_surface_cnt > 1 in guilite code
-            if (display.m_surface_cnt > 1) {
+            if (display.m_surface_cnt > 0) {
                 // m_fb = calloc(m_width * m_height, m_color_bytes);
                 this.m_fb = @ptrCast(try core.allocator.alloc(u8, @intCast(this.m_width * this.m_height * this.m_color_bytes)));
             }

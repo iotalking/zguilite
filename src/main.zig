@@ -4,16 +4,28 @@ const guilite = @import("./guilite.zig");
 pub fn main() !void {
     guilite.init();
 
-    const color_bytes = 2;
-    const screen_width = 240;
-    const screen_height = 320;
+    // const color_bytes = 2;
+    // const screen_width = 240;
+    // const screen_height = 320;
+    var screen_width: int = 0;
+    var screen_height: int = 0;
+    var color_bytes: int = 0;
+    const devfb = try get_dev_fb("/dev/fb0", &screen_width, &screen_height, &color_bytes);
+    if (devfb == null) {
+        return error.devfb;
+    }
+    std.log.debug("screen:({}x{})*{} devfb:{*}", .{ screen_width, screen_height, color_bytes, devfb });
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    const fbuf = try allocator.alloc(u8, screen_width * screen_height * color_bytes);
+    const mem_fb = try allocator.alloc(u8, @as(usize, @as(u32, @bitCast(screen_width * screen_height * color_bytes))));
     defer {
-        allocator.free(fbuf);
+        allocator.free(mem_fb);
         _ = gpa.deinit();
     }
+
+    const i16_width: i16 = @truncate(screen_width);
+    const i16_height: i16 = @truncate(screen_height);
+    const fbuf: [*]u8 = @ptrCast(devfb.?);
     var desktop = c_desktop{};
     var btn: guilite.c_button = guilite.c_button{};
     std.log.debug("btn.font:{*}", .{btn.wnd.m_font});
@@ -26,21 +38,35 @@ pub fn main() !void {
             .str = "hello",
             .x = 10,
             .y = 10,
-            .width = 50,
-            .height = 50,
+            .width = 200,
+            .height = 40,
             .p_child_tree = null,
         },
         null,
     };
+    const usize_width = @as(usize, @as(u32, @bitCast(screen_width)));
+    const usize_height = @as(usize, @as(u32, @bitCast(screen_height)));
+    const fb32: [*]u32 = @ptrCast(@alignCast(mem_fb));
+    std.log.debug("fb32:{*}", .{fb32});
+    for (10..usize_height - 10) |y| {
+        for (10..usize_width - 10) |x| {
+            fb32[y * usize_width + x] = 0xff_ff_ff_ff;
+        }
+    }
 
     std.log.debug("s_desktop_children[0]:{*},s_desktop_children[0].resource_id:{d}", .{ s_desktop_children[0], s_desktop_children[0].?.resource_id });
     var _display: guilite.c_display = .{};
-    try _display.init2(@ptrCast(@constCast(&fbuf[0])), screen_width, screen_height, screen_width, screen_height, color_bytes, 1, null);
+    try _display.init2(fbuf, screen_width, screen_height, screen_width, screen_height, color_bytes, 1, null);
     const surface = try _display.alloc_surface(.Z_ORDER_LEVEL_1, guilite.c_rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
     desktop.asWnd().set_surface(surface);
-    _ = desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, &s_desktop_children);
+    _ = desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, i16_width, i16_height, &s_desktop_children);
     desktop.asWnd().show_window();
+
+    // _ = _display.flush_screen(&_display, 0, 0, screen_width, screen_height, @ptrCast(mem_fb), screen_width);
+    // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
+    surface.draw_rect_pos(0, 0, 100, 100, guilite.GL_RGB(200, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1), 10);
+    surface.fill_rect(guilite.c_rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
     std.log.debug("main end", .{});
 }
 
@@ -62,4 +88,55 @@ test "simple test" {
     defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
     try list.append(42);
     try std.testing.expectEqual(@as(i32, 42), list.pop());
+}
+
+const linux = @cImport({
+    @cInclude("stdlib.h");
+    @cInclude("string.h");
+    @cInclude("stdio.h");
+    @cInclude("fcntl.h");
+    @cInclude("sys/ioctl.h");
+    @cInclude("sys/shm.h");
+    @cInclude("unistd.h");
+    @cInclude("sys/mman.h");
+    @cInclude("linux/fb.h");
+    @cInclude("errno.h");
+    @cInclude("sys/stat.h");
+});
+
+const printf = linux.printf;
+const int = c_int;
+fn get_dev_fb(path: []const u8, width: *int, height: *int, color_bytes: *int) !?*anyopaque {
+    const fd = linux.open(@ptrCast(path), linux.O_RDWR);
+    if (0 > fd) {
+        return error.open_fb;
+    }
+
+    var vinfo: linux.fb_var_screeninfo = undefined;
+    if (0 > linux.ioctl(fd, linux.FBIOGET_VSCREENINFO, &vinfo)) {
+        // printf("get fb info failed!\n");
+        // _exit(-1);
+        return error.ioctl_screen_info;
+    }
+
+    width.* = @bitCast(vinfo.xres);
+    height.* = @bitCast(vinfo.yres);
+    const bits_per_pixel: int = @bitCast(vinfo.bits_per_pixel);
+    color_bytes.* = @divExact(bits_per_pixel, 8);
+    const ucolor_bytes: c_uint = @bitCast(color_bytes.*);
+    if (width.* & 0x3 != 0) {
+        _ = printf("Warning: vinfo.xres should be divided by 4!\nChange your display resolution to meet the rule.\n");
+    }
+    _ = printf("vinfo.xres=%d\n", vinfo.xres);
+    _ = printf("vinfo.yres=%d\n", vinfo.yres);
+    _ = printf("vinfo.bits_per_pixel=%d\n", vinfo.bits_per_pixel);
+
+    const fbp = linux.mmap(@ptrFromInt(0), (vinfo.xres * vinfo.yres * ucolor_bytes), linux.PROT_READ | linux.PROT_WRITE, linux.MAP_SHARED, fd, 0);
+    if (fbp == null) {
+        _ = printf("mmap fb failed!\n");
+        // linux._exit(-1);
+        return error.mmap_fb;
+    }
+    _ = linux.memset(fbp, 0, (vinfo.xres * vinfo.yres * ucolor_bytes));
+    return fbp;
 }
