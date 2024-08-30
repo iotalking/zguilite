@@ -35,10 +35,10 @@ pub fn main() !void {
         &guilite.WND_TREE{
             .p_wnd = btn.asWnd(), //
             .resource_id = ID_BTN,
-            .str = "hello",
+            .str = "朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
             .x = 10,
             .y = 10,
-            .width = 200,
+            .width = 500,
             .height = 40,
             .p_child_tree = null,
         },
