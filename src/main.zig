@@ -1,12 +1,13 @@
 const std = @import("std");
 const guilite = @import("./guilite.zig");
+const _3d = @import("./3d.zig");
 
 pub fn main() !void {
     guilite.init();
 
-    // const color_bytes = 2;
-    // const screen_width = 240;
-    // const screen_height = 320;
+    // const color_bytes = 4;
+    // const screen_width: int = 240;
+    // const screen_height: int = 320;
     var screen_width: int = 0;
     var screen_height: int = 0;
     var color_bytes: int = 0;
@@ -14,7 +15,7 @@ pub fn main() !void {
     if (devfb == null) {
         return error.devfb;
     }
-    std.log.debug("screen:({}x{})*{} devfb:{*}", .{ screen_width, screen_height, color_bytes, devfb });
+    // std.log.debug("screen:({}x{})*{} devfb:{*}", .{ screen_width, screen_height, color_bytes, devfb });
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     const mem_fb = try allocator.alloc(u8, @as(usize, @as(u32, @bitCast(screen_width * screen_height * color_bytes))));
@@ -23,9 +24,10 @@ pub fn main() !void {
         _ = gpa.deinit();
     }
 
-    const i16_width: i16 = @truncate(screen_width);
     const i16_height: i16 = @truncate(screen_height);
+    const i16_width: i16 = @truncate(screen_width);
     const fbuf: [*]u8 = @ptrCast(devfb.?);
+    // const fbuf: [*]u8 = @ptrCast(mem_fb);
     var desktop = c_desktop{};
     var btn: guilite.c_button = guilite.c_button{};
     std.log.debug("btn.font:{*}", .{btn.wnd.m_font});
@@ -56,7 +58,7 @@ pub fn main() !void {
 
     std.log.debug("s_desktop_children[0]:{*},s_desktop_children[0].resource_id:{d}", .{ s_desktop_children[0], s_desktop_children[0].?.resource_id });
     var _display: guilite.c_display = .{};
-    try _display.init2(fbuf, screen_width, screen_height, screen_width, screen_height, color_bytes, 1, null);
+    try _display.init2(fbuf, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
     const surface = try _display.alloc_surface(.Z_ORDER_LEVEL_1, guilite.c_rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
     desktop.asWnd().set_surface(surface);
@@ -65,11 +67,20 @@ pub fn main() !void {
 
     // _ = _display.flush_screen(&_display, 0, 0, screen_width, screen_height, @ptrCast(mem_fb), screen_width);
     // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
-    surface.draw_rect_pos(0, 0, 100, 100, guilite.GL_RGB(200, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1), 10);
-    surface.fill_rect(guilite.c_rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
+    // surface.draw_rect_pos(0, 0, 100, 100, guilite.GL_RGB(200, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1), 10);
+    // surface.fill_rect(guilite.c_rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
+    // try _3d.create_ui(&_display);
     std.log.debug("main end", .{});
 }
 
+test "test [*]65" {
+    var a: [3][1]f64 = .{ .{0.1}, .{0.2}, .{0.3} };
+    std.log.err("a:{any}", .{a});
+    const b: [*]f64 = @ptrCast(&a[0][0]);
+    for (0..3) |i| {
+        std.log.err("b:{any}", .{b[i]});
+    }
+}
 const c_desktop = struct {
     wnd: guilite.c_wnd = .{
         .m_class = "c_desktop",

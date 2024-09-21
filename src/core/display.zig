@@ -77,8 +77,9 @@ pub const c_display = struct {
         return;
     }
     pub inline fn alloc_surface(this: *c_display, max_zorder: Z_ORDER_LEVEL, layer_rect: c_rect) !*c_surface {
+        std.log.debug("display alloc_surface max_zorder:{}", .{max_zorder});
         api.ASSERT(@intFromEnum(max_zorder) < @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX) and this.m_surface_index < this.m_surface_cnt);
-        std.log.debug("alloc_surface", .{});
+        std.log.debug("alloc_surface m_surface_index:{}", .{this.m_surface_index});
         const m_surface_index: usize = @intCast(this.m_surface_index);
         if (layer_rect.eql(c_rect.init())) {
             if (this.m_surface_group[m_surface_index]) |surface| {
@@ -252,7 +253,7 @@ pub const c_display = struct {
             const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_phy_fb.?));
             fb_u16[@intCast(y * @as(int, @intCast(this.m_width)) + x)] = api.GL_RGB_32_to_16(rgb);
         } else {
-            std.log.debug("({},{}) m_width:{}", .{ x, y, this.m_width });
+            // std.log.debug("({},{}) m_width:{}", .{ x, y, this.m_width });
             const fb_u32: [*]u32 = @ptrCast(@alignCast(this.m_phy_fb.?));
             fb_u32[@intCast(y * this.m_width + x)] = @bitCast(rgb);
         }
@@ -447,7 +448,7 @@ pub const c_surface = struct {
     }
 
     fn draw_pixel_impl(this: *c_surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void {
-        std.log.debug("surface draw_pixel_impl(this:{*},x:{},y:{},rgb:{},z_order:{})", .{ this, x, y, rgb, z_order });
+        // std.log.debug("surface draw_pixel_impl(this:{*},x:{},y:{},rgb:{},z_order:{})", .{ this, x, y, rgb, z_order });
         if (x >= this.m_width or y >= this.m_height or x < 0 or y < 0) {
             return;
         }
@@ -559,14 +560,17 @@ pub const c_surface = struct {
         }
     }
 
-    pub fn draw_line(this: *c_surface, x1: int, y1: int, x2: int, y2: int, rgb: uint, z_order: uint) void {
+    pub fn draw_line(this: *c_surface, _x1: int, _y1: int, _x2: int, _y2: int, rgb: uint, z_order: uint) void {
         // int dx, dy, x, y, e;
         var dx: int = 0;
         var dy: int = 0;
         var x: int = 0;
         var y: int = 0;
         var e: int = 0;
-
+        var x1 = _x1;
+        var x2 = _x2;
+        var y1 = _y1;
+        var y2 = _y2;
         if (x1 > x2) dx = x1 - x2 else dx = x2 - x1;
         if (y1 > y2) dy = y1 - y2 else dy = y2 - y1;
 
@@ -582,26 +586,26 @@ pub const c_surface = struct {
         y = y1;
 
         if (dx > dy) {
-            e = dy - dx / 2;
+            e = dy - @divExact(dx, 2);
             // for (; x1 <= x2; ++x1, e += dy)
             while (x1 <= x2) : ({
                 x1 += 1;
                 e += dy;
             }) {
-                this.draw_pixel(x1, y1, rgb, z_order);
+                this.draw_pixel(x1, y1, rgb, @enumFromInt(z_order));
                 if (e > 0) {
                     e -= dx;
                     if (y > y2) y1 += 1 else y1 += 1;
                 }
             }
         } else {
-            e = dx - dy / 2;
+            e = dx - @divExact(dy, 2);
             // for (; y1 <= y2; ++y1, e += dx)
             while (y1 <= y2) : ({
                 y1 += 1;
                 e += 1;
             }) {
-                this.draw_pixel(x1, y1, rgb, z_order);
+                this.draw_pixel(x1, y1, rgb, @enumFromInt(z_order));
                 if (e > 0) {
                     e -= dy;
                     if (x > x2) x1 += 1 else x1 += 1;
@@ -729,7 +733,7 @@ pub const c_surface = struct {
     }
 
     fn draw_pixel_low_level_impl(this: *c_surface, x: int, y: int, rgb: uint) void {
-        std.log.debug("draw_pixel_low_level_impl x:{d} y:{d} rgb:{d}", .{ x, y, rgb });
+        // std.log.debug("draw_pixel_low_level_impl x:{d} y:{d} rgb:{d}", .{ x, y, rgb });
         if (this.m_fb != null) { //draw pixel on framebuffer of surface
             const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_fb));
             const fb_uint: [*]uint = @ptrCast(@alignCast(this.m_fb));
