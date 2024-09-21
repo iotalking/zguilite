@@ -30,9 +30,12 @@ pub fn main() !void {
     // const fbuf: [*]u8 = @ptrCast(mem_fb);
     var desktop = c_desktop{};
     var btn: guilite.c_button = guilite.c_button{};
-    std.log.debug("btn.font:{*}", .{btn.wnd.m_font});
+    var label: guilite.c_label = guilite.c_label{};
+    // std.log.debug("btn.font:{*}", .{btn.wnd.m_font});
     const ID_BTN = 1;
     const ID_DESKTOP = 2;
+    const ID_LABEL = 3;
+    // _ = btn;
     var s_desktop_children = [_]?*const guilite.WND_TREE{
         &guilite.WND_TREE{
             .p_wnd = btn.asWnd(), //
@@ -40,6 +43,16 @@ pub fn main() !void {
             .str = "朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
             .x = 10,
             .y = 10,
+            .width = 500,
+            .height = 40,
+            .p_child_tree = null,
+        },
+        &guilite.WND_TREE{
+            .p_wnd = label.asWnd(), //
+            .resource_id = ID_LABEL,
+            .str = "朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
+            .x = 10,
+            .y = 80,
             .width = 500,
             .height = 40,
             .p_child_tree = null,

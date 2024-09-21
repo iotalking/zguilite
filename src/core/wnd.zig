@@ -236,14 +236,13 @@ pub const c_wnd = struct {
         }
 
         var child: ?*c_wnd = this.m_top_child;
-
+        var pre: ?*c_wnd = child;
         while (child) |_child| {
-            if (_child.m_next_sibling) |next_sibling| {
-                child = next_sibling;
-            }
+            pre = child;
+            child = _child.m_next_sibling;
         }
 
-        return child;
+        return pre;
     }
     pub fn unlink_child(this: *c_wnd, child: *c_wnd) int {
         if ((null == child) or (this != child.m_parent)) {
@@ -444,6 +443,7 @@ pub const c_wnd = struct {
     }
 
     pub fn load_child_wnd(this: *c_wnd, _p_child_tree: ?[]?*const WND_TREE) int {
+        std.log.debug("load_child_wnd", .{});
         // if (null == _p_child_tree) {
         //     return 0;
         // }
