@@ -77,7 +77,7 @@ pub const c_button = struct {
         w.m_status = .STATUS_NORMAL;
         w.on_paint();
     }
-    fn pre_create_wnd(w: *c_wnd) void {
+    pub fn pre_create_wnd(w: *c_wnd) void {
         const this: *c_button = @fieldParentPtr("wnd", w);
         this.on_click = null;
         w.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);

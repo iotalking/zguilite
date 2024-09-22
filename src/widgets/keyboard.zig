@@ -44,11 +44,20 @@ pub const c_keyboard_button = struct {
     base: button.c_button = base: {
         var btn = button.c_button{};
         btn.wnd.m_class = "c_keyboard_button";
+        btn.wnd.m_vtable.pre_create_wnd = c_keyboard_button.pre_create_wnd;
         break :base btn;
     },
     pub fn asWnd(this: *c_keyboard_button) *c_wnd {
         const w = this.base.asWnd();
         return w;
+    }
+    pub fn pre_create_wnd(w: *c_wnd) void {
+        // const base: *button.c_button = @fieldParentPtr("wnd", w);
+        // const this: *c_keyboard_button = @fieldParentPtr("base", base);
+        // _ = this;
+        // w.pre_create_wnd();
+        button.c_button.pre_create_wnd(w);
+        w.m_font = c_theme.get_font(.FONT_CUSTOM1);
     }
 };
 
@@ -470,6 +479,7 @@ pub const c_keyboard = struct {
 
     fn pre_create_wnd(w: *c_wnd) void {
         const this: *c_keyboard = @fieldParentPtr("wnd", w);
+        w.m_font = c_theme.get_font(.FONT_CUSTOM1);
         _ = this;
     }
     fn on_paint(w: *c_wnd) void {
