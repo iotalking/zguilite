@@ -113,7 +113,7 @@ pub const c_font_operator = struct {
     pub fn get_string_pos(string: [*]const u8, font: *anyopaque, rect: c_rect, align_type: int, x: *int, y: *int) void {
         var x_size: int = 0;
         var y_size: int = 0;
-        _ = c_font_operator.get_str_size(string, font, &x_size, &y_size);
+        _ = fontOperator.get_str_size(string, font, &x_size, &y_size);
         const height = rect.m_bottom - rect.m_top + 1;
         const width = rect.m_right - rect.m_left + 1;
         x.* = 0;
@@ -142,6 +142,7 @@ pub const c_font_operator = struct {
             api.ALIGN_VCENTER => {
                 //m_text_org_y=0
                 if (height > y_size) {
+                    std.log.debug("get_string_pos height:{d} y_size:{d}", .{ height, y_size });
                     y.* = @divTrunc(height - y_size, 2);
                 }
             },
@@ -151,6 +152,7 @@ pub const c_font_operator = struct {
             api.ALIGN_BOTTOM => {
                 //m_text_org_y=0
                 if (height > y_size) {
+                    std.log.debug("get_string_pos height:{d} y_size:{d}", .{ height, y_size });
                     y.* = height - y_size;
                 }
             },
@@ -190,6 +192,7 @@ pub const c_lattice_font_op = struct {
         if (font) |_anyfont| {
             const _font: *LATTICE_FONT_INFO = @ptrCast(@alignCast(_anyfont));
             c_font_operator.get_string_pos(string, _font, rect, align_type, &x, &y);
+            std.log.debug("draw_string_in_rect ({d},{d}) ({d},{d})", .{ rect.m_left, rect.m_top, x, y });
             c_lattice_font_op.draw_string(surface, z_order, string, rect.m_left + x, rect.m_top + y, font, font_color, bg_color);
         }
     }
@@ -220,15 +223,19 @@ pub const c_lattice_font_op = struct {
         var lattice_width: int = 0;
         var utf8_code: uint = 0;
         var utf8_bytes: usize = 0;
-        const _font: *LATTICE_FONT_INFO = @ptrCast(font);
-        while (s.* != 0) {
-            utf8_bytes = get_utf8_code(s, &utf8_code);
+        const _font: *LATTICE_FONT_INFO = @alignCast(@ptrCast(font));
+        while (s[0] != 0) {
+            utf8_bytes = @as(u32, @bitCast(get_utf8_code(s, &utf8_code)));
             const p_lattice = get_lattice(_font, utf8_code);
-            lattice_width += if (p_lattice != null) p_lattice.width else _font.height;
+            if (p_lattice) |lattice| {
+                lattice_width += lattice.width;
+            } else {
+                lattice_width += _font.height;
+            }
             s += utf8_bytes;
         }
-        width = lattice_width;
-        height = _font.height;
+        width.* = lattice_width;
+        height.* = _font.height;
         return 0;
     }
     // private:
