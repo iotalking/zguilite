@@ -248,7 +248,7 @@ pub fn create_ui(display: *guilite.c_display) !void {
     if (s_surface) |surface| {
         const rect = guilite.c_rect.init2(0, 0, UI_WIDTH - 1, UI_HEIGHT - 1);
         surface.set_active(true);
-        surface.fill_rect(rect, guilite.GL_RGB(255, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_0));
+        surface.fill_rect(rect, guilite.GL_RGB(0, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_0));
 
         var theCube: [SHAPE_CNT]Cube = .{ .{}, .{} };
         var thePyramid: [SHAPE_CNT]Pyramid = .{ .{}, .{} };

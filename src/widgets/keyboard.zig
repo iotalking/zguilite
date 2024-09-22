@@ -52,10 +52,9 @@ pub const c_keyboard_button = struct {
         return w;
     }
     pub fn pre_create_wnd(w: *c_wnd) void {
-        // const base: *button.c_button = @fieldParentPtr("wnd", w);
-        // const this: *c_keyboard_button = @fieldParentPtr("base", base);
-        // _ = this;
-        // w.pre_create_wnd();
+        const base: *button.c_button = @fieldParentPtr("wnd", w);
+        const this: *c_keyboard_button = @fieldParentPtr("base", base);
+        _ = this;
         button.c_button.pre_create_wnd(w);
         w.m_font = c_theme.get_font(.FONT_CUSTOM1);
     }

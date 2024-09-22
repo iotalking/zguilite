@@ -86,11 +86,12 @@ pub fn main() !void {
     try _display.init2(fbuf, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
     const surface = try _display.alloc_surface(.Z_ORDER_LEVEL_1, guilite.c_rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
+    surface.draw_line(0, 0, screen_width - 1, 500, guilite.GL_RGB(255, 200, 100), guilite.Z_ORDER_LEVEL_1);
     desktop.asWnd().set_surface(surface);
     _ = desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, i16_width, i16_height, &s_desktop_children);
     desktop.asWnd().show_window();
 
-    try dialog.open_dialog(true);
+    // try dialog.open_dialog(true);
 
     var keyboard = guilite.c_keyboard{};
     _ = keyboard.connect(dialog.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD);
@@ -99,7 +100,7 @@ pub fn main() !void {
     // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
     // surface.draw_rect_pos(0, 0, 100, 100, guilite.GL_RGB(200, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1), 10);
     // surface.fill_rect(guilite.c_rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
-    // try _3d.create_ui(&_display);
+    try _3d.create_ui(&_display);
     std.log.debug("main end", .{});
 }
 

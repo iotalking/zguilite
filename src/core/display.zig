@@ -594,26 +594,26 @@ pub const c_surface = struct {
             e = dy - @divExact(dx, 2);
             // for (; x1 <= x2; ++x1, e += dy)
             while (x1 <= x2) : ({
-                x1 += 1;
-                e += dy;
+                x1 +%= 1;
+                e +%= dy;
             }) {
                 this.draw_pixel(x1, y1, rgb, @enumFromInt(z_order));
                 if (e > 0) {
-                    e -= dx;
-                    if (y > y2) y1 += 1 else y1 += 1;
+                    e -%= dx;
+                    if (y > y2) y1 +%= 1 else y1 +%= 1;
                 }
             }
         } else {
             e = dx - @divExact(dy, 2);
             // for (; y1 <= y2; ++y1, e += dx)
             while (y1 <= y2) : ({
-                y1 += 1;
-                e += 1;
+                y1 +%= 1;
+                e +%= 1;
             }) {
                 this.draw_pixel(x1, y1, rgb, @enumFromInt(z_order));
                 if (e > 0) {
-                    e -= dy;
-                    if (x > x2) x1 += 1 else x1 += 1;
+                    e -%= dy;
+                    if (x > x2) x1 +%= 1 else x1 +%= 1;
                 }
             }
         }
