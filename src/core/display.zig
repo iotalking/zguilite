@@ -14,6 +14,11 @@ pub const Z_ORDER_LEVEL = enum {
     Z_ORDER_LEVEL_MAX,
 };
 
+pub const Z_ORDER_LEVEL_0 = @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_0);
+pub const Z_ORDER_LEVEL_1 = @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_1);
+pub const Z_ORDER_LEVEL_2 = @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_2);
+pub const Z_ORDER_LEVEL_MAX = @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX);
+
 pub const DISPLAY_DRIVER = struct {
     // void(*draw_pixel)(int x, int y, unsigned int rgb);
     draw_pixel: ?*const fn (x: int, y: int, rgb: int) void,
@@ -653,33 +658,43 @@ pub const c_surface = struct {
         return this.m_display;
     }
 
-    fn activate_layer(this: c_surface, active_rect: c_rect, active_z_order: uint) void //empty active rect means inactivating the layer
+    pub fn activate_layer(this: *c_surface, active_rect: c_rect, active_z_order: uint) void //empty active rect means inactivating the layer
     {
-        api.ASSERT(active_z_order > .Z_ORDER_LEVEL_0 and active_z_order <= .Z_ORDER_LEVEL_MAX);
+        api.ASSERT(active_z_order > Z_ORDER_LEVEL_0 and active_z_order <= Z_ORDER_LEVEL_MAX);
 
+        const uactive_z_order: usize = @as(u32, @bitCast(active_z_order));
         //Show the layers below the current active rect.
-        const current_active_rect = this.m_layers[active_z_order].active_rect;
+        const current_active_rect = this.m_layers[uactive_z_order].active_rect;
         // for(int low_z_order = Z_ORDER_LEVEL_0; low_z_order < active_z_order; low_z_order++)
-        for (@intFromEnum(.Z_ORDER_LEVEL_0)..active_z_order) |low_z_order| {
+        for (Z_ORDER_LEVEL_0..uactive_z_order) |low_z_order| {
             const low_layer_rect = this.m_layers[low_z_order].rect;
             const low_active_rect = this.m_layers[low_z_order].active_rect;
             const fb = this.m_layers[low_z_order].fb;
-            const width = low_layer_rect.width();
+            const width: usize = @as(u32, @bitCast(low_layer_rect.width()));
             // for (int y = current_active_rect.m_top; y <= current_active_rect.m_bottom; y++)
-            for (current_active_rect.m_top..(current_active_rect.m_bottom + 1)) |y| {
+            const uleft: usize = @as(u32, @bitCast(current_active_rect.m_left));
+            const utop: usize = @as(u32, @bitCast(current_active_rect.m_top));
+            const uright: usize = @as(u32, @bitCast(current_active_rect.m_right));
+            const ubottom: usize = @as(u32, @bitCast(current_active_rect.m_bottom));
+            for (utop..(ubottom + 1)) |y| {
+                const iy: i32 = @truncate(@as(i64, @bitCast(y)));
                 // for (int x = current_active_rect.m_left; x <= current_active_rect.m_right; x++)
-                for (current_active_rect.m_left..(current_active_rect.m_right + 1)) |x| {
-                    if (low_active_rect.pt_in_rect(x, y) and low_layer_rect.pt_in_rect(x, y)) //active rect maybe is bigger than layer rect
+                for (uleft..(uright + 1)) |x| {
+                    const ix: i32 = @truncate(@as(i64, @bitCast(x)));
+                    if (low_active_rect.pt_in_rect(ix, iy) and low_layer_rect.pt_in_rect(ix, iy)) //active rect maybe is bigger than layer rect
                     {
-                        const fb_u16: [*]u16 = @ptrCast(fb);
-                        const fb_uint: [*]uint = @ptrCast(fb);
-                        const rgb = if (this.m_color_bytes == 2) api.GL_RGB_16_to_32(fb_u16[(x - low_layer_rect.m_left) + (y - low_layer_rect.m_top) * width]) else fb_uint[(x - low_layer_rect.m_left) + (y - low_layer_rect.m_top) * width];
-                        this.draw_pixel_low_level(x, y, rgb);
+                        const fb_u16: [*]u16 = @alignCast(@ptrCast(fb));
+                        const fb_uint: [*]uint = @alignCast(@ptrCast(fb));
+                        const ulayer_rect_left: usize = @as(u32, @bitCast(low_layer_rect.m_left));
+                        const ulayer_rect_top: usize = @as(u32, @bitCast(low_layer_rect.m_top));
+
+                        const rgb = if (this.m_color_bytes == 2) api.GL_RGB_16_to_32(fb_u16[(x - ulayer_rect_left) + (y - ulayer_rect_top) * width]) else fb_uint[(x - ulayer_rect_left) + (y - ulayer_rect_top) * width];
+                        this.draw_pixel_low_level(ix, iy, rgb);
                     }
                 }
             }
         }
-        this.m_layers[active_z_order].active_rect = active_rect; //set the new acitve rect.
+        this.m_layers[uactive_z_order].active_rect = active_rect; //set the new acitve rect.
     }
 
     pub fn set_active(this: *c_surface, flag: bool) void {

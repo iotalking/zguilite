@@ -23,58 +23,53 @@ pub const DIALOG_ARRAY = struct {
 };
 
 pub const c_dialog = struct {
-    wnd: c_wnd,
+    wnd: c_wnd = .{
+        .m_class = "c_dialog",
+    },
     pub fn asWnd(this: *c_dialog) *c_wnd {
         const w = &this.wnd;
-        w.m_vtable.on_paint = this.on_paint;
-        w.m_vtable.pre_create_wnd = this.pre_create_wnd;
+        w.m_vtable.on_paint = c_dialog.on_paint;
+        w.m_vtable.pre_create_wnd = c_dialog.pre_create_wnd;
         return w;
     }
     // public:
-    pub fn open_dialog(p_dlg: *c_dialog, modal_mode: bool) int {
-        const _dlg = get_the_dialog(p_dlg.get_surface());
-        if (_dlg == null) {
-            return 0;
+    pub fn open_dialog(p_dlg: *c_dialog, modal_mode: bool) !void {
+        if (p_dlg.wnd.get_surface()) |surface| {
+            if (get_the_dialog(surface)) |cur_dlg| {
+                if (cur_dlg == p_dlg) {
+                    return;
+                }
+
+                cur_dlg.wnd.set_attr(.ATTR_UNKNOWN);
+            }
+            var rc: c_rect = c_rect.init();
+
+            p_dlg.wnd.get_screen_rect(&rc);
+            surface.activate_layer(rc, p_dlg.wnd.m_z_order);
+
+            p_dlg.wnd.set_attr(@enumFromInt(if (modal_mode) wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS | wnd.ATTR_PRIORITY else wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS));
+            p_dlg.wnd.show_window();
+            try p_dlg.set_me_the_dialog();
+        } else {
+            return error.open_dialog_surface;
         }
-        const cur_dlg = _dlg.?;
-        if (cur_dlg == p_dlg) {
-            return 1;
-        }
-
-        cur_dlg.wnd.set_attr(.ATTR_UNKNOWN);
-
-        var rc: c_rect = c_rect.init();
-
-        p_dlg.get_screen_rect(&rc);
-        p_dlg.get_surface().activate_layer(rc, p_dlg.m_z_order);
-
-        p_dlg.set_attr(if (modal_mode) .ATTR_VISIBLE | .ATTR_FOCUS | .ATTR_PRIORITY else .ATTR_VISIBLE | .ATTR_FOCUS);
-        p_dlg.show_window();
-        p_dlg.set_me_the_dialog();
-        return 1;
     }
 
-    pub fn close_dialog(surface: *c_surface) int {
+    pub fn close_dialog(surface: *c_surface) !void {
         const _dlg = get_the_dialog(surface);
+        if (_dlg) |dlg| {
+            dlg.wnd.set_attr(.ATTR_UNKNOWN);
+            surface.activate_layer(c_rect(), dlg.m_z_order); //inactivate the layer of dialog by empty rect.
 
-        if (null == _dlg) {
-            return 0;
-        }
-        const dlg = _dlg.?;
-
-        dlg.wnd.set_attr(.ATTR_UNKNOWN);
-        surface.activate_layer(c_rect(), dlg.m_z_order); //inactivate the layer of dialog by empty rect.
-
-        //clear the dialog
-        // for (int i = 0; i < SURFACE_CNT_MAX; i++)
-        for (0..SURFACE_CNT_MAX) |i| {
-            if (ms_the_dialogs[i].surface == surface) {
-                ms_the_dialogs[i].dialog = null;
-                return 1;
+            //clear the dialog
+            // for (int i = 0; i < SURFACE_CNT_MAX; i++)
+            for (0..SURFACE_CNT_MAX) |i| {
+                if (ms_the_dialogs[i].surface == surface) {
+                    ms_the_dialogs[i].dialog = null;
+                    return;
+                }
             }
         }
-        api.ASSERT(false);
-        return -1;
     }
 
     pub fn get_the_dialog(surface: *c_surface) ?*c_dialog {
@@ -89,27 +84,31 @@ pub const c_dialog = struct {
     // protected:
     fn pre_create_wnd(w: *c_wnd) void {
         w.m_attr = .ATTR_UNKNOWN; // no focus/visible
-        w.m_z_order = .Z_ORDER_LEVEL_1;
+        w.m_z_order = @intFromEnum(display.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1);
         w.m_bg_color = api.GL_RGB(33, 42, 53);
     }
     fn on_paint(w: *c_wnd) void {
         var rect: c_rect = c_rect.init();
         w.get_screen_rect(&rect);
-        w.m_surface.fill_rect(rect, w.m_bg_color, w.m_z_order);
+        w.m_surface.?.fill_rect(rect, w.m_bg_color, w.m_z_order);
 
-        if (w.m_str) {
-            c_word.draw_string(w.m_surface, w.m_z_order, w.m_str, rect.m_left + 35, rect.m_top, c_theme.get_font(.FONT_DEFAULT), api.GL_RGB(255, 255, 255), api.GL_ARGB(0, 0, 0, 0));
+        if (w.m_str) |str| {
+            if (w.m_surface) |surface| {
+                if (c_theme.get_font(.FONT_DEFAULT)) |font| {
+                    c_word.draw_string(surface, w.m_z_order, str, rect.m_left + 35, rect.m_top, font, api.GL_RGB(255, 255, 255), api.GL_ARGB(0, 0, 0, 0));
+                }
+            }
         }
     }
     // private:
-    fn set_me_the_dialog(this: *c_dialog) int {
+    fn set_me_the_dialog(this: *c_dialog) !void {
         const w = &this.wnd;
         const surface = w.get_surface();
         // for (int i = 0; i < SURFACE_CNT_MAX; i++)
         for (0..SURFACE_CNT_MAX) |i| {
             if (ms_the_dialogs[i].surface == surface) {
                 ms_the_dialogs[i].dialog = this;
-                return 0;
+                return;
             }
         }
 
@@ -118,11 +117,10 @@ pub const c_dialog = struct {
             if (ms_the_dialogs[i].surface == null) {
                 ms_the_dialogs[i].dialog = this;
                 ms_the_dialogs[i].surface = surface;
-                return 1;
+                return;
             }
         }
-        api.ASSERT(false);
-        return -2;
+        return error.set_me_the_dialog;
     }
     var ms_the_dialogs: [SURFACE_CNT_MAX]DIALOG_ARRAY = undefined;
 };

@@ -1,37 +1,37 @@
 const std = @import("std");
 pub const types = @import("./types.zig");
 pub const REAL_TIME_TASK_CYCLE_MS = 50;
-pub fn MAX(a: type, b: type) @TypeOf(a) {
+pub inline fn MAX(a: type, b: type) @TypeOf(a) {
     return @max(a, b);
 }
-pub fn MIN(a: type, b: type) @TypeOf(a) {
+pub inline fn MIN(a: type, b: type) @TypeOf(a) {
     return @min(a, b);
 }
-pub fn GL_ARGB(a: types.int, r: types.int, g: types.int, b: types.int) types.int {
+pub inline fn GL_ARGB(a: types.int, r: types.int, g: types.int, b: types.int) types.int {
     return ((((a)) << 24) | (((r)) << 16) | (((g)) << 8) | ((b)));
 }
-pub fn GL_ARGB_A(rgb: types.int) types.int {
+pub inline fn GL_ARGB_A(rgb: types.int) types.int {
     return ((rgb >> 24) & 0xFF);
 }
-pub fn GL_RGB(r: types.int, g: types.int, b: types.int) types.int {
+pub inline fn GL_RGB(r: types.int, g: types.int, b: types.int) types.int {
     const ret = ((@as(usize, 0xFF) << 24) | ((@as(usize, @as(u32, @bitCast(r)))) << 16) | (((@as(usize, @as(u32, @bitCast(g))))) << 8) | ((@as(usize, @as(u32, @bitCast(b))))));
     return @bitCast(@as(u32, @truncate(ret)));
 }
-pub fn GL_RGB_R(rgb: types.int) types.int {
+pub inline fn GL_RGB_R(rgb: types.int) types.int {
     return ((((rgb)) >> 16) & 0xFF);
 }
-pub fn GL_RGB_G(rgb: types.int) types.int {
+pub inline fn GL_RGB_G(rgb: types.int) types.int {
     return ((((rgb)) >> 8) & 0xFF);
 }
-pub fn GL_RGB_B(rgb: types.int) types.int {
+pub inline fn GL_RGB_B(rgb: types.int) types.int {
     return (((rgb)) & 0xFF);
 }
-pub fn GL_RGB_32_to_16(rgb: types.int) u16 {
+pub inline fn GL_RGB_32_to_16(rgb: types.int) u16 {
     const ret: i16 = @truncate(((((rgb)) & 0xFF) >> 3) | ((((rgb)) & 0xFC00) >> 5) | ((((rgb)) & 0xF80000) >> 8));
     return @bitCast(ret);
 }
-pub fn GL_RGB_16_to_32(rgb: types.int) types.int {
-    return ((0xFF << 24) | ((((rgb)) & 0x1F) << 3) | ((((rgb)) & 0x7E0) << 5) | ((((rgb)) & 0xF800) << 8));
+pub inline fn GL_RGB_16_to_32(rgb: types.int) types.int {
+    return ((@as(types.int, 0xFF) << 24) | ((((rgb)) & 0x1F) << 3) | ((((rgb)) & 0x7E0) << 5) | ((((rgb)) & 0xF800) << 8));
 }
 
 pub const ALIGN_HCENTER = 0x00000000;
@@ -58,21 +58,18 @@ pub fn register_debug_function(my_assert: *const fn (file: [*]const u8, line: ty
     _ = my_assert;
     _ = my_log_out;
 }
-pub fn _assert(file: [*]const u8, line: types.int) void {
-    _ = file;
-    _ = line;
-}
+
 // #define ASSERT(condition)	\
 // 	do{                     \
 // 	if(!(condition))_assert(__FILE__, __LINE__);\
 // 	}while(0)
 
-pub fn ASSERT(condition: bool) void {
+pub noinline fn ASSERT(condition: bool) void {
     if (!condition) {
+        // const loc = @src();
+        // std.log.err("ASSERT {s}:{d}:{d}", .{ loc.file, loc.line, loc.column });
         std.debug.dumpCurrentStackTrace(null);
-        std.log.err("ASSERT", .{});
-        const loc = @src();
-        _assert(@ptrCast(loc.fn_name), loc.line);
+        while (true) {}
     }
 }
 pub fn log_out(log: [*]const u8) void {

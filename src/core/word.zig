@@ -402,7 +402,7 @@ pub const c_lattice_font_op = struct {
 
 pub const c_word = struct {
     // public:
-    fn draw_string(
+    pub fn draw_string(
         surface: *c_surface, //
         z_order: int,
         string: [*]const u8,

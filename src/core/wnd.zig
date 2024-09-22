@@ -395,7 +395,7 @@ pub const c_wnd = struct {
         }
     }
 
-    pub fn get_surface(this: *c_wnd) *c_surface {
+    pub fn get_surface(this: *c_wnd) ?*c_surface {
         return this.m_surface;
     }
     pub fn set_surface(this: *c_wnd, surface: *c_surface) void {

@@ -31,20 +31,31 @@ pub fn main() !void {
     var desktop = c_desktop{};
     var btn: guilite.c_button = guilite.c_button{};
     var label: guilite.c_label = guilite.c_label{};
-    // std.log.debug("btn.font:{*}", .{btn.wnd.m_font});
+    var dialog = guilite.c_dialog{};
     const ID_BTN = 1;
     const ID_DESKTOP = 2;
     const ID_LABEL = 3;
+    const ID_DIALOG = 4;
     // _ = btn;
     var s_desktop_children = [_]?*const guilite.WND_TREE{
         &guilite.WND_TREE{
-            .p_wnd = btn.asWnd(), //
-            .resource_id = ID_BTN,
-            .str = "朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
+            .p_wnd = dialog.asWnd(), //
+            .resource_id = ID_DIALOG,
+            .str = "千里辞",
             .x = 10,
             .y = 10,
             .width = 500,
-            .height = 40,
+            .height = 80,
+            .p_child_tree = null,
+        },
+        &guilite.WND_TREE{
+            .p_wnd = btn.asWnd(), //
+            .resource_id = ID_BTN,
+            .str = "吴朝辞",
+            .x = 10,
+            .y = 10,
+            .width = 500,
+            .height = 80,
             .p_child_tree = null,
         },
         &guilite.WND_TREE{
@@ -52,9 +63,9 @@ pub fn main() !void {
             .resource_id = ID_LABEL,
             .str = "朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
             .x = 10,
-            .y = 80,
+            .y = 100,
             .width = 500,
-            .height = 40,
+            .height = 80,
             .p_child_tree = null,
         },
         null,
@@ -77,6 +88,8 @@ pub fn main() !void {
     desktop.asWnd().set_surface(surface);
     _ = desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, i16_width, i16_height, &s_desktop_children);
     desktop.asWnd().show_window();
+
+    try dialog.open_dialog(true);
 
     // _ = _display.flush_screen(&_display, 0, 0, screen_width, screen_height, @ptrCast(mem_fb), screen_width);
     // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
