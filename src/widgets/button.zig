@@ -16,19 +16,18 @@ const uint = types.uint;
 const WND_CALLBACK = wnd.WND_CALLBACK;
 const TOUCH_ACTION = wnd.TOUCH_ACTION;
 pub const c_button = struct {
-    wnd: wnd.c_wnd = .{
-        .m_class = "c_button",
-    },
+    wnd: wnd.c_wnd = .{ .m_class = "c_button", .m_vtable = .{
+        .on_paint = c_button.on_paint,
+        .on_focus = c_button.on_focus,
+        .on_kill_focus = c_button.on_kill_focus,
+        .pre_create_wnd = c_button.pre_create_wnd,
+        .on_touch = c_button.on_touch,
+        .on_navigate = c_button.on_navigate,
+    } },
     on_click: ?WND_CALLBACK = null,
+
     pub fn asWnd(this: *c_button) *wnd.c_wnd {
         const w = &this.wnd;
-        w.m_vtable.on_paint = c_button.on_paint;
-        w.m_vtable.on_focus = c_button.on_focus;
-        w.m_vtable.on_kill_focus = c_button.on_kill_focus;
-        w.m_vtable.pre_create_wnd = c_button.pre_create_wnd;
-        w.m_vtable.on_touch = c_button.on_touch;
-        w.m_vtable.on_navigate = c_button.on_navigate;
-        std.log.debug("button wnd:{*} font:{*}", .{ w, w.m_font });
         return w;
     }
     // public:

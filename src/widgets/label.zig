@@ -17,11 +17,13 @@ const uint = types.uint;
 pub const c_label = struct {
     wnd: c_wnd = .{
         .m_class = "c_label",
+        .m_vtable = .{
+            .on_paint = c_label.on_paint,
+            .pre_create_wnd = c_label.pre_create_wnd,
+        },
     },
     pub fn asWnd(this: *c_label) *c_wnd {
         const w = &this.wnd;
-        w.m_vtable.on_paint = c_label.on_paint;
-        w.m_vtable.pre_create_wnd = c_label.pre_create_wnd;
         return w;
     }
     // public:

@@ -36,6 +36,7 @@ pub fn main() !void {
     const ID_DESKTOP = 2;
     const ID_LABEL = 3;
     const ID_DIALOG = 4;
+    const ID_KEYBOARD = 5;
     // _ = btn;
     var s_desktop_children = [_]?*const guilite.WND_TREE{
         &guilite.WND_TREE{
@@ -91,6 +92,9 @@ pub fn main() !void {
 
     try dialog.open_dialog(true);
 
+    var keyboard = guilite.c_keyboard{};
+    _ = keyboard.connect(dialog.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD);
+    keyboard.asWnd().show_window();
     // _ = _display.flush_screen(&_display, 0, 0, screen_width, screen_height, @ptrCast(mem_fb), screen_width);
     // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
     // surface.draw_rect_pos(0, 0, 100, 100, guilite.GL_RGB(200, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1), 10);

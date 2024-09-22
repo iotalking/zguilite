@@ -23,13 +23,16 @@ pub const DIALOG_ARRAY = struct {
 };
 
 pub const c_dialog = struct {
-    wnd: c_wnd = .{
-        .m_class = "c_dialog",
-    },
+    wnd: c_wnd = .{ .m_class = "c_dialog", .m_vtable = .{
+        .on_paint = c_dialog.on_paint,
+        .pre_create_wnd = c_dialog.pre_create_wnd,
+    } },
+    pub fn new() c_dialog {
+        const this = c_dialog{};
+        return this;
+    }
     pub fn asWnd(this: *c_dialog) *c_wnd {
         const w = &this.wnd;
-        w.m_vtable.on_paint = c_dialog.on_paint;
-        w.m_vtable.pre_create_wnd = c_dialog.pre_create_wnd;
         return w;
     }
     // public:

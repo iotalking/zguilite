@@ -134,7 +134,7 @@ pub const c_wnd = struct {
         _ = this;
     }
     pub fn show_window(this: *c_wnd) void {
-        std.log.debug("show_window", .{});
+        std.log.debug("show_window class:{s}", .{this.m_class});
         if (ATTR_VISIBLE == (@intFromEnum(this.m_attr) & ATTR_VISIBLE)) {
             this.on_paint();
             var _child: ?*c_wnd = this.m_top_child;
@@ -143,6 +143,8 @@ pub const c_wnd = struct {
                 child.show_window();
                 _child = child.m_next_sibling;
             }
+        } else {
+            std.log.debug("show_window no visibale", .{});
         }
     }
 
@@ -490,6 +492,7 @@ pub const c_wnd = struct {
         return this.m_vtable.on_init_children(this);
     }
     pub fn on_paint(this: *c_wnd) void {
+        std.log.debug("on_paint class:{s}", .{this.m_class});
         this.m_vtable.on_paint(this);
     }
     pub fn on_touch(this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void {
