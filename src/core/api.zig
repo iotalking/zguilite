@@ -189,3 +189,7 @@ pub const c_rect = struct {
     m_right: types.int = -1,
     m_bottom: types.int = -1,
 };
+
+pub fn strlen(str: []const u8) usize {
+    std.mem.len(@as([*c]const u8, str));
+}

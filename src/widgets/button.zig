@@ -30,6 +30,9 @@ pub const c_button = struct {
         const w = &this.wnd;
         return w;
     }
+    pub fn asButton(w: *c_wnd) *c_button {
+        return @fieldParentPtr("wnd", w);
+    }
     // public:
     // 	void set_on_click(WND_CALLBACK on_click) { this.on_click = on_click; }
     pub fn set_on_click(this: *c_button, on_click: WND_CALLBACK) void {
@@ -99,7 +102,7 @@ pub const c_button = struct {
             w.on_paint();
             if (this.on_click) |click| {
                 // (m_parent.*(on_click))(m_id, 0);
-                click(w.m_id, 0);
+                click.on(w.m_id, 0);
             }
         }
     }

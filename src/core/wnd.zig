@@ -56,7 +56,21 @@ pub const struct_wnd_tree = struct {
 pub const WND_TREE = struct_wnd_tree;
 
 // typedef void (c_wnd::*WND_CALLBACK)(int, int);
-pub const WND_CALLBACK = *const fn (int, int) void;
+// pub const WND_CALLBACK = *const fn (int, int) void;
+pub const WND_CALLBACK = struct {
+    m_callback: CALLBACK,
+    m_user: *const anyopaque,
+    const CALLBACK = *const fn (user: *const anyopaque, id: int, param: int) void;
+    pub fn init(user: *const anyopaque, callback: anytype) WND_CALLBACK {
+        return .{
+            .m_user = user,
+            .m_callback = @ptrCast(callback),
+        };
+    }
+    pub fn on(this: *const WND_CALLBACK, id: int, param: int) void {
+        this.m_callback(this.m_user, id, param);
+    }
+};
 
 pub const c_wnd = struct {
     // public:

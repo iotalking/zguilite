@@ -591,7 +591,7 @@ pub const c_surface = struct {
         y = y1;
 
         if (dx > dy) {
-            e = dy - @divExact(dx, 2);
+            e = dy - @divTrunc(dx, 2);
             // for (; x1 <= x2; ++x1, e += dy)
             while (x1 <= x2) : ({
                 x1 +%= 1;
@@ -604,7 +604,7 @@ pub const c_surface = struct {
                 }
             }
         } else {
-            e = dx - @divExact(dy, 2);
+            e = dx - @divTrunc(dy, 2);
             // for (; y1 <= y2; ++y1, e += dx)
             while (y1 <= y2) : ({
                 y1 +%= 1;

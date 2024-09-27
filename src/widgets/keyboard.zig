@@ -435,19 +435,17 @@ pub const c_keyboard = struct {
         .m_class = "c_keyboard",
         .m_vtable = .{
             .on_paint = c_keyboard.on_paint,
+            .on_init_children = c_keyboard.on_init_children,
             .pre_create_wnd = c_keyboard.pre_create_wnd,
         },
     },
-    m_vtable: VTable = .{},
-
+    m_on_click: ?wnd.WND_CALLBACK = null,
     pub fn asWnd(this: *c_keyboard) *c_wnd {
         const w = &this.wnd;
         return w;
     }
-    pub fn connect(this: *c_keyboard, user: *wnd.c_wnd, resource_id: u16, style: KEYBOARD_STYLE) types.int {
-        return this.m_vtable.connect(this, user, resource_id, style);
-    }
-    fn connect_impl(this: *c_keyboard, user: *wnd.c_wnd, resource_id: u16, style: KEYBOARD_STYLE) types.int {
+
+    pub fn open_keyboard(this: *c_keyboard, user: *wnd.c_wnd, resource_id: u16, style: KEYBOARD_STYLE, click: ?wnd.WND_CALLBACK) types.int {
         // _ = this;
         // _ = user;
         // _ = resource_id;
@@ -470,11 +468,82 @@ pub const c_keyboard = struct {
         } else {
             api.ASSERT(false);
         }
+        this.m_on_click = click;
         return 0;
     }
-    pub const VTable = struct {
-        connect: *const fn (this: *c_keyboard, user: *wnd.c_wnd, resource_id: u16, style: KEYBOARD_STYLE) types.int = connect_impl,
-    };
+    pub fn on_init_children(this: *c_wnd) void {
+        var next = this.m_top_child;
+        const keyboard: *c_keyboard = @fieldParentPtr("wnd", this);
+        while (next) |child| {
+            const btn = button.c_button.asButton(this);
+            btn.set_on_click(wnd.WND_CALLBACK.init(keyboard, &c_keyboard.on_key_clicked));
+            next = child.get_next_sibling();
+        }
+    }
+    fn on_key_clicked(this: *c_keyboard, id: int, param: int) void {
+        _ = this;
+        switch (id) {
+            0x14 => {
+                on_caps_clicked(id, param);
+            },
+            '\n' => {
+                on_enter_clicked(id, param);
+            },
+            0x1B => {
+                on_esc_clicked(id, param);
+            },
+            0x7F => {
+                on_del_clicked(id, param);
+            },
+            else => {
+                on_char_clicked(id, param);
+            },
+        }
+    }
+
+    fn on_caps_clicked(id: int, param: int) void {
+        _ = id;
+        _ = param;
+    }
+    fn on_enter_clicked(id: int, param: int) void {
+        _ = id;
+        _ = param;
+    }
+    fn on_esc_clicked(id: int, param: int) void {
+        _ = id;
+        _ = param;
+    }
+    fn on_del_clicked(id: int, param: int) void {
+        _ = id;
+        _ = param;
+    }
+    fn on_char_clicked(id: int, param: int) void {
+        _ = id;
+        _ = param;
+        //id = char ascii code.
+        // 	if (m_str_len >= sizeof(m_str))
+        // 	{
+        // 		return;
+        // 	}
+        // 	if ((id >= '0' && id <= '9') || id == ' ' || id == '.')
+        // 	{
+        // 		goto InputChar;
+        // 	}
+
+        // 	if (id >= 'A' && id <= 'Z')
+        // 	{
+        // 		if (STATUS_LOWERCASE == m_cap_status)
+        // 		{
+        // 			id += 0x20;
+        // 		}
+        // 		goto InputChar;
+        // 	}
+        // 	if (id == 0x90) return;//TBD
+        // 	ASSERT(false);
+        // InputChar:
+        // 	m_str[m_str_len++] = id;
+        // 	(m_parent->*(m_on_click))(m_id, CLICK_CHAR);
+    }
 
     fn pre_create_wnd(w: *c_wnd) void {
         const this: *c_keyboard = @fieldParentPtr("wnd", w);
@@ -489,5 +558,10 @@ pub const c_keyboard = struct {
         if (_w.m_surface) |m_surface| {
             m_surface.fill_rect(rect, api.GL_RGB(0, 0, 0), _w.m_z_order);
         }
+    }
+    pub fn close_keyboard(this: *c_keyboard) void {
+        const w = this.asWnd();
+        w.disconnect();
+        w.m_surface.activate_layer(c_rect(), w.m_z_order); //inactivate the layer of keyboard by empty rect.
     }
 };

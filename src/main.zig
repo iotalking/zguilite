@@ -94,7 +94,14 @@ pub fn main() !void {
     // try dialog.open_dialog(true);
 
     var keyboard = guilite.c_keyboard{};
-    _ = keyboard.connect(dialog.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD);
+    const onkbclick = struct {
+        fn onclick(this: *@This(), id: int, param: int) void {
+            _ = this;
+            _ = id;
+            _ = param;
+        }
+    };
+    _ = keyboard.open_keyboard(dialog.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD, guilite.WND_CALLBACK.init(&onkbclick{}, &onkbclick.onclick));
     keyboard.asWnd().show_window();
     // _ = _display.flush_screen(&_display, 0, 0, screen_width, screen_height, @ptrCast(mem_fb), screen_width);
     // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
@@ -104,7 +111,16 @@ pub fn main() !void {
     std.log.debug("main end", .{});
 }
 
+const A = struct {
+    fn Hello(a: *A, b: u32, c: u32) void {
+        std.log.err("AAAA:{*} b:{d} c:{d}", .{ a, b, c });
+    }
+};
 test "test [*]65" {
+    var aa = A{};
+
+    const f: *const fn (*anyopaque, u32) void = @ptrCast(&A.Hello);
+    @call(.auto, f, .{ &aa, 2 });
     var a: [3][1]f64 = .{ .{0.1}, .{0.2}, .{0.3} };
     std.log.err("a:{any}", .{a});
     const b: [*]f64 = @ptrCast(&a[0][0]);
