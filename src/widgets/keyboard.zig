@@ -481,43 +481,48 @@ pub const c_keyboard = struct {
         }
     }
     fn on_key_clicked(this: *c_keyboard, id: int, param: int) void {
-        _ = this;
+        // _ = this;
         switch (id) {
             0x14 => {
-                on_caps_clicked(id, param);
+                this.on_caps_clicked(id, param);
             },
             '\n' => {
-                on_enter_clicked(id, param);
+                this.on_enter_clicked(id, param);
             },
             0x1B => {
-                on_esc_clicked(id, param);
+                this.on_esc_clicked(id, param);
             },
             0x7F => {
-                on_del_clicked(id, param);
+                this.on_del_clicked(id, param);
             },
             else => {
-                on_char_clicked(id, param);
+                this.on_char_clicked(id, param);
             },
         }
     }
 
-    fn on_caps_clicked(id: int, param: int) void {
+    fn on_caps_clicked(this: *c_keyboard, id: int, param: int) void {
+        _ = this;
         _ = id;
         _ = param;
     }
-    fn on_enter_clicked(id: int, param: int) void {
+    fn on_enter_clicked(this: *c_keyboard, id: int, param: int) void {
+        _ = this;
         _ = id;
         _ = param;
     }
-    fn on_esc_clicked(id: int, param: int) void {
+    fn on_esc_clicked(this: *c_keyboard, id: int, param: int) void {
+        _ = this;
         _ = id;
         _ = param;
     }
-    fn on_del_clicked(id: int, param: int) void {
+    fn on_del_clicked(this: *c_keyboard, id: int, param: int) void {
+        _ = this;
         _ = id;
         _ = param;
     }
-    fn on_char_clicked(id: int, param: int) void {
+    fn on_char_clicked(this: *c_keyboard, id: int, param: int) void {
+        _ = this;
         _ = id;
         _ = param;
         //id = char ascii code.
