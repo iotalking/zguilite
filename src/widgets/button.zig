@@ -36,6 +36,7 @@ pub const c_button = struct {
     // public:
     // 	void set_on_click(WND_CALLBACK on_click) { this.on_click = on_click; }
     pub fn set_on_click(this: *c_button, on_click: WND_CALLBACK) void {
+        std.log.debug("button.set_on_click this:{*}", .{this});
         this.on_click = on_click;
     }
     // protected:
@@ -83,6 +84,7 @@ pub const c_button = struct {
     pub fn pre_create_wnd(w: *c_wnd) void {
         const this: *c_button = @fieldParentPtr("wnd", w);
         this.on_click = null;
+        std.log.debug("button pre_create_wnd set on_click = null", .{});
         w.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
         w.m_font = c_theme.get_font(.FONT_DEFAULT);
         w.m_font_color = c_theme.get_color(.COLOR_WND_FONT);
@@ -90,9 +92,12 @@ pub const c_button = struct {
     }
 
     fn on_touch(w: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void {
-        _ = x;
-        _ = y;
+        std.log.debug("button.on_touch(x:{any},y:{any},action:{any})", .{ x, y, action });
+        // _ = x;
+        // _ = y;
         const this: *c_button = @fieldParentPtr("wnd", w);
+        std.log.debug("button on_touch this:{*}", .{this});
+        api.ASSERT(w.m_parent != null);
         if (action == .TOUCH_DOWN) {
             _ = w.m_parent.?.set_child_focus(w);
             w.m_status = .STATUS_PUSHED;
@@ -102,11 +107,15 @@ pub const c_button = struct {
             w.on_paint();
             if (this.on_click) |click| {
                 // (m_parent.*(on_click))(m_id, 0);
+                std.log.debug("button call click", .{});
                 click.on(w.m_id, 0);
+            } else {
+                std.log.debug("button on_touch up on_click == null", .{});
             }
         }
     }
-    fn on_navigate(w: *c_wnd, key: wnd.NAVIGATION_KEY) void {
+    pub fn on_navigate(w: *c_wnd, key: wnd.NAVIGATION_KEY) void {
+        std.log.debug("button.on_navigate key:{any}", .{key});
         switch (key) {
             .NAV_ENTER => {
                 on_touch(w, w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_DOWN);
@@ -114,6 +123,5 @@ pub const c_button = struct {
             },
             .NAV_FORWARD, .NAV_BACKWARD => {},
         }
-        return c_wnd.on_navigate(w, key);
     }
 };

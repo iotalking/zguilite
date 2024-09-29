@@ -94,15 +94,17 @@ pub fn main() !void {
     // try dialog.open_dialog(true);
 
     var keyboard = guilite.c_keyboard{};
-    const onkbclick = struct {
-        fn onclick(this: *@This(), id: int, param: int) void {
-            _ = this;
+
+    _ = keyboard.open_keyboard(dialog.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD, guilite.WND_CALLBACK.init(&keyboard, &struct {
+        fn onclick(kb: *guilite.c_keyboard, id: int, param: int) void {
+            std.log.debug("onkbclick.onclick keyboard:{*}", .{kb});
+            // _ = this;
             _ = id;
             _ = param;
         }
-    };
-    _ = keyboard.open_keyboard(dialog.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD, guilite.WND_CALLBACK.init(&onkbclick{}, &onkbclick.onclick));
+    }.onclick));
     keyboard.asWnd().show_window();
+
     // _ = _display.flush_screen(&_display, 0, 0, screen_width, screen_height, @ptrCast(mem_fb), screen_width);
     // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
     // surface.draw_rect_pos(0, 0, 100, 100, guilite.GL_RGB(200, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1), 10);

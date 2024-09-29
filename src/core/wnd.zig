@@ -352,17 +352,21 @@ pub const c_wnd = struct {
         }
     }
     pub fn on_navigate_impl(this: *c_wnd, key: NAVIGATION_KEY) void {
+        std.log.debug("wnd.on_navigate_impl", .{});
         const priority_wnd = this.search_priority_sibling(this.m_top_child);
         if (priority_wnd) |w| {
             return w.on_navigate(key);
         }
 
         if (this.is_focus_wnd()) {
+            std.log.debug("wnd.on_navigate_impl is_focus_wnd", .{});
             return;
         }
         if (key != .NAV_BACKWARD and key != .NAV_FORWARD) {
             if (this.m_focus_child) |child| {
                 child.on_navigate(key);
+            } else {
+                std.log.debug("wnd.on_navigate_impl no m_focus_child", .{});
             }
             return;
         }
@@ -478,6 +482,8 @@ pub const c_wnd = struct {
                     std.log.debug("loop wnd tree resource_id:{d}", .{p_cur.resource_id});
                     if (p_cur.p_wnd) |p_wnd| {
                         _ = p_wnd.connect(this, p_cur.resource_id, p_cur.str, p_cur.x, p_cur.y, p_cur.width, p_cur.height, p_cur.p_child_tree);
+                    } else {
+                        api.ASSERT(false);
                     }
                 }
                 // _p_cur += 1;

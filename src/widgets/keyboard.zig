@@ -452,7 +452,9 @@ pub const c_keyboard = struct {
         // _ = style;
         const thisWnd: *c_wnd = this.asWnd();
         var user_rect: c_rect = c_rect.init();
+        var ret: int = -1;
         user.get_wnd_rect(&user_rect);
+        this.m_on_click = click;
         if (style == .STYLE_ALL_BOARD) { //Place keyboard at the bottom of user's parent window.
             var user_parent_rect = c_rect.init();
             if (user.get_parent()) |p| {
@@ -460,27 +462,28 @@ pub const c_keyboard = struct {
             }
             const ix: i16 = @truncate(0 - user_rect.m_left);
             const iy: i16 = @truncate(user_parent_rect.height() - user_rect.m_top - KEYBOARD_HEIGHT);
-            return thisWnd.connect(user, resource_id, null, ix, iy, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, &g_key_board_children);
+            ret = thisWnd.connect(user, resource_id, null, ix, iy, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, &g_key_board_children);
         } else if (style == .STYLE_NUM_BOARD) { //Place keyboard below the user window.
             const ix: i16 = 0;
             const iy: i16 = @truncate(user_rect.height());
-            return thisWnd.connect(user, resource_id, null, ix, iy, NUM_BOARD_WIDTH, NUM_BOARD_HEIGHT, &g_number_board_children);
+            ret = thisWnd.connect(user, resource_id, null, ix, iy, NUM_BOARD_WIDTH, NUM_BOARD_HEIGHT, &g_number_board_children);
         } else {
             api.ASSERT(false);
         }
-        this.m_on_click = click;
-        return 0;
+        return ret;
     }
     pub fn on_init_children(this: *c_wnd) void {
         var next = this.m_top_child;
         const keyboard: *c_keyboard = @fieldParentPtr("wnd", this);
         while (next) |child| {
-            const btn = button.c_button.asButton(this);
+            const btn = button.c_button.asButton(child);
+            std.log.debug("keyboard.on_init_children.btn:{any} parent:{*}", .{ this.get_id(), btn.asWnd().m_parent.? });
             btn.set_on_click(wnd.WND_CALLBACK.init(keyboard, &c_keyboard.on_key_clicked));
             next = child.get_next_sibling();
         }
     }
     fn on_key_clicked(this: *c_keyboard, id: int, param: int) void {
+        std.log.debug("keyboard.on_key_clicked(id:{any},param:{any})", .{ id, param });
         // _ = this;
         switch (id) {
             0x14 => {
@@ -522,8 +525,8 @@ pub const c_keyboard = struct {
         _ = param;
     }
     fn on_char_clicked(this: *c_keyboard, id: int, param: int) void {
-        _ = this;
-        _ = id;
+        // _ = this;
+        // _ = id;
         _ = param;
         //id = char ascii code.
         // 	if (m_str_len >= sizeof(m_str))
@@ -548,6 +551,10 @@ pub const c_keyboard = struct {
         // InputChar:
         // 	m_str[m_str_len++] = id;
         // 	(m_parent->*(m_on_click))(m_id, CLICK_CHAR);
+
+        if (this.m_on_click) |click| {
+            click.on(id, @intFromEnum(CLICK_STATUS.CLICK_CHAR));
+        }
     }
 
     fn pre_create_wnd(w: *c_wnd) void {

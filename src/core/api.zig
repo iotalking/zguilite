@@ -69,7 +69,7 @@ pub noinline fn ASSERT(condition: bool) void {
         // const loc = @src();
         // std.log.err("ASSERT {s}:{d}:{d}", .{ loc.file, loc.line, loc.column });
         std.debug.dumpCurrentStackTrace(null);
-        while (true) {}
+        std.process.exit(1);
     }
 }
 pub fn log_out(log: [*]const u8) void {
