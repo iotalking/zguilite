@@ -29,48 +29,51 @@ pub fn main() !void {
     const fbuf: [*]u8 = @ptrCast(devfb.?);
     // const fbuf: [*]u8 = @ptrCast(mem_fb);
     var desktop = c_desktop{};
-    // var btn: guilite.c_button = guilite.c_button{};
-    // var label: guilite.c_label = guilite.c_label{};
+    var btn: guilite.c_button = guilite.c_button{};
+    var label: guilite.c_label = guilite.c_label{};
     var edit: guilite.c_edit = guilite.c_edit{};
-    // var dialog = guilite.c_dialog{};
-    // const ID_BTN = 1;
+    var list_box: guilite.c_list_box = guilite.c_list_box{};
+    var dialog = guilite.c_dialog{};
+    const ID_BTN = 1;
     const ID_DESKTOP = 2;
-    // const ID_LABEL = 3;
-    // const ID_DIALOG = 4;
+    const ID_LABEL = 3;
+    const ID_DIALOG = 4;
     const ID_KEYBOARD = 5;
     const ID_EDIT = 6;
+    const ID_LIST_BOX = 7;
+
     // _ = btn;
     var s_desktop_children = [_]?*const guilite.WND_TREE{
-        // &guilite.WND_TREE{
-        //     .p_wnd = dialog.asWnd(), //
-        //     .resource_id = ID_DIALOG,
-        //     .str = "千里辞",
-        //     .x = 10,
-        //     .y = 10,
-        //     .width = 500,
-        //     .height = 80,
-        //     .p_child_tree = null,
-        // },
-        // &guilite.WND_TREE{
-        //     .p_wnd = btn.asWnd(), //
-        //     .resource_id = ID_BTN,
-        //     .str = "吴朝辞",
-        //     .x = 10,
-        //     .y = 10,
-        //     .width = 500,
-        //     .height = 80,
-        //     .p_child_tree = null,
-        // },
-        // &guilite.WND_TREE{
-        //     .p_wnd = label.asWnd(), //
-        //     .resource_id = ID_LABEL,
-        //     .str = "朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
-        //     .x = 10,
-        //     .y = 100,
-        //     .width = 500,
-        //     .height = 80,
-        //     .p_child_tree = null,
-        // },
+        &guilite.WND_TREE{
+            .p_wnd = dialog.asWnd(), //
+            .resource_id = ID_DIALOG,
+            .str = "千里辞",
+            .x = 10,
+            .y = 10,
+            .width = 500,
+            .height = 80,
+            .p_child_tree = null,
+        },
+        &guilite.WND_TREE{
+            .p_wnd = btn.asWnd(), //
+            .resource_id = ID_BTN,
+            .str = "吴朝辞",
+            .x = 10,
+            .y = 10,
+            .width = 500,
+            .height = 80,
+            .p_child_tree = null,
+        },
+        &guilite.WND_TREE{
+            .p_wnd = label.asWnd(), //
+            .resource_id = ID_LABEL,
+            .str = "朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
+            .x = 10,
+            .y = 100,
+            .width = 500,
+            .height = 80,
+            .p_child_tree = null,
+        },
         &guilite.WND_TREE{
             .p_wnd = edit.asWnd(), //
             .resource_id = ID_EDIT,
@@ -81,8 +84,23 @@ pub fn main() !void {
             .height = 80,
             .p_child_tree = null,
         },
+        &guilite.WND_TREE{
+            .p_wnd = list_box.asWnd(), //
+            .resource_id = ID_LIST_BOX,
+            .str = "listbox",
+            .x = 10,
+            .y = 300,
+            .width = 200,
+            .height = 30,
+            .p_child_tree = null,
+        },
         null,
     };
+    list_box.clear_item();
+    try list_box.add_item("里江");
+    try list_box.add_item("猿声啼不住");
+    std.log.debug("main list_box:{*} item0:{s}", .{ &list_box, list_box.m_item_array[0] });
+
     const usize_width = @as(usize, @as(u32, @bitCast(screen_width)));
     const usize_height = @as(usize, @as(u32, @bitCast(screen_height)));
     const fb32: [*]u32 = @ptrCast(@alignCast(mem_fb));
@@ -101,6 +119,7 @@ pub fn main() !void {
     surface.draw_line(0, 0, screen_width - 1, 500, guilite.GL_RGB(255, 200, 100), guilite.Z_ORDER_LEVEL_1);
     desktop.asWnd().set_surface(surface);
     _ = desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, i16_width, i16_height, &s_desktop_children);
+
     desktop.asWnd().show_window();
 
     // try dialog.open_dialog(true);
@@ -123,6 +142,7 @@ pub fn main() !void {
     // surface.fill_rect(guilite.c_rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
     // try _3d.create_ui(&_display);
     std.log.debug("main end", .{});
+    while (true) {}
 }
 
 const A = struct {

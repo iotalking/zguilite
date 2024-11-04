@@ -169,14 +169,16 @@ pub const c_lattice_font_op = struct {
 
     // public:
     fn draw_string(surface: *c_surface, z_order: int, string: []const u8, x: int, y: int, font: ?*anyopaque, font_color: int, bg_color: uint) void {
-        var s = string.ptr;
-        var offset: int = 0;
+        var offset: usize = 0;
+        var strcur = string[offset..];
+        var xoffset: int = 0;
         var utf8_code: int = 0;
-        while (s[0] != 0) {
-            const uchar = @as(usize, @intCast(get_utf8_code(s[0..4], &utf8_code)));
-            s += uchar;
+        while (strcur.len > 0) {
+            const uchar = @as(usize, @intCast(get_utf8_code(strcur, &utf8_code)));
+            offset += uchar;
+            strcur = string[offset..];
             const _font: ?*LATTICE_FONT_INFO = @ptrCast(@alignCast(font));
-            offset += draw_single_char(surface, z_order, utf8_code, (x + offset), y, _font, font_color, bg_color);
+            xoffset += draw_single_char(surface, z_order, utf8_code, (x + xoffset), y, _font, font_color, bg_color);
         }
     }
 
@@ -207,27 +209,24 @@ pub const c_lattice_font_op = struct {
     }
 
     fn get_str_size(string: []const u8, font: *anyopaque, width: *int, height: *int) int {
-        var s = string.ptr;
-        // if (null == s or null == font)
-        // {
-        // 	width = 0;
-        //     height = 0;
-        // 	return -1;
-        // }
-
+        var offset: usize = 0;
+        var strcur = string[offset..];
         var lattice_width: int = 0;
         var utf8_code: uint = 0;
         var utf8_bytes: usize = 0;
         const _font: *LATTICE_FONT_INFO = @alignCast(@ptrCast(font));
-        while (s[0] != 0) {
-            utf8_bytes = @as(u32, @bitCast(get_utf8_code(s[0..1], &utf8_code)));
+        while (strcur.len > 0) {
+            std.log.debug("strcur:{s}", .{strcur});
+            utf8_bytes = @as(u32, @bitCast(get_utf8_code(strcur, &utf8_code)));
+            std.log.debug("utf8_code:{x}", .{utf8_code});
             const p_lattice = get_lattice(_font, utf8_code);
             if (p_lattice) |lattice| {
                 lattice_width += lattice.width;
             } else {
                 lattice_width += _font.height;
             }
-            s += utf8_bytes;
+            offset += utf8_bytes;
+            strcur = string[offset..];
         }
         width.* = lattice_width;
         height.* = _font.height;
@@ -337,9 +336,9 @@ pub const c_lattice_font_op = struct {
     fn get_lattice(font: *LATTICE_FONT_INFO, utf8_code: uint) ?*const LATTICE {
         var first: usize = 0;
         var last: usize = @as(u32, @bitCast(font.count)) - 1;
-        var middle: usize = @bitCast(@divTrunc(first + last, 2));
-
-        while (first <= last) {
+        var middle: usize = (first + last) / 2;
+        while (first <= last and middle > 0) {
+            std.log.debug("get_lattice middle:{d}", .{middle});
             const lattice_array: []const LATTICE = font.lattice_array;
             if (lattice_array[middle].utf8_code < utf8_code) {
                 first = middle + 1;
@@ -377,20 +376,23 @@ pub const c_lattice_font_op = struct {
         const us = s;
         const utf8_bytes: int = @intCast(s_utf8_length_table[us[0]]);
         const us0: i32 = @as(i32, us[0]);
-        const us1: i32 = @as(i32, us[1]);
-        const us2: i32 = @as(i32, us[2]);
-        const us3: i32 = @as(i32, us[3]);
         switch (utf8_bytes) {
             1 => {
                 output_utf8_code.* = us0;
             },
             2 => {
+                const us1: i32 = @as(i32, us[1]);
                 output_utf8_code.* = (us0 << 8) | (us1);
             },
             3 => {
+                const us1: i32 = @as(i32, us[1]);
+                const us2: i32 = @as(i32, us[2]);
                 output_utf8_code.* = (us0 << 16) | ((us1) << 8) | us2;
             },
             4 => {
+                const us1: i32 = @as(i32, us[1]);
+                const us2: i32 = @as(i32, us[2]);
+                const us3: i32 = @as(i32, us[3]);
                 output_utf8_code.* = (us0 << 24) | ((us1) << 16) | (us2 << 8) | us3;
             },
             else => {
@@ -426,6 +428,7 @@ pub const c_word = struct {
         bg_color: int,
         align_type: int,
     ) void {
+        std.log.debug("word draw_string_in_rect string:{s}", .{string});
         fontOperator.draw_string_in_rect(surface, z_order, string, rect, font, font_color, bg_color, align_type);
     }
     fn draw_value_in_rect(

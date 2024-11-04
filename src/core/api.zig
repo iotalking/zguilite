@@ -212,6 +212,6 @@ pub fn strcpy(dst: []u8, src: []const u8) void {
     }
     if (dstCnt < end) {
         dst[dstCnt + 1] = 0;
-        std.log.err("strcpy dstCnt:{d}", .{dstCnt});
+        // std.log.err("strcpy dstCnt:{d}", .{dstCnt});
     }
 }
