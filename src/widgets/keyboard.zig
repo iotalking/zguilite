@@ -440,6 +440,11 @@ pub const c_keyboard = struct {
         },
     },
     m_on_click: ?wnd.WND_CALLBACK = null,
+    m_cap_status: KEYBOARD_STATUS = .STATUS_LOWERCASE,
+
+    m_str: [32]u8 = std.mem.zeroes([32]u8),
+    m_str_len: u32 = 0,
+
     pub fn asWnd(this: *c_keyboard) *c_wnd {
         const w = &this.wnd;
         return w;
@@ -505,58 +510,84 @@ pub const c_keyboard = struct {
     }
 
     fn on_caps_clicked(this: *c_keyboard, id: int, param: int) void {
-        _ = this;
         _ = id;
         _ = param;
+        var _wnd = this.asWnd();
+        this.m_cap_status = if (this.m_cap_status == .STATUS_LOWERCASE) .STATUS_UPPERCASE else .STATUS_LOWERCASE;
+        _wnd.show_window();
     }
     fn on_enter_clicked(this: *c_keyboard, id: int, param: int) void {
-        _ = this;
+        // _ = this;
         _ = id;
         _ = param;
+        @memset(&this.m_str, 0);
+        if (this.m_on_click) |on_click| {
+            on_click.on(this.asWnd().m_id, @intFromEnum(CLICK_STATUS.CLICK_ENTER));
+        } else {
+            api.ASSERT(false);
+        }
     }
     fn on_esc_clicked(this: *c_keyboard, id: int, param: int) void {
-        _ = this;
+        // _ = this;
         _ = id;
         _ = param;
+        @memset(&this.m_str, 0);
+        if (this.m_on_click) |on_click| {
+            on_click.on(this.asWnd().m_id, @intFromEnum(CLICK_STATUS.CLICK_ESC));
+        } else {
+            api.ASSERT(false);
+        }
     }
     fn on_del_clicked(this: *c_keyboard, id: int, param: int) void {
-        _ = this;
+        // _ = this;
         _ = id;
         _ = param;
+        if (this.m_str_len <= 0) {
+            return;
+        }
+        this.m_str_len -= 1;
+        this.m_str[this.m_str_len] = 0;
+
+        if (this.m_on_click) |on_click| {
+            on_click.on(this.asWnd().m_id, @intFromEnum(CLICK_STATUS.CLICK_CHAR));
+        } else {
+            api.ASSERT(false);
+        }
     }
-    fn on_char_clicked(this: *c_keyboard, id: int, param: int) void {
+    fn on_char_clicked(this: *c_keyboard, _id: int, param: int) void {
         // _ = this;
-        // _ = id;
+        var id = _id;
         _ = param;
         //id = char ascii code.
-        // 	if (m_str_len >= sizeof(m_str))
-        // 	{
-        // 		return;
-        // 	}
-        // 	if ((id >= '0' && id <= '9') || id == ' ' || id == '.')
-        // 	{
-        // 		goto InputChar;
-        // 	}
+        if (this.m_str_len >= this.m_str.len) {
+            return;
+        }
+        InputChar: {
+            if ((id >= '0' and id <= '9') or id == ' ' or id == '.') {
+                break :InputChar;
+            }
 
-        // 	if (id >= 'A' && id <= 'Z')
-        // 	{
-        // 		if (STATUS_LOWERCASE == m_cap_status)
-        // 		{
-        // 			id += 0x20;
-        // 		}
-        // 		goto InputChar;
-        // 	}
-        // 	if (id == 0x90) return;//TBD
-        // 	ASSERT(false);
+            if (id >= 'A' and id <= 'Z') {
+                if (.STATUS_LOWERCASE == this.m_cap_status) {
+                    id += 0x20;
+                }
+                break :InputChar;
+            }
+            if (id == 0x90) return; //TBD
+            api.ASSERT(false);
+        }
         // InputChar:
-        // 	m_str[m_str_len++] = id;
-        // 	(m_parent->*(m_on_click))(m_id, CLICK_CHAR);
+        this.m_str_len += 1;
+        this.m_str[this.m_str_len] = @truncate(@as(u32, @bitCast(id)));
 
         if (this.m_on_click) |click| {
             click.on(id, @intFromEnum(CLICK_STATUS.CLICK_CHAR));
         }
     }
 
+    pub fn get_str(this: *const c_keyboard) []const u8 {
+        return &this.m_str;
+    }
     fn pre_create_wnd(w: *c_wnd) void {
         const this: *c_keyboard = @fieldParentPtr("wnd", w);
         w.m_font = c_theme.get_font(.FONT_CUSTOM1);
@@ -574,6 +605,8 @@ pub const c_keyboard = struct {
     pub fn close_keyboard(this: *c_keyboard) void {
         const w = this.asWnd();
         w.disconnect();
-        w.m_surface.activate_layer(c_rect(), w.m_z_order); //inactivate the layer of keyboard by empty rect.
+        if (w.m_surface) |surface| {
+            surface.activate_layer(c_rect.init(), w.m_z_order); //inactivate the layer of keyboard by empty rect.
+        }
     }
 };

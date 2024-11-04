@@ -177,6 +177,12 @@ pub const c_rect = struct {
             (this.m_right == rect.m_right) and //
             (this.m_bottom == rect.m_bottom);
     }
+    pub fn add(this: *c_rect, other: c_rect) void {
+        this.m_left +%= other.m_left;
+        this.m_top +%= other.m_top;
+        this.m_right +%= other.m_right;
+        this.m_bottom +%= other.m_bottom;
+    }
     pub fn width(this: c_rect) types.int {
         return this.m_right - this.m_left + 1;
     }
@@ -191,5 +197,21 @@ pub const c_rect = struct {
 };
 
 pub fn strlen(str: []const u8) usize {
-    std.mem.len(@as([*c]const u8, str));
+    return std.mem.len(@as([*c]const u8, str.ptr));
+}
+
+pub fn strcpy(dst: []u8, src: []const u8) void {
+    // std.mem.copyForwards(u8, dst, src);
+    const end = dst.len - 1;
+    var dstCnt: usize = 0;
+    for (0.., src) |i, c| {
+        if (i < end) {
+            dst[i] = c;
+        }
+        dstCnt += 1;
+    }
+    if (dstCnt < end) {
+        dst[dstCnt + 1] = 0;
+        std.log.err("strcpy dstCnt:{d}", .{dstCnt});
+    }
 }

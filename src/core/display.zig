@@ -631,7 +631,7 @@ pub const c_surface = struct {
         }
     }
 
-    pub fn draw_rect(this: *c_surface, rect: c_rect, rgb: int, size: uint, z_order: uint) void {
+    pub fn draw_rect(this: *c_surface, rect: c_rect, rgb: int, z_order: uint, size: uint) void {
         this.draw_rect_pos(rect.m_left, rect.m_top, rect.m_right, rect.m_bottom, rgb, z_order, size);
     }
 

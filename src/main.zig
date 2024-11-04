@@ -29,42 +29,54 @@ pub fn main() !void {
     const fbuf: [*]u8 = @ptrCast(devfb.?);
     // const fbuf: [*]u8 = @ptrCast(mem_fb);
     var desktop = c_desktop{};
-    var btn: guilite.c_button = guilite.c_button{};
-    var label: guilite.c_label = guilite.c_label{};
-    var dialog = guilite.c_dialog{};
-    const ID_BTN = 1;
+    // var btn: guilite.c_button = guilite.c_button{};
+    // var label: guilite.c_label = guilite.c_label{};
+    var edit: guilite.c_edit = guilite.c_edit{};
+    // var dialog = guilite.c_dialog{};
+    // const ID_BTN = 1;
     const ID_DESKTOP = 2;
-    const ID_LABEL = 3;
-    const ID_DIALOG = 4;
+    // const ID_LABEL = 3;
+    // const ID_DIALOG = 4;
     const ID_KEYBOARD = 5;
+    const ID_EDIT = 6;
     // _ = btn;
     var s_desktop_children = [_]?*const guilite.WND_TREE{
+        // &guilite.WND_TREE{
+        //     .p_wnd = dialog.asWnd(), //
+        //     .resource_id = ID_DIALOG,
+        //     .str = "千里辞",
+        //     .x = 10,
+        //     .y = 10,
+        //     .width = 500,
+        //     .height = 80,
+        //     .p_child_tree = null,
+        // },
+        // &guilite.WND_TREE{
+        //     .p_wnd = btn.asWnd(), //
+        //     .resource_id = ID_BTN,
+        //     .str = "吴朝辞",
+        //     .x = 10,
+        //     .y = 10,
+        //     .width = 500,
+        //     .height = 80,
+        //     .p_child_tree = null,
+        // },
+        // &guilite.WND_TREE{
+        //     .p_wnd = label.asWnd(), //
+        //     .resource_id = ID_LABEL,
+        //     .str = "朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
+        //     .x = 10,
+        //     .y = 100,
+        //     .width = 500,
+        //     .height = 80,
+        //     .p_child_tree = null,
+        // },
         &guilite.WND_TREE{
-            .p_wnd = dialog.asWnd(), //
-            .resource_id = ID_DIALOG,
-            .str = "千里辞",
+            .p_wnd = edit.asWnd(), //
+            .resource_id = ID_EDIT,
+            .str = "edit",
             .x = 10,
-            .y = 10,
-            .width = 500,
-            .height = 80,
-            .p_child_tree = null,
-        },
-        &guilite.WND_TREE{
-            .p_wnd = btn.asWnd(), //
-            .resource_id = ID_BTN,
-            .str = "吴朝辞",
-            .x = 10,
-            .y = 10,
-            .width = 500,
-            .height = 80,
-            .p_child_tree = null,
-        },
-        &guilite.WND_TREE{
-            .p_wnd = label.asWnd(), //
-            .resource_id = ID_LABEL,
-            .str = "朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
-            .x = 10,
-            .y = 100,
+            .y = 200,
             .width = 500,
             .height = 80,
             .p_child_tree = null,
@@ -95,7 +107,7 @@ pub fn main() !void {
 
     var keyboard = guilite.c_keyboard{};
 
-    _ = keyboard.open_keyboard(dialog.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD, guilite.WND_CALLBACK.init(&keyboard, &struct {
+    _ = keyboard.open_keyboard(edit.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD, guilite.WND_CALLBACK.init(&keyboard, &struct {
         fn onclick(kb: *guilite.c_keyboard, id: int, param: int) void {
             std.log.debug("onkbclick.onclick keyboard:{*}", .{kb});
             // _ = this;
@@ -109,7 +121,7 @@ pub fn main() !void {
     // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
     // surface.draw_rect_pos(0, 0, 100, 100, guilite.GL_RGB(200, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1), 10);
     // surface.fill_rect(guilite.c_rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
-    try _3d.create_ui(&_display);
+    // try _3d.create_ui(&_display);
     std.log.debug("main end", .{});
 }
 

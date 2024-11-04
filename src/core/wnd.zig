@@ -46,7 +46,7 @@ pub const TOUCH_ACTION = enum(u16) {
 pub const struct_wnd_tree = struct {
     p_wnd: ?*c_wnd = null, //window instance
     resource_id: u16 = 0, //ID
-    str: ?[*]const u8 = null, //caption
+    str: ?[]const u8 = null, //caption
     x: i16 = 0, //position x
     y: i16 = 0, //position y
     width: i16 = 0,
@@ -64,7 +64,7 @@ pub const WND_CALLBACK = struct {
     pub fn init(user: *const anyopaque, callback: anytype) WND_CALLBACK {
         return .{
             .m_user = user,
-            .m_callback = @ptrCast(callback),
+            .m_callback = @ptrCast(&callback),
         };
     }
     pub fn on(this: *const WND_CALLBACK, id: int, param: int) void {
@@ -84,7 +84,7 @@ pub const c_wnd = struct {
         _ = this;
     }
     // 	virtual ~c_wnd() {};
-    pub fn connect_impl(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int {
+    pub fn connect_impl(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int {
         if (0 == resource_id) {
             api.ASSERT(false);
             return -1;
@@ -124,18 +124,18 @@ pub const c_wnd = struct {
 
     pub fn disconnect(this: *c_wnd) void {
         if (null != this.m_top_child) {
-            const child: ?*c_wnd = this.m_top_child;
-            const next_child = null;
+            var child: ?*c_wnd = this.m_top_child;
+            var next_child: ?*c_wnd = null;
 
-            while (child != null) {
-                next_child = child.m_next_sibling;
-                child.disconnect();
+            while (child) |_child| {
+                next_child = _child.m_next_sibling;
+                _child.disconnect();
                 child = next_child;
             }
         }
 
-        if (null != this.m_parent) {
-            this.m_parent.unlink_child(this);
+        if (this.m_parent) |parent| {
+            _ = parent.unlink_child(this);
         }
         this.m_focus_child = null;
         this.m_attr = .ATTR_UNKNOWN;
@@ -182,10 +182,10 @@ pub const c_wnd = struct {
         return _child;
     }
     pub fn get_attr(this: *c_wnd) uint {
-        return this.m_attr;
+        return @bitCast(@intFromEnum(this.m_attr));
     }
 
-    pub fn set_str(this: *c_wnd, str: ?[*]const u8) void {
+    pub fn set_str(this: *c_wnd, str: ?[]const u8) void {
         this.m_str = str;
     }
     pub fn set_attr(this: *c_wnd, attr: WND_ATTRIBUTION) void {
@@ -261,7 +261,7 @@ pub const c_wnd = struct {
         return pre;
     }
     pub fn unlink_child(this: *c_wnd, child: *c_wnd) int {
-        if ((null == child) or (this != child.m_parent)) {
+        if ((this != child.m_parent)) {
             return -1;
         }
 
@@ -274,24 +274,26 @@ pub const c_wnd = struct {
         var tmp_child = this.m_top_child;
         if (tmp_child == child) {
             this.m_top_child = child.m_next_sibling;
-            if (null != child.m_next_sibling) {
-                child.m_next_sibling.m_prev_sibling = null;
+            if (child.m_next_sibling) |next_sibling| {
+                next_sibling.m_prev_sibling = null;
             }
 
             find = true;
         } else {
-            while (tmp_child.m_next_sibling) {
-                if (child == tmp_child.m_next_sibling) {
-                    tmp_child.m_next_sibling = child.m_next_sibling;
-                    if (null != child.m_next_sibling) {
-                        child.m_next_sibling.m_prev_sibling = tmp_child;
+            if (tmp_child) |_child| {
+                while (_child.m_next_sibling) |*next_sibling| {
+                    if (child == next_sibling.*) {
+                        next_sibling.* = child.m_next_sibling.?;
+                        if (child.m_next_sibling) |m_next_sibling| {
+                            m_next_sibling.m_prev_sibling = _child;
+                        }
+
+                        find = true;
+                        break;
                     }
 
-                    find = true;
-                    break;
+                    tmp_child = next_sibling.*;
                 }
-
-                tmp_child = tmp_child.m_next_sibling;
             }
         }
 
@@ -505,7 +507,7 @@ pub const c_wnd = struct {
         _ = this;
     }
 
-    pub fn connect(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int {
+    pub fn connect(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int {
         return this.m_vtable.connect(this, parent, resource_id, str, x, y, width, height, p_child_tree);
     }
     pub fn on_init_children(this: *c_wnd) void {
@@ -531,7 +533,7 @@ pub const c_wnd = struct {
         this.m_vtable.on_navigate(this, key);
     }
     pub const vtable = struct {
-        connect: *const fn (this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[*]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int = connect_impl,
+        connect: *const fn (this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int = connect_impl,
         on_init_children: *const fn (this: *c_wnd) void = on_init_children_impl,
         on_paint: *const fn (this: *c_wnd) void = on_paint_impl,
         on_touch: *const fn (this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void = on_touch_impl,
@@ -552,7 +554,7 @@ pub const c_wnd = struct {
     m_prev_sibling: ?*c_wnd = null, //previous brother
     m_next_sibling: ?*c_wnd = null, //next brother
     m_focus_child: ?*c_wnd = null, //current focused window
-    m_str: ?[*]const u8 = null, //caption
+    m_str: ?[]const u8 = null, //caption
 
     m_font: ?*anyopaque = null, //font face
     m_font_color: uint = 0,

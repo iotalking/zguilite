@@ -14113,7 +14113,7 @@ const lattice_array = [_]guilite.LATTICE{
     .{ .utf8_code = 14849724, .width = 12, .pixel_buffer = &_14849724 },
 };
 pub const Consolas_24B = guilite.LATTICE_FONT_INFO{
-    .height = 27, //
+    .height = 28, //
     .count = lattice_array.len,
     .lattice_array = &lattice_array,
 };

@@ -110,7 +110,7 @@ pub const c_font_operator = struct {
         return 0;
     }
 
-    pub fn get_string_pos(string: [*]const u8, font: *anyopaque, rect: c_rect, align_type: int, x: *int, y: *int) void {
+    pub fn get_string_pos(string: []const u8, font: *anyopaque, rect: c_rect, align_type: int, x: *int, y: *int) void {
         var x_size: int = 0;
         var y_size: int = 0;
         _ = fontOperator.get_str_size(string, font, &x_size, &y_size);
@@ -168,24 +168,19 @@ pub const c_lattice_font_op = struct {
     // parent: c_font_operator,
 
     // public:
-    fn draw_string(surface: *c_surface, z_order: int, string: [*]const u8, x: int, y: int, font: ?*anyopaque, font_color: int, bg_color: uint) void {
-        var s = string;
-        // if (0 == s)
-        // {
-        // 	return;
-        // }
-
+    fn draw_string(surface: *c_surface, z_order: int, string: []const u8, x: int, y: int, font: ?*anyopaque, font_color: int, bg_color: uint) void {
+        var s = string.ptr;
         var offset: int = 0;
         var utf8_code: int = 0;
         while (s[0] != 0) {
-            const uchar = @as(usize, @intCast(get_utf8_code(s, &utf8_code)));
+            const uchar = @as(usize, @intCast(get_utf8_code(s[0..4], &utf8_code)));
             s += uchar;
             const _font: ?*LATTICE_FONT_INFO = @ptrCast(@alignCast(font));
             offset += draw_single_char(surface, z_order, utf8_code, (x + offset), y, _font, font_color, bg_color);
         }
     }
 
-    fn draw_string_in_rect(surface: *c_surface, z_order: int, string: [*]const u8, rect: c_rect, font: ?*anyopaque, font_color: uint, bg_color: uint, align_type: uint) void {
+    fn draw_string_in_rect(surface: *c_surface, z_order: int, string: []const u8, rect: c_rect, font: ?*anyopaque, font_color: uint, bg_color: uint, align_type: uint) void {
         var x: int = 0;
         var y: int = 0;
         std.log.debug("draw_string_in_rect font:{*}", .{font});
@@ -211,8 +206,8 @@ pub const c_lattice_font_op = struct {
         draw_string_in_rect(surface, z_order, buf, rect, _font, font_color, bg_color, align_type);
     }
 
-    fn get_str_size(string: [*]const u8, font: *anyopaque, width: *int, height: *int) int {
-        var s = string;
+    fn get_str_size(string: []const u8, font: *anyopaque, width: *int, height: *int) int {
+        var s = string.ptr;
         // if (null == s or null == font)
         // {
         // 	width = 0;
@@ -225,7 +220,7 @@ pub const c_lattice_font_op = struct {
         var utf8_bytes: usize = 0;
         const _font: *LATTICE_FONT_INFO = @alignCast(@ptrCast(font));
         while (s[0] != 0) {
-            utf8_bytes = @as(u32, @bitCast(get_utf8_code(s, &utf8_code)));
+            utf8_bytes = @as(u32, @bitCast(get_utf8_code(s[0..1], &utf8_code)));
             const p_lattice = get_lattice(_font, utf8_code);
             if (p_lattice) |lattice| {
                 lattice_width += lattice.width;
@@ -358,7 +353,7 @@ pub const c_lattice_font_op = struct {
         return null;
     }
 
-    fn get_utf8_code(s: [*]const u8, output_utf8_code: *int) int {
+    fn get_utf8_code(s: []const u8, output_utf8_code: *int) int {
         const s_utf8_length_table: [256]u8 =
             .{
             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //
@@ -412,7 +407,7 @@ pub const c_word = struct {
     pub fn draw_string(
         surface: *c_surface, //
         z_order: int,
-        string: [*]const u8,
+        string: []const u8,
         x: int,
         y: int,
         font: *anyopaque,
@@ -424,7 +419,7 @@ pub const c_word = struct {
     pub fn draw_string_in_rect(
         surface: *c_surface, //
         z_order: int,
-        string: [*]const u8,
+        string: []const u8,
         rect: c_rect,
         font: ?*anyopaque,
         font_color: int,
