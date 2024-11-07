@@ -243,7 +243,7 @@ pub const c_display = struct {
 
     // protected:
     fn draw_pixel_impl(this: *c_display, x: int, y: int, rgb: uint) void {
-        std.log.debug("display draw_pixel_impl({},{},{})", .{ x, y, rgb });
+        // std.log.debug("display draw_pixel_impl({},{},{})", .{ x, y, rgb });
         if ((x >= this.m_width) or (y >= this.m_height)) {
             return;
         }
@@ -621,6 +621,8 @@ pub const c_surface = struct {
 
     pub fn draw_rect_pos(this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint, size: uint) void {
         // for (unsigned int offset = 0; offset < size; offset++)
+
+        std.log.debug("draw_rect_pos({d},{d},{d},{d},{d})", .{ x0, y0, x1, y1, rgb });
         const _usize: usize = @as(usize, @as(u32, @bitCast(size)));
         for (0.._usize) |_offset| {
             const offset: int = @bitCast(@as(u32, @truncate(_offset)));
@@ -645,9 +647,12 @@ pub const c_surface = struct {
         {
             api.ASSERT(false);
         }
-
-        this.m_display.flush_screen(left, top, right, bottom, this.m_fb, this.m_width);
-        this.m_phy_write_index.* = this.m_phy_write_index.* + 1;
+        if (this.m_display) |display| {
+            return display.flush_screen(display, left, top, right, bottom, this.m_fb.?, this.m_width);
+        }
+        if (this.m_phy_write_index) |m_phy_write_index| {
+            m_phy_write_index.* = m_phy_write_index.* + 1;
+        }
         return 0;
     }
 

@@ -1,32 +1,36 @@
 const std = @import("std");
 const guilite = @import("./guilite.zig");
 const _3d = @import("./3d.zig");
-
+const x11 = @import("./x11.zig");
 pub fn main() !void {
     guilite.init();
 
     // const color_bytes = 4;
     // const screen_width: int = 240;
     // const screen_height: int = 320;
-    var screen_width: int = 0;
-    var screen_height: int = 0;
+    const screen_width: int = 1024;
+    const screen_height: int = 600;
     var color_bytes: int = 0;
-    const devfb = try get_dev_fb("/dev/fb0", &screen_width, &screen_height, &color_bytes);
-    if (devfb == null) {
-        return error.devfb;
-    }
+    // const devfb = try get_dev_fb("/dev/fb0", &screen_width, &screen_height, &color_bytes);
+    // if (devfb == null) {
+    //     return error.devfb;
+    // }
     // std.log.debug("screen:({}x{})*{} devfb:{*}", .{ screen_width, screen_height, color_bytes, devfb });
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    const mem_fb = try allocator.alloc(u8, @as(usize, @as(u32, @bitCast(screen_width * screen_height * color_bytes))));
-    defer {
-        allocator.free(mem_fb);
-        _ = gpa.deinit();
-    }
+    // const mem_fb = try allocator.alloc(u8, @as(usize, @as(u32, @bitCast(screen_width * screen_height * color_bytes))));
+    // defer {
+    //     allocator.free(mem_fb);
+    //     _ = gpa.deinit();
+    // }
 
     const i16_height: i16 = @truncate(screen_height);
     const i16_width: i16 = @truncate(screen_width);
-    const fbuf: [*]u8 = @ptrCast(devfb.?);
+    const frameBuffer = try x11.createFrameBuffer(allocator, screen_width, screen_height, &color_bytes);
+    defer allocator.free(frameBuffer);
+
+    const fbuf: [*]u8 = frameBuffer.ptr;
+
     // const fbuf: [*]u8 = @ptrCast(mem_fb);
     var desktop = c_desktop{};
     var btn: guilite.c_button = guilite.c_button{};
@@ -67,7 +71,7 @@ pub fn main() !void {
         &guilite.WND_TREE{
             .p_wnd = label.asWnd(), //
             .resource_id = ID_LABEL,
-            .str = "朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
+            .str = "123朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
             .x = 10,
             .y = 100,
             .width = 500,
@@ -91,7 +95,7 @@ pub fn main() !void {
             .x = 10,
             .y = 300,
             .width = 200,
-            .height = 30,
+            .height = 60,
             .p_child_tree = null,
         },
         null,
@@ -103,7 +107,7 @@ pub fn main() !void {
 
     const usize_width = @as(usize, @as(u32, @bitCast(screen_width)));
     const usize_height = @as(usize, @as(u32, @bitCast(screen_height)));
-    const fb32: [*]u32 = @ptrCast(@alignCast(mem_fb));
+    const fb32: [*]u32 = @ptrCast(@alignCast(fbuf));
     std.log.debug("fb32:{*}", .{fb32});
     for (10..usize_height - 10) |y| {
         for (10..usize_width - 10) |x| {
@@ -116,6 +120,9 @@ pub fn main() !void {
     try _display.init2(fbuf, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
     const surface = try _display.alloc_surface(.Z_ORDER_LEVEL_1, guilite.c_rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
+
+    // try showFont.showFont(allocator, surface);
+
     surface.draw_line(0, 0, screen_width - 1, 500, guilite.GL_RGB(255, 200, 100), guilite.Z_ORDER_LEVEL_1);
     desktop.asWnd().set_surface(surface);
     _ = desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, i16_width, i16_height, &s_desktop_children);
@@ -142,7 +149,8 @@ pub fn main() !void {
     // surface.fill_rect(guilite.c_rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
     // try _3d.create_ui(&_display);
     std.log.debug("main end", .{});
-    while (true) {}
+
+    try x11.appLoop();
 }
 
 const A = struct {

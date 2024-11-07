@@ -216,9 +216,9 @@ pub const c_lattice_font_op = struct {
         var utf8_bytes: usize = 0;
         const _font: *LATTICE_FONT_INFO = @alignCast(@ptrCast(font));
         while (strcur.len > 0) {
-            std.log.debug("strcur:{s}", .{strcur});
+            // std.log.debug("strcur:{s}", .{strcur});
             utf8_bytes = @as(u32, @bitCast(get_utf8_code(strcur, &utf8_code)));
-            std.log.debug("utf8_code:{x}", .{utf8_code});
+            // std.log.debug("utf8_code:{x}", .{utf8_code});
             const p_lattice = get_lattice(_font, utf8_code);
             if (p_lattice) |lattice| {
                 lattice_width += lattice.width;
@@ -338,7 +338,7 @@ pub const c_lattice_font_op = struct {
         var last: usize = @as(u32, @bitCast(font.count)) - 1;
         var middle: usize = (first + last) / 2;
         while (first <= last and middle > 0) {
-            std.log.debug("get_lattice middle:{d}", .{middle});
+            // std.log.debug("get_lattice middle:{d}", .{middle});
             const lattice_array: []const LATTICE = font.lattice_array;
             if (lattice_array[middle].utf8_code < utf8_code) {
                 first = middle + 1;

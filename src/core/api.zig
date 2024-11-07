@@ -144,10 +144,10 @@ pub const c_rect = struct {
     // public:
     pub fn init() c_rect {
         return .{
-            .m_left = -1,
-            .m_top = -1,
-            .m_right = -1,
-            .m_bottom = -1,
+            .m_left = 0,
+            .m_top = 0,
+            .m_right = 0,
+            .m_bottom = 0,
         };
     }
     pub fn init2(left: types.int, top: types.int, _width: types.int, _height: types.int) c_rect {
