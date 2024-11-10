@@ -91,7 +91,7 @@ pub const c_button = struct {
         std.log.debug("button pre_create_wnd font:{*} font_color:{any}", .{ w.m_font, w.m_font_color });
     }
 
-    fn on_touch(w: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void {
+    pub fn on_touch(w: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void {
         std.log.debug("button.on_touch(x:{any},y:{any},action:{any})", .{ x, y, action });
         // _ = x;
         // _ = y;

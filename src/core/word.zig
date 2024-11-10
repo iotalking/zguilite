@@ -201,11 +201,11 @@ pub const c_lattice_font_op = struct {
         c_lattice_font_op.draw_string(surface, z_order, buf, x, y, _font, font_color, bg_color);
     }
 
-    fn draw_value_in_rect(surface: *c_surface, z_order: int, value: int, dot_position: int, rect: c_rect, font: *anyopaque, font_color: uint, bg_color: uint, align_type: uint) void {
-        const buf: [VALUE_STR_LEN]u8 = undefined;
-        value_2_string(value, dot_position, buf, VALUE_STR_LEN);
-        const _font: *LATTICE_FONT_INFO = @ptrCast(font);
-        draw_string_in_rect(surface, z_order, buf, rect, _font, font_color, bg_color, align_type);
+    fn draw_value_in_rect(surface: *c_surface, z_order: int, value: int, dot_position: int, rect: c_rect, font: *anyopaque, font_color: uint, bg_color: uint, align_type: uint) !void {
+        var buf: [VALUE_STR_LEN]u8 = undefined;
+        try value_2_string(value, dot_position, &buf);
+        const _font: *LATTICE_FONT_INFO = @alignCast(@ptrCast(@constCast(font)));
+        draw_string_in_rect(surface, z_order, &buf, rect, _font, font_color, bg_color, align_type);
     }
 
     fn get_str_size(string: []const u8, font: *anyopaque, width: *int, height: *int) int {
@@ -233,25 +233,26 @@ pub const c_lattice_font_op = struct {
         return 0;
     }
     // private:
-    fn value_2_string(value: int, dot_position: int, _buf: [*]u8, len: int) void {
+    fn value_2_string(value: int, dot_position: int, _buf: []u8) !void {
         // memset(buf, 0, len);
-        const buf: []u8 = _buf[0..len];
+        const buf: []u8 = _buf;
         switch (dot_position) {
             0 => {
                 // sprintf(buf, "%d", value);
-                std.fmt.bufPrint(buf, "{d}", .{value});
+                _ = try std.fmt.bufPrint(buf, "{d}", .{value});
             },
             1 => {
                 // sprintf(buf, "%.1f", value * 1.0 / 10);
-                std.fmt.bufPrint(buf, "{.1e}", .{value * 1.0 / 10.0});
+                const v = @divExact(@as(f32, @bitCast(value)) * 1.0, 10.0);
+                _ = try std.fmt.bufPrint(buf, "{e:.1}", .{v});
             },
             2 => {
-                // sprintf(buf, "%.2f", value * 1.0 / 100);
-                std.fmt.bufPrint(buf, "{.2e}", .{value * 1.0 / 100.0});
+                const v = @divExact(@as(f32, @bitCast(value)) * 1.0, 100.0);
+                _ = try std.fmt.bufPrint(buf, "{e:.2}", .{v});
             },
             3 => {
-                // sprintf(buf, "%.3f", value * 1.0 / 1000);
-                std.fmt.bufPrint(buf, "{.3e}", .{value * 1.0 / 1000.0});
+                const v = @divExact(@as(f32, @bitCast(value)) * 1.0, 1000.0);
+                _ = try std.fmt.bufPrint(buf, "{e:.3}", .{v});
             },
             else => {
                 api.ASSERT(false);
@@ -338,6 +339,7 @@ pub const c_lattice_font_op = struct {
         var last: usize = @as(u32, @bitCast(font.count)) - 1;
         var middle: usize = (first + last) / 2;
         while (first <= last and middle > 0) {
+
             // std.log.debug("get_lattice middle:{d}", .{middle});
             const lattice_array: []const LATTICE = font.lattice_array;
             if (lattice_array[middle].utf8_code < utf8_code) {
@@ -431,7 +433,7 @@ pub const c_word = struct {
         std.log.debug("word draw_string_in_rect string:{s}", .{string});
         fontOperator.draw_string_in_rect(surface, z_order, string, rect, font, font_color, bg_color, align_type);
     }
-    fn draw_value_in_rect(
+    pub fn draw_value_in_rect(
         surface: *c_surface, //
         z_order: int,
         value: int,
@@ -441,8 +443,8 @@ pub const c_word = struct {
         font_color: int,
         bg_color: int,
         align_type: int,
-    ) void {
-        fontOperator.draw_value_in_rect(surface, z_order, value, dot_position, rect, font, font_color, bg_color, align_type);
+    ) !void {
+        try fontOperator.draw_value_in_rect(surface, z_order, value, dot_position, rect, font, font_color, bg_color, align_type);
     }
     fn draw_value(
         surface: *c_surface, //

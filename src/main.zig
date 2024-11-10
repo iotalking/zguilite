@@ -38,6 +38,7 @@ pub fn main() !void {
     var edit: guilite.c_edit = guilite.c_edit{};
     var list_box: guilite.c_list_box = guilite.c_list_box{};
     var dialog = guilite.c_dialog{};
+    var spin_box: guilite.c_spin_box = guilite.c_spin_box{};
     const ID_BTN = 1;
     const ID_DESKTOP = 2;
     const ID_LABEL = 3;
@@ -45,6 +46,7 @@ pub fn main() !void {
     const ID_KEYBOARD = 5;
     const ID_EDIT = 6;
     const ID_LIST_BOX = 7;
+    const ID_SPIN_BOX = 8;
 
     // _ = btn;
     var s_desktop_children = [_]?*const guilite.WND_TREE{
@@ -98,11 +100,25 @@ pub fn main() !void {
             .height = 60,
             .p_child_tree = null,
         },
+        &guilite.WND_TREE{
+            .p_wnd = spin_box.asWnd(), //
+            .resource_id = ID_SPIN_BOX,
+            .str = "spinbox",
+            .x = 10,
+            .y = 450,
+            .width = 100,
+            .height = 30,
+            .p_child_tree = null,
+        },
         null,
     };
     list_box.clear_item();
     try list_box.add_item("里江");
     try list_box.add_item("猿声啼不住");
+    spin_box.asWnd().m_font = guilite.c_theme.get_font(.FONT_CUSTOM1);
+    spin_box.m_bt_down.button.wnd.m_font = guilite.c_theme.get_font(.FONT_CUSTOM1);
+    spin_box.m_bt_up.button.wnd.m_font = guilite.c_theme.get_font(.FONT_CUSTOM1);
+
     std.log.debug("main list_box:{*} item0:{s}", .{ &list_box, list_box.m_item_array[0] });
 
     const usize_width = @as(usize, @as(u32, @bitCast(screen_width)));
