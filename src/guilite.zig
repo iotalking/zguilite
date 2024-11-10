@@ -29,16 +29,15 @@ pub usingnamespace word;
 pub usingnamespace resource;
 pub usingnamespace theme;
 
-const c_theme = theme.c_theme;
+const Theme = theme.Theme;
 
 pub fn init() void {
-    // _ = c_theme.add_font(theme.FONT_LIST.FONT_DEFAULT, @ptrCast(@constCast(&Lucida_Console_27.Lucida_Console_27)));
-    _ = c_theme.add_font(theme.FONT_LIST.FONT_DEFAULT, @ptrCast(@constCast(&KaiTi_33B.KaiTi_33B)));
-    _ = c_theme.add_font(theme.FONT_LIST.FONT_CUSTOM1, @ptrCast(@constCast(&Consolas_24B.Consolas_24B)));
-    _ = c_theme.add_color(theme.COLOR_LIST.COLOR_WND_FONT, api.GL_RGB(255, 255, 255));
-    _ = c_theme.add_color(theme.COLOR_LIST.COLOR_WND_NORMAL, api.GL_RGB(59, 75, 94));
-    _ = c_theme.add_color(theme.COLOR_LIST.COLOR_WND_PUSHED, api.GL_RGB(33, 42, 53));
-    _ = c_theme.add_color(theme.COLOR_LIST.COLOR_WND_FOCUS, api.GL_RGB(43, 118, 219));
-    _ = c_theme.add_color(theme.COLOR_LIST.COLOR_WND_BORDER, api.GL_RGB(46, 59, 73));
+    _ = Theme.add_font(theme.FONT_LIST.FONT_DEFAULT, @ptrCast(@constCast(&KaiTi_33B.KaiTi_33B)));
+    _ = Theme.add_font(theme.FONT_LIST.FONT_CUSTOM1, @ptrCast(@constCast(&Consolas_24B.Consolas_24B)));
+    _ = Theme.add_color(theme.COLOR_LIST.COLOR_WND_FONT, api.GL_RGB(255, 255, 255));
+    _ = Theme.add_color(theme.COLOR_LIST.COLOR_WND_NORMAL, api.GL_RGB(59, 75, 94));
+    _ = Theme.add_color(theme.COLOR_LIST.COLOR_WND_PUSHED, api.GL_RGB(33, 42, 53));
+    _ = Theme.add_color(theme.COLOR_LIST.COLOR_WND_FOCUS, api.GL_RGB(43, 118, 219));
+    _ = Theme.add_color(theme.COLOR_LIST.COLOR_WND_BORDER, api.GL_RGB(46, 59, 73));
     std.log.debug("inited", .{});
 }

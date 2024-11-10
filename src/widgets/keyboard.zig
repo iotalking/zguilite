@@ -7,10 +7,10 @@ const word = @import("../core/word.zig");
 const display = @import("../core/display.zig");
 const theme = @import("../core/theme.zig");
 const types = @import("../core/types.zig");
-const c_wnd = wnd.c_wnd;
+const Wnd = wnd.Wnd;
 const c_rect = api.c_rect;
 const c_word = word.c_word;
-const c_theme = theme.c_theme;
+const Theme = theme.Theme;
 const c_surface = display.c_surface;
 const int = types.int;
 const uint = types.uint;
@@ -40,73 +40,73 @@ pub const KEYBOARD_STATUS = enum { STATUS_UPPERCASE, STATUS_LOWERCASE };
 pub const KEYBOARD_STYLE = enum { STYLE_ALL_BOARD, STYLE_NUM_BOARD };
 pub const CLICK_STATUS = enum { CLICK_CHAR, CLICK_ENTER, CLICK_ESC };
 
-pub const c_keyboard_button = struct {
-    base: button.c_button = base: {
-        var btn = button.c_button{};
-        btn.wnd.m_class = "c_keyboard_button";
-        btn.wnd.m_vtable.pre_create_wnd = c_keyboard_button.pre_create_wnd;
+pub const KeyboardButton = struct {
+    base: button.Button = base: {
+        var btn = button.Button{};
+        btn.wnd.m_class = "KeyboardButton";
+        btn.wnd.m_vtable.pre_create_wnd = KeyboardButton.pre_create_wnd;
         break :base btn;
     },
-    pub fn asWnd(this: *c_keyboard_button) *c_wnd {
+    pub fn asWnd(this: *KeyboardButton) *Wnd {
         const w = this.base.asWnd();
         return w;
     }
-    pub fn pre_create_wnd(w: *c_wnd) !void {
-        const base: *button.c_button = @fieldParentPtr("wnd", w);
-        const this: *c_keyboard_button = @fieldParentPtr("base", base);
+    pub fn pre_create_wnd(w: *Wnd) !void {
+        const base: *button.Button = @fieldParentPtr("wnd", w);
+        const this: *KeyboardButton = @fieldParentPtr("base", base);
         _ = this;
-        try button.c_button.pre_create_wnd(w);
-        w.m_font = c_theme.get_font(.FONT_CUSTOM1);
+        try button.Button.pre_create_wnd(w);
+        w.m_font = Theme.get_font(.FONT_CUSTOM1);
     }
 };
 
-var s_button_0: c_keyboard_button = .{};
-var s_button_1: c_keyboard_button = .{};
-var s_button_2: c_keyboard_button = .{};
-var s_button_3: c_keyboard_button = .{};
-var s_button_4: c_keyboard_button = .{};
-var s_button_5: c_keyboard_button = .{};
-var s_button_6: c_keyboard_button = .{};
-var s_button_7: c_keyboard_button = .{};
-var s_button_8: c_keyboard_button = .{};
-var s_button_9: c_keyboard_button = .{};
+var s_button_0: KeyboardButton = .{};
+var s_button_1: KeyboardButton = .{};
+var s_button_2: KeyboardButton = .{};
+var s_button_3: KeyboardButton = .{};
+var s_button_4: KeyboardButton = .{};
+var s_button_5: KeyboardButton = .{};
+var s_button_6: KeyboardButton = .{};
+var s_button_7: KeyboardButton = .{};
+var s_button_8: KeyboardButton = .{};
+var s_button_9: KeyboardButton = .{};
 
-var s_button_A: c_keyboard_button = .{};
-var s_button_B: c_keyboard_button = .{};
-var s_button_C: c_keyboard_button = .{};
-var s_button_D: c_keyboard_button = .{};
-var s_button_E: c_keyboard_button = .{};
-var s_button_F: c_keyboard_button = .{};
-var s_button_G: c_keyboard_button = .{};
-var s_button_H: c_keyboard_button = .{};
-var s_button_I: c_keyboard_button = .{};
-var s_button_J: c_keyboard_button = .{};
+var s_button_A: KeyboardButton = .{};
+var s_button_B: KeyboardButton = .{};
+var s_button_C: KeyboardButton = .{};
+var s_button_D: KeyboardButton = .{};
+var s_button_E: KeyboardButton = .{};
+var s_button_F: KeyboardButton = .{};
+var s_button_G: KeyboardButton = .{};
+var s_button_H: KeyboardButton = .{};
+var s_button_I: KeyboardButton = .{};
+var s_button_J: KeyboardButton = .{};
 
-var s_button_K: c_keyboard_button = .{};
-var s_button_L: c_keyboard_button = .{};
-var s_button_M: c_keyboard_button = .{};
-var s_button_N: c_keyboard_button = .{};
-var s_button_O: c_keyboard_button = .{};
-var s_button_P: c_keyboard_button = .{};
-var s_button_Q: c_keyboard_button = .{};
-var s_button_R: c_keyboard_button = .{};
-var s_button_S: c_keyboard_button = .{};
-var s_button_T: c_keyboard_button = .{};
+var s_button_K: KeyboardButton = .{};
+var s_button_L: KeyboardButton = .{};
+var s_button_M: KeyboardButton = .{};
+var s_button_N: KeyboardButton = .{};
+var s_button_O: KeyboardButton = .{};
+var s_button_P: KeyboardButton = .{};
+var s_button_Q: KeyboardButton = .{};
+var s_button_R: KeyboardButton = .{};
+var s_button_S: KeyboardButton = .{};
+var s_button_T: KeyboardButton = .{};
 
-var s_button_U: c_keyboard_button = .{};
-var s_button_V: c_keyboard_button = .{};
-var s_button_W: c_keyboard_button = .{};
-var s_button_X: c_keyboard_button = .{};
-var s_button_Y: c_keyboard_button = .{};
-var s_button_Z: c_keyboard_button = .{};
+var s_button_U: KeyboardButton = .{};
+var s_button_V: KeyboardButton = .{};
+var s_button_W: KeyboardButton = .{};
+var s_button_X: KeyboardButton = .{};
+var s_button_Y: KeyboardButton = .{};
+var s_button_Z: KeyboardButton = .{};
 
-var s_button_dot: c_keyboard_button = .{};
-var s_button_caps: c_keyboard_button = .{};
-var s_button_space: c_keyboard_button = .{};
-var s_button_enter: c_keyboard_button = .{};
-var s_button_del: c_keyboard_button = .{};
-var s_button_esc: c_keyboard_button = .{};
-var s_button_num_switch: c_keyboard_button = .{};
+var s_button_dot: KeyboardButton = .{};
+var s_button_caps: KeyboardButton = .{};
+var s_button_space: KeyboardButton = .{};
+var s_button_enter: KeyboardButton = .{};
+var s_button_del: KeyboardButton = .{};
+var s_button_esc: KeyboardButton = .{};
+var s_button_num_switch: KeyboardButton = .{};
 
 var g_key_board_children = [_]?*const wnd.WND_TREE{
     //Row 1
@@ -430,13 +430,13 @@ var g_number_board_children = [_]?*const wnd.WND_TREE{
     &.{ .p_wnd = s_button_dot.asWnd(), .resource_id = '.', .str = ".", .x = POS_X(2), .y = POS_Y(3), .width = KEY_WIDTH, .height = KEY_HEIGHT },
     null,
 };
-pub const c_keyboard = struct {
-    wnd: c_wnd = .{
-        .m_class = "c_keyboard",
+pub const Keyboard = struct {
+    wnd: Wnd = .{
+        .m_class = "Keyboard",
         .m_vtable = .{
-            .on_paint = c_keyboard.on_paint,
-            .on_init_children = c_keyboard.on_init_children,
-            .pre_create_wnd = c_keyboard.pre_create_wnd,
+            .on_paint = Keyboard.on_paint,
+            .on_init_children = Keyboard.on_init_children,
+            .pre_create_wnd = Keyboard.pre_create_wnd,
         },
     },
     m_on_click: ?wnd.WND_CALLBACK = null,
@@ -445,17 +445,17 @@ pub const c_keyboard = struct {
     m_str: [32]u8 = std.mem.zeroes([32]u8),
     m_str_len: u32 = 0,
 
-    pub fn asWnd(this: *c_keyboard) *c_wnd {
+    pub fn asWnd(this: *Keyboard) *Wnd {
         const w = &this.wnd;
         return w;
     }
 
-    pub fn open_keyboard(this: *c_keyboard, user: *wnd.c_wnd, resource_id: u16, style: KEYBOARD_STYLE, click: ?wnd.WND_CALLBACK) !void {
+    pub fn open_keyboard(this: *Keyboard, user: *wnd.Wnd, resource_id: u16, style: KEYBOARD_STYLE, click: ?wnd.WND_CALLBACK) !void {
         // _ = this;
         // _ = user;
         // _ = resource_id;
         // _ = style;
-        const thisWnd: *c_wnd = this.asWnd();
+        const thisWnd: *Wnd = this.asWnd();
         var user_rect: c_rect = c_rect.init();
         user.get_wnd_rect(&user_rect);
         this.m_on_click = click;
@@ -475,17 +475,17 @@ pub const c_keyboard = struct {
             api.ASSERT(false);
         }
     }
-    pub fn on_init_children(this: *c_wnd) !void {
+    pub fn on_init_children(this: *Wnd) !void {
         var next = this.m_top_child;
-        const keyboard: *c_keyboard = @fieldParentPtr("wnd", this);
+        const keyboard: *Keyboard = @fieldParentPtr("wnd", this);
         while (next) |child| {
-            const btn = button.c_button.asButton(child);
+            const btn = button.Button.asButton(child);
             std.log.debug("keyboard.on_init_children.btn:{any} parent:{*}", .{ this.get_id(), btn.asWnd().m_parent.? });
-            btn.set_on_click(wnd.WND_CALLBACK.init(keyboard, &c_keyboard.on_key_clicked));
+            btn.set_on_click(wnd.WND_CALLBACK.init(keyboard, &Keyboard.on_key_clicked));
             next = child.get_next_sibling();
         }
     }
-    fn on_key_clicked(this: *c_keyboard, id: int, param: int) !void {
+    fn on_key_clicked(this: *Keyboard, id: int, param: int) !void {
         std.log.debug("keyboard.on_key_clicked(id:{any},param:{any})", .{ id, param });
         // _ = this;
         switch (id) {
@@ -507,14 +507,14 @@ pub const c_keyboard = struct {
         }
     }
 
-    fn on_caps_clicked(this: *c_keyboard, id: int, param: int) !void {
+    fn on_caps_clicked(this: *Keyboard, id: int, param: int) !void {
         _ = id;
         _ = param;
         var _wnd = this.asWnd();
         this.m_cap_status = if (this.m_cap_status == .STATUS_LOWERCASE) .STATUS_UPPERCASE else .STATUS_LOWERCASE;
         try _wnd.show_window();
     }
-    fn on_enter_clicked(this: *c_keyboard, id: int, param: int) !void {
+    fn on_enter_clicked(this: *Keyboard, id: int, param: int) !void {
         // _ = this;
         _ = id;
         _ = param;
@@ -525,7 +525,7 @@ pub const c_keyboard = struct {
             api.ASSERT(false);
         }
     }
-    fn on_esc_clicked(this: *c_keyboard, id: int, param: int) !void {
+    fn on_esc_clicked(this: *Keyboard, id: int, param: int) !void {
         // _ = this;
         _ = id;
         _ = param;
@@ -536,7 +536,7 @@ pub const c_keyboard = struct {
             api.ASSERT(false);
         }
     }
-    fn on_del_clicked(this: *c_keyboard, id: int, param: int) !void {
+    fn on_del_clicked(this: *Keyboard, id: int, param: int) !void {
         // _ = this;
         _ = id;
         _ = param;
@@ -552,7 +552,7 @@ pub const c_keyboard = struct {
             api.ASSERT(false);
         }
     }
-    fn on_char_clicked(this: *c_keyboard, _id: int, param: int) !void {
+    fn on_char_clicked(this: *Keyboard, _id: int, param: int) !void {
         // _ = this;
         var id = _id;
         _ = param;
@@ -583,16 +583,16 @@ pub const c_keyboard = struct {
         }
     }
 
-    pub fn get_str(this: *const c_keyboard) []const u8 {
+    pub fn get_str(this: *const Keyboard) []const u8 {
         return &this.m_str;
     }
-    fn pre_create_wnd(w: *c_wnd) !void {
-        const this: *c_keyboard = @fieldParentPtr("wnd", w);
-        w.m_font = c_theme.get_font(.FONT_CUSTOM1);
+    fn pre_create_wnd(w: *Wnd) !void {
+        const this: *Keyboard = @fieldParentPtr("wnd", w);
+        w.m_font = Theme.get_font(.FONT_CUSTOM1);
         _ = this;
     }
-    fn on_paint(w: *c_wnd) !void {
-        const this: *c_keyboard = @fieldParentPtr("wnd", w);
+    fn on_paint(w: *Wnd) !void {
+        const this: *Keyboard = @fieldParentPtr("wnd", w);
         const _w = this.asWnd();
         var rect = c_rect.init();
         _w.get_screen_rect(&rect);
@@ -600,7 +600,7 @@ pub const c_keyboard = struct {
             m_surface.fill_rect(rect, api.GL_RGB(0, 0, 0), _w.m_z_order);
         }
     }
-    pub fn close_keyboard(this: *c_keyboard) void {
+    pub fn close_keyboard(this: *Keyboard) void {
         const w = this.asWnd();
         w.disconnect();
         if (w.m_surface) |surface| {

@@ -2,27 +2,15 @@ const std = @import("std");
 const guilite = @import("./guilite.zig");
 const _3d = @import("./3d.zig");
 const x11 = @import("./x11.zig");
+const int = c_int;
 pub fn main() !void {
     guilite.init();
 
-    // const color_bytes = 4;
-    // const screen_width: int = 240;
-    // const screen_height: int = 320;
     const screen_width: int = 1024;
     const screen_height: int = 800;
     var color_bytes: int = 0;
-    // const devfb = try get_dev_fb("/dev/fb0", &screen_width, &screen_height, &color_bytes);
-    // if (devfb == null) {
-    //     return error.devfb;
-    // }
-    // std.log.debug("screen:({}x{})*{} devfb:{*}", .{ screen_width, screen_height, color_bytes, devfb });
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    // const mem_fb = try allocator.alloc(u8, @as(usize, @as(u32, @bitCast(screen_width * screen_height * color_bytes))));
-    // defer {
-    //     allocator.free(mem_fb);
-    //     _ = gpa.deinit();
-    // }
 
     const i16_height: i16 = @truncate(screen_height);
     const i16_width: i16 = @truncate(screen_width);
@@ -31,14 +19,13 @@ pub fn main() !void {
 
     const fbuf: [*]u8 = frameBuffer.ptr;
 
-    // const fbuf: [*]u8 = @ptrCast(mem_fb);
-    var desktop = c_desktop{};
-    var btn: guilite.c_button = guilite.c_button{};
-    var label: guilite.c_label = guilite.c_label{};
-    var edit: guilite.c_edit = guilite.c_edit{};
-    var list_box: guilite.c_list_box = guilite.c_list_box{};
-    var dialog = guilite.c_dialog{};
-    var spin_box: guilite.c_spin_box = guilite.c_spin_box{};
+    var desktop = Desktop{};
+    var btn: guilite.Button = guilite.Button{};
+    var label: guilite.Label = guilite.Label{};
+    var edit: guilite.Edit = guilite.Edit{};
+    var list_box: guilite.ListBox = guilite.ListBox{};
+    var dialog = guilite.Dialog{};
+    var spin_box: guilite.SpinBox = guilite.SpinBox{};
     const ID_BTN = 1;
     const ID_DESKTOP = 2;
     const ID_LABEL = 3;
@@ -49,7 +36,7 @@ pub fn main() !void {
     const ID_SPIN_BOX = 8;
     // _ = btn;
     var s_desktop_children = [_]?*const guilite.WND_TREE{
-        &guilite.WND_TREE{
+        &.{
             .p_wnd = dialog.asWnd(), //
             .resource_id = ID_DIALOG,
             .str = "千里辞",
@@ -59,7 +46,7 @@ pub fn main() !void {
             .height = 80,
             .p_child_tree = null,
         },
-        &guilite.WND_TREE{
+        &.{
             .p_wnd = btn.asWnd(), //
             .resource_id = ID_BTN,
             .str = "吴朝辞",
@@ -69,7 +56,7 @@ pub fn main() !void {
             .height = 80,
             .p_child_tree = null,
         },
-        &guilite.WND_TREE{
+        &.{
             .p_wnd = label.asWnd(), //
             .resource_id = ID_LABEL,
             .str = "123朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
@@ -79,7 +66,7 @@ pub fn main() !void {
             .height = 80,
             .p_child_tree = null,
         },
-        &guilite.WND_TREE{
+        &.{
             .p_wnd = edit.asWnd(), //
             .resource_id = ID_EDIT,
             .str = "edit",
@@ -89,7 +76,7 @@ pub fn main() !void {
             .height = 80,
             .p_child_tree = null,
         },
-        &guilite.WND_TREE{
+        &.{
             .p_wnd = list_box.asWnd(), //
             .resource_id = ID_LIST_BOX,
             .str = "listbox",
@@ -100,12 +87,12 @@ pub fn main() !void {
             .p_child_tree = null,
             .user_data = @ptrCast(&guilite.ListBoxData{ .items = &[_][]const u8{ "item1", "item2" }, .selected = 1 }),
         },
-        &guilite.WND_TREE{
+        &.{
             .p_wnd = spin_box.asWnd(), //
             .resource_id = ID_SPIN_BOX,
             .str = "spinbox",
             .x = 10,
-            .y = 450,
+            .y = 500,
             .width = 100,
             .height = 30,
             .p_child_tree = null,
@@ -113,12 +100,9 @@ pub fn main() !void {
         null,
     };
 
-    // list_box.clear_item();
-    // try list_box.add_item("里江");
-    // try list_box.add_item("猿声啼不住");
-    spin_box.asWnd().m_font = guilite.c_theme.get_font(.FONT_CUSTOM1);
-    spin_box.m_bt_down.button.wnd.m_font = guilite.c_theme.get_font(.FONT_CUSTOM1);
-    spin_box.m_bt_up.button.wnd.m_font = guilite.c_theme.get_font(.FONT_CUSTOM1);
+    spin_box.asWnd().m_font = guilite.Theme.get_font(.FONT_CUSTOM1);
+    spin_box.m_bt_down.button.wnd.m_font = guilite.Theme.get_font(.FONT_CUSTOM1);
+    spin_box.m_bt_up.button.wnd.m_font = guilite.Theme.get_font(.FONT_CUSTOM1);
 
     std.log.debug("main list_box:{*} item0:{s}", .{ &list_box, list_box.m_item_array[0] });
 
@@ -148,10 +132,10 @@ pub fn main() !void {
 
     // try dialog.open_dialog(true);
 
-    var keyboard = guilite.c_keyboard{};
+    var keyboard = guilite.Keyboard{};
 
     _ = try keyboard.open_keyboard(edit.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD, guilite.WND_CALLBACK.init(&keyboard, &struct {
-        fn onclick(kb: *guilite.c_keyboard, id: int, param: int) void {
+        fn onclick(kb: *guilite.Keyboard, id: int, param: int) void {
             std.log.debug("onkbclick.onclick keyboard:{*}", .{kb});
             // _ = this;
             _ = id;
@@ -170,90 +154,16 @@ pub fn main() !void {
     try x11.appLoop();
 }
 
-const A = struct {
-    fn Hello(a: *A, b: u32, c: u32) void {
-        std.log.err("AAAA:{*} b:{d} c:{d}", .{ a, b, c });
-    }
-};
-test "test [*]65" {
-    var aa = A{};
-
-    const f: *const fn (*anyopaque, u32) void = @ptrCast(&A.Hello);
-    @call(.auto, f, .{ &aa, 2 });
-    var a: [3][1]f64 = .{ .{0.1}, .{0.2}, .{0.3} };
-    std.log.err("a:{any}", .{a});
-    const b: [*]f64 = @ptrCast(&a[0][0]);
-    for (0..3) |i| {
-        std.log.err("b:{any}", .{b[i]});
-    }
-}
-const c_desktop = struct {
-    wnd: guilite.c_wnd = .{
-        .m_class = "c_desktop",
+const Desktop = struct {
+    wnd: guilite.Wnd = .{
+        .m_class = "Desktop",
     },
-    pub fn asWnd(this: *c_desktop) *guilite.c_wnd {
-        this.wnd.m_vtable.on_paint = c_desktop.on_paint;
+    pub fn asWnd(this: *Desktop) *guilite.Wnd {
+        this.wnd.m_vtable.on_paint = Desktop.on_paint;
         return &this.wnd;
     }
-    fn on_paint(this: *guilite.c_wnd) !void {
+    fn on_paint(this: *guilite.Wnd) !void {
         _ = this;
-        std.log.debug("c_desktop on paint", .{});
+        std.log.debug("Desktop on paint", .{});
     }
 };
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
-
-const linux = @cImport({
-    @cInclude("stdlib.h");
-    @cInclude("string.h");
-    @cInclude("stdio.h");
-    @cInclude("fcntl.h");
-    @cInclude("sys/ioctl.h");
-    @cInclude("sys/shm.h");
-    @cInclude("unistd.h");
-    @cInclude("sys/mman.h");
-    @cInclude("linux/fb.h");
-    @cInclude("errno.h");
-    @cInclude("sys/stat.h");
-});
-
-const printf = linux.printf;
-const int = c_int;
-fn get_dev_fb(path: []const u8, width: *int, height: *int, color_bytes: *int) !?*anyopaque {
-    const fd = linux.open(@ptrCast(path), linux.O_RDWR);
-    if (0 > fd) {
-        return error.open_fb;
-    }
-
-    var vinfo: linux.fb_var_screeninfo = undefined;
-    if (0 > linux.ioctl(fd, linux.FBIOGET_VSCREENINFO, &vinfo)) {
-        // printf("get fb info failed!\n");
-        // _exit(-1);
-        return error.ioctl_screen_info;
-    }
-
-    width.* = @bitCast(vinfo.xres);
-    height.* = @bitCast(vinfo.yres);
-    const bits_per_pixel: int = @bitCast(vinfo.bits_per_pixel);
-    color_bytes.* = @divExact(bits_per_pixel, 8);
-    const ucolor_bytes: c_uint = @bitCast(color_bytes.*);
-    if (width.* & 0x3 != 0) {
-        _ = printf("Warning: vinfo.xres should be divided by 4!\nChange your display resolution to meet the rule.\n");
-    }
-    _ = printf("vinfo.xres=%d\n", vinfo.xres);
-    _ = printf("vinfo.yres=%d\n", vinfo.yres);
-    _ = printf("vinfo.bits_per_pixel=%d\n", vinfo.bits_per_pixel);
-
-    const fbp = linux.mmap(@ptrFromInt(0), (vinfo.xres * vinfo.yres * ucolor_bytes), linux.PROT_READ | linux.PROT_WRITE, linux.MAP_SHARED, fd, 0);
-    if (fbp == null) {
-        _ = printf("mmap fb failed!\n");
-        // linux._exit(-1);
-        return error.mmap_fb;
-    }
-    _ = linux.memset(fbp, 0, (vinfo.xres * vinfo.yres * ucolor_bytes));
-    return fbp;
-}

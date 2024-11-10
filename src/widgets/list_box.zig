@@ -7,10 +7,10 @@ const display = @import("../core/display.zig");
 const theme = @import("../core/theme.zig");
 const types = @import("../core/types.zig");
 const keyboard = @import("./keyboard.zig");
-const c_wnd = wnd.c_wnd;
+const Wnd = wnd.Wnd;
 const c_rect = api.c_rect;
 const c_word = word.c_word;
-const c_theme = theme.c_theme;
+const Theme = theme.Theme;
 const int = types.int;
 const uint = types.uint;
 
@@ -21,14 +21,14 @@ pub const ListBoxData = struct {
     selected: usize,
 };
 
-pub const c_list_box = struct {
-    wnd: wnd.c_wnd = .{ .m_class = "c_list_box", .m_vtable = .{
-        .on_paint = c_list_box.on_paint,
-        .on_focus = c_list_box.on_focus,
-        .on_kill_focus = c_list_box.on_kill_focus,
-        .pre_create_wnd = c_list_box.pre_create_wnd,
-        .on_touch = c_list_box.on_touch,
-        .on_navigate = c_list_box.on_navigate,
+pub const ListBox = struct {
+    wnd: wnd.Wnd = .{ .m_class = "ListBox", .m_vtable = .{
+        .on_paint = ListBox.on_paint,
+        .on_focus = ListBox.on_focus,
+        .on_kill_focus = ListBox.on_kill_focus,
+        .pre_create_wnd = ListBox.pre_create_wnd,
+        .on_touch = ListBox.on_touch,
+        .on_navigate = ListBox.on_navigate,
     } },
     m_selected_item: u16 = 0,
     m_item_total: u16 = 0,
@@ -37,14 +37,14 @@ pub const c_list_box = struct {
     m_list_screen_rect: c_rect = c_rect.init(), //rect relative to physical screen(frame buffer)
     on_change: ?wnd.WND_CALLBACK = null,
 
-    pub fn asWnd(this: *c_list_box) *c_wnd {
+    pub fn asWnd(this: *ListBox) *Wnd {
         return &this.wnd;
     }
-    fn pre_create_wnd(thisWnd: *c_wnd) !void {
-        const this: *c_list_box = @fieldParentPtr("wnd", thisWnd);
+    fn pre_create_wnd(thisWnd: *Wnd) !void {
+        const this: *ListBox = @fieldParentPtr("wnd", thisWnd);
         thisWnd.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
-        thisWnd.m_font = c_theme.get_font(.FONT_DEFAULT);
-        thisWnd.m_font_color = c_theme.get_color(.COLOR_WND_FONT);
+        thisWnd.m_font = Theme.get_font(.FONT_DEFAULT);
+        thisWnd.m_font_color = Theme.get_color(.COLOR_WND_FONT);
         thisWnd.m_status = .STATUS_PUSHED;
 
         if (thisWnd.m_user_data) |userData| {
@@ -55,8 +55,8 @@ pub const c_list_box = struct {
             this.select_item(data.selected);
         }
     }
-    fn on_paint(thisWnd: *c_wnd) !void {
-        const this: *c_list_box = @fieldParentPtr("wnd", thisWnd);
+    fn on_paint(thisWnd: *Wnd) !void {
+        const this: *ListBox = @fieldParentPtr("wnd", thisWnd);
 
         var rect = c_rect.init();
         thisWnd.get_screen_rect(&rect);
@@ -71,9 +71,9 @@ pub const c_list_box = struct {
                             thisWnd.m_z_order = parent.m_z_order;
                             thisWnd.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
                         }
-                        surface.draw_rect(rect, c_theme.get_color(.COLOR_WND_NORMAL), thisWnd.m_z_order, 1);
-                        c_word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, thisWnd.m_font_color, c_theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
-                        std.log.debug("c_list_box drawed {s} {*}", .{ this.m_item_array[0], this });
+                        surface.draw_rect(rect, Theme.get_color(.COLOR_WND_NORMAL), thisWnd.m_z_order, 1);
+                        c_word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                        std.log.debug("ListBox drawed {s} {*}", .{ this.m_item_array[0], this });
                     },
                     .STATUS_FOCUSED => {
                         if (thisWnd.m_z_order > parent.m_z_order) {
@@ -81,11 +81,11 @@ pub const c_list_box = struct {
                             thisWnd.m_z_order = parent.m_z_order;
                             thisWnd.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
                         }
-                        surface.draw_rect(rect, c_theme.get_color(.COLOR_WND_FOCUS), thisWnd.m_z_order, 1);
-                        c_word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, thisWnd.m_font_color, c_theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                        surface.draw_rect(rect, Theme.get_color(.COLOR_WND_FOCUS), thisWnd.m_z_order, 1);
+                        c_word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                     },
                     .STATUS_PUSHED => {
-                        surface.fill_rect(rect, c_theme.get_color(.COLOR_WND_PUSHED), thisWnd.m_z_order);
+                        surface.fill_rect(rect, Theme.get_color(.COLOR_WND_PUSHED), thisWnd.m_z_order);
                         c_word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, api.GL_RGB(2, 124, 165), api.GL_ARGB(0, 0, 0, 0), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                         //draw list
                         if (this.m_item_total > 0) {
@@ -106,7 +106,7 @@ pub const c_list_box = struct {
             api.ASSERT(false);
         }
     }
-    fn show_list(this: *c_list_box) void {
+    fn show_list(this: *ListBox) void {
         //draw all items
         var tmp_rect = c_rect.init();
         if (this.wnd.m_surface) |surface| {
@@ -118,8 +118,8 @@ pub const c_list_box = struct {
                 tmp_rect.m_bottom = tmp_rect.m_top + ITEM_HEIGHT;
 
                 if (this.m_selected_item == i) {
-                    surface.fill_rect(tmp_rect, c_theme.get_color(.COLOR_WND_FOCUS), this.wnd.m_z_order);
-                    c_word.draw_string_in_rect(surface, this.wnd.m_z_order, this.m_item_array[i], tmp_rect, this.wnd.m_font, this.wnd.m_font_color, c_theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                    surface.fill_rect(tmp_rect, Theme.get_color(.COLOR_WND_FOCUS), this.wnd.m_z_order);
+                    c_word.draw_string_in_rect(surface, this.wnd.m_z_order, this.m_item_array[i], tmp_rect, this.wnd.m_font, this.wnd.m_font_color, Theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                 } else {
                     surface.fill_rect(tmp_rect, api.GL_RGB(17, 17, 17), this.wnd.m_z_order);
                     c_word.draw_string_in_rect(surface, this.wnd.m_z_order, this.m_item_array[i], tmp_rect, this.wnd.m_font, this.wnd.m_font_color, api.GL_RGB(17, 17, 17), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
@@ -127,16 +127,16 @@ pub const c_list_box = struct {
             }
         }
     }
-    fn on_focus(thisWnd: *c_wnd) !void {
+    fn on_focus(thisWnd: *Wnd) !void {
         thisWnd.m_status = .STATUS_FOCUSED;
         try thisWnd.on_paint();
     }
-    fn on_kill_focus(thisWnd: *c_wnd) !void {
+    fn on_kill_focus(thisWnd: *Wnd) !void {
         thisWnd.m_status = .STATUS_NORMAL;
         try thisWnd.on_paint();
     }
-    fn on_navigate(thisWnd: *c_wnd, key: wnd.NAVIGATION_KEY) !void {
-        const this: *c_list_box = @fieldParentPtr("wnd", thisWnd);
+    fn on_navigate(thisWnd: *Wnd, key: wnd.NAVIGATION_KEY) !void {
+        const this: *ListBox = @fieldParentPtr("wnd", thisWnd);
         if (thisWnd.m_parent) |_| {
             switch (key) {
                 .NAV_ENTER => {
@@ -167,15 +167,15 @@ pub const c_list_box = struct {
             api.ASSERT(false);
         }
     }
-    fn on_touch(thisWnd: *c_wnd, x: int, y: int, action: wnd.TOUCH_ACTION) !void {
-        const this: *c_list_box = @fieldParentPtr("wnd", thisWnd);
+    fn on_touch(thisWnd: *Wnd, x: int, y: int, action: wnd.TOUCH_ACTION) !void {
+        const this: *ListBox = @fieldParentPtr("wnd", thisWnd);
         if (action == .TOUCH_DOWN) {
             try this.on_touch_down(x, y);
         } else {
             try this.on_touch_up(x, y);
         }
     }
-    fn on_touch_down(this: *c_list_box, x: int, y: int) !void {
+    fn on_touch_down(this: *ListBox, x: int, y: int) !void {
         if (this.wnd.m_parent) |parent| {
             if (this.wnd.m_wnd_rect.pt_in_rect(x, y)) { //click base
                 if (.STATUS_NORMAL == this.wnd.m_status) {
@@ -194,7 +194,7 @@ pub const c_list_box = struct {
             }
         }
     }
-    fn on_touch_up(this: *c_list_box, x: int, y: int) !void {
+    fn on_touch_up(this: *ListBox, x: int, y: int) !void {
         if (.STATUS_FOCUSED == this.wnd.m_status) {
             this.wnd.m_status = .STATUS_PUSHED;
             try this.wnd.on_paint();
@@ -214,35 +214,35 @@ pub const c_list_box = struct {
             }
         }
     }
-    fn select_item(this: *c_list_box, index: usize) void {
+    fn select_item(this: *ListBox, index: usize) void {
         if (index < 0 or index >= this.m_item_total) {
             api.ASSERT(false);
         }
         this.m_selected_item = @as(u16, @truncate(index));
     }
 
-    fn set_on_change(this: *c_list_box, on_change: wnd.WND_CALLBACK) void {
+    fn set_on_change(this: *ListBox, on_change: wnd.WND_CALLBACK) void {
         this.on_change = on_change;
     }
-    fn get_item_count(this: *c_list_box) usize {
+    fn get_item_count(this: *ListBox) usize {
         return this.m_item_total;
     }
 
-    fn update_list_size(this: *c_list_box) void {
+    fn update_list_size(this: *ListBox) void {
         this.wnd.get_screen_rect(&this.m_list_screen_rect);
         this.m_list_screen_rect.m_top = this.m_list_screen_rect.m_bottom + 1;
         this.m_list_screen_rect.m_bottom = this.m_list_screen_rect.m_top + this.m_item_total * ITEM_HEIGHT;
     }
-    pub fn add_item(this: *c_list_box, str: []const u8) !void {
+    pub fn add_item(this: *ListBox, str: []const u8) !void {
         if (this.m_item_total >= MAX_ITEM_NUM) {
             return error.out_of_max_item_num;
         }
         this.m_item_array[this.m_item_total] = str;
-        std.log.debug("c_list_box add_item str:{*}", .{this.m_item_array[this.m_item_total].ptr});
+        std.log.debug("ListBox add_item str:{*}", .{this.m_item_array[this.m_item_total].ptr});
         this.m_item_total += 1;
         this.update_list_size();
     }
-    pub fn clear_item(this: *c_list_box) void {
+    pub fn clear_item(this: *ListBox) void {
         this.m_selected_item = 0;
         this.m_item_total = 0;
         @memset(&this.m_item_array, &.{});

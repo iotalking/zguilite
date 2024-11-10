@@ -44,7 +44,7 @@ pub const COLOR_LIST = enum(u16) {
     COLOR_MAX,
 };
 
-pub const c_theme = struct {
+pub const Theme = struct {
     // public:
     pub fn add_font(index: FONT_LIST, font: *anyopaque) types.int {
         std.log.debug("theme.add_font(index:{} font:{})", .{ index, font });
@@ -53,7 +53,7 @@ pub const c_theme = struct {
             api.ASSERT(false);
             return -1;
         }
-        c_theme.s_font_map[uIdx] = font;
+        Theme.s_font_map[uIdx] = font;
         return 0;
     }
 
@@ -64,10 +64,10 @@ pub const c_theme = struct {
             return null;
         }
         std.log.debug("theme.get_font index:{any}", .{index});
-        return c_theme.s_font_map[uindex];
+        return Theme.s_font_map[uindex];
     }
 
-    pub fn add_image(this: c_theme, index: IMAGE_LIST, image_info: *anyopaque) types.int {
+    pub fn add_image(this: Theme, index: IMAGE_LIST, image_info: *anyopaque) types.int {
         if (index >= .IMAGE_MAX) {
             api.ASSERT(false);
             return -1;
@@ -91,7 +91,7 @@ pub const c_theme = struct {
             api.ASSERT(false);
             return -1;
         }
-        c_theme.s_color_map[uidx] = color;
+        Theme.s_color_map[uidx] = color;
         return 0;
     }
 

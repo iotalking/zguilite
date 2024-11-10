@@ -7,19 +7,19 @@ const display = @import("../core/display.zig");
 const theme = @import("../core/theme.zig");
 const types = @import("../core/types.zig");
 const button = @import("./button.zig");
-const c_wnd = wnd.c_wnd;
+const Wnd = wnd.Wnd;
 const c_rect = api.c_rect;
 const c_word = word.c_word;
-const c_theme = theme.c_theme;
+const Theme = theme.Theme;
 const int = types.int;
 const uint = types.uint;
 
 const ID_BT_ARROW_UP = 0x1111;
 const ID_BT_ARROW_DOWN = 0x2222;
-pub const c_spin_box = struct {
-    wnd: wnd.c_wnd = .{ .m_class = "c_spin_box", .m_vtable = .{
-        .on_paint = c_spin_box.on_paint,
-        .pre_create_wnd = c_spin_box.pre_create_wnd,
+pub const SpinBox = struct {
+    wnd: wnd.Wnd = .{ .m_class = "SpinBox", .m_vtable = .{
+        .on_paint = SpinBox.on_paint,
+        .pre_create_wnd = SpinBox.pre_create_wnd,
     } },
     m_cur_value: u16 = 0,
     m_value: u16 = 0,
@@ -31,48 +31,48 @@ pub const c_spin_box = struct {
     m_bt_down: c_spin_button = .{},
     on_change: ?wnd.WND_CALLBACK = null,
 
-    pub fn asWnd(this: *c_spin_box) *c_wnd {
+    pub fn asWnd(this: *SpinBox) *Wnd {
         return &this.wnd;
     }
 
-    fn get_value(this: *c_spin_box) u16 {
+    fn get_value(this: *SpinBox) u16 {
         return this.m_value;
     }
-    fn set_value(this: *c_spin_box, value: u16) void {
+    fn set_value(this: *SpinBox, value: u16) void {
         this.m_value = value;
         this.m_cur_value = value;
     }
-    fn set_max_min(this: *c_spin_box, max: u16, min: u16) void {
+    fn set_max_min(this: *SpinBox, max: u16, min: u16) void {
         this.m_max = max;
         this.m_min = min;
     }
-    fn set_step(this: *c_spin_box, step: u16) void {
+    fn set_step(this: *SpinBox, step: u16) void {
         this.m_step = step;
     }
-    fn get_min(this: *c_spin_box) u16 {
+    fn get_min(this: *SpinBox) u16 {
         return this.m_min;
     }
-    fn get_max(this: *c_spin_box) u16 {
+    fn get_max(this: *SpinBox) u16 {
         return this.m_max;
     }
-    fn get_step(this: *c_spin_box) u16 {
+    fn get_step(this: *SpinBox) u16 {
         return this.m_step;
     }
-    fn set_value_digit(this: *c_spin_box, digit: u16) void {
+    fn set_value_digit(this: *SpinBox, digit: u16) void {
         this.m_digit = digit;
     }
-    fn get_value_digit(this: *c_spin_box) u16 {
+    fn get_value_digit(this: *SpinBox) u16 {
         return this.m_digit;
     }
-    fn set_on_change(this: *c_spin_box, on_change: wnd.WND_CALLBACK) void {
+    fn set_on_change(this: *SpinBox, on_change: wnd.WND_CALLBACK) void {
         this.on_change = on_change;
     }
 
-    fn pre_create_wnd(thisWnd: *c_wnd) !void {
-        var this: *c_spin_box = @fieldParentPtr("wnd", thisWnd);
+    fn pre_create_wnd(thisWnd: *Wnd) !void {
+        var this: *SpinBox = @fieldParentPtr("wnd", thisWnd);
         thisWnd.m_attr = @enumFromInt(wnd.ATTR_VISIBLE);
-        thisWnd.m_font = c_theme.get_font(.FONT_DEFAULT);
-        thisWnd.m_font_color = c_theme.get_color(.COLOR_WND_FONT);
+        thisWnd.m_font = Theme.get_font(.FONT_DEFAULT);
+        thisWnd.m_font_color = Theme.get_color(.COLOR_WND_FONT);
 
         var rect = c_rect.init();
         thisWnd.get_screen_rect(&rect);
@@ -86,8 +86,8 @@ pub const c_spin_box = struct {
         try this.m_bt_up.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_UP, "+", x, y, @truncate(@divFloor(rect.width(), 3)), @truncate(@divFloor(rect.height(), 3)), null);
         try this.m_bt_up.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_UP, "-", x, y2, @truncate(@divFloor(rect.width(), 3)), @truncate(@divFloor(rect.height(), 3)), null);
     }
-    fn on_paint(thisWnd: *c_wnd) !void {
-        // const this: *c_spin_box = @fieldParentPtr("wnd", thisWnd);
+    fn on_paint(thisWnd: *Wnd) !void {
+        // const this: *SpinBox = @fieldParentPtr("wnd", thisWnd);
 
         var rect = c_rect.init();
         thisWnd.get_screen_rect(&rect);
@@ -95,8 +95,8 @@ pub const c_spin_box = struct {
 
         if (thisWnd.m_parent) |_| {
             if (thisWnd.m_surface) |surface| {
-                surface.draw_rect(rect, c_theme.get_color(.COLOR_WND_NORMAL), thisWnd.m_z_order, 1);
-                // c_word.draw_value_in_rect(surface, thisWnd.m_z_order, this.m_cur_value, this.m_digit, rect, thisWnd.m_font.?, thisWnd.m_font_color, c_theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER) catch {};
+                surface.draw_rect(rect, Theme.get_color(.COLOR_WND_NORMAL), thisWnd.m_z_order, 1);
+                // c_word.draw_value_in_rect(surface, thisWnd.m_z_order, this.m_cur_value, this.m_digit, rect, thisWnd.m_font.?, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER) catch {};
             } else {
                 api.ASSERT(false);
             }
@@ -105,7 +105,7 @@ pub const c_spin_box = struct {
         }
     }
 
-    fn on_arrow_up_bt_click(this: *c_spin_box) !void {
+    fn on_arrow_up_bt_click(this: *SpinBox) !void {
         // _ = this;
         if (this.m_cur_value + this.m_step > this.m_max) {
             return;
@@ -116,7 +116,7 @@ pub const c_spin_box = struct {
         }
         try this.wnd.on_paint();
     }
-    fn on_arrow_down_bt_click(this: *c_spin_box) !void {
+    fn on_arrow_down_bt_click(this: *SpinBox) !void {
         // _ = this;
         if (this.m_cur_value - this.m_step < this.m_min) {
             return;
@@ -130,23 +130,23 @@ pub const c_spin_box = struct {
 };
 
 pub const c_spin_button = struct {
-    button: button.c_button = btn: {
-        var _btn = button.c_button{};
+    button: button.Button = btn: {
+        var _btn = button.Button{};
         _btn.wnd.m_class = "c_spin_button";
         _btn.wnd.m_vtable.on_touch = c_spin_button.on_touch;
         break :btn _btn;
     },
-    m_spin_box: *c_spin_box = undefined,
+    m_spin_box: *SpinBox = undefined,
 
-    fn init(spinbox: *c_spin_box) c_spin_button {
+    fn init(spinbox: *SpinBox) c_spin_button {
         const this = c_spin_button{ .m_spin_box = spinbox };
         return this;
     }
-    pub fn asWnd(this: *c_spin_button) *c_wnd {
+    pub fn asWnd(this: *c_spin_button) *Wnd {
         return this.button.asWnd();
     }
-    fn on_touch(thisWnd: *c_wnd, x: int, y: int, action: wnd.TOUCH_ACTION) !void {
-        const _button: *button.c_button = @fieldParentPtr("wnd", thisWnd);
+    fn on_touch(thisWnd: *Wnd, x: int, y: int, action: wnd.TOUCH_ACTION) !void {
+        const _button: *button.Button = @fieldParentPtr("wnd", thisWnd);
         const this: *c_spin_button = @fieldParentPtr("button", _button);
         if (action == .TOUCH_UP) {
             if (thisWnd.m_id == ID_BT_ARROW_UP) {
@@ -155,6 +155,6 @@ pub const c_spin_button = struct {
                 try this.m_spin_box.on_arrow_down_bt_click();
             }
         }
-        try button.c_button.on_touch(thisWnd, x, y, action);
+        try button.Button.on_touch(thisWnd, x, y, action);
     }
 };
