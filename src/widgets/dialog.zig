@@ -85,12 +85,12 @@ pub const c_dialog = struct {
         return null;
     }
     // protected:
-    fn pre_create_wnd(w: *c_wnd) void {
+    fn pre_create_wnd(w: *c_wnd) !void {
         w.m_attr = .ATTR_UNKNOWN; // no focus/visible
         w.m_z_order = @intFromEnum(display.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1);
         w.m_bg_color = api.GL_RGB(33, 42, 53);
     }
-    fn on_paint(w: *c_wnd) void {
+    fn on_paint(w: *c_wnd) !void {
         var rect: c_rect = c_rect.init();
         w.get_screen_rect(&rect);
         w.m_surface.?.fill_rect(rect, w.m_bg_color, w.m_z_order);

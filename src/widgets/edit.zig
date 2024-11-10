@@ -45,15 +45,15 @@ pub const c_edit = struct {
     fn set_keyboard_style(this: *c_edit, kb_sytle: keyboard.KEYBOARD_STYLE) void {
         this.m_kb_style = kb_sytle;
     }
-    fn on_touch(w: *c_wnd, x: int, y: int, action: wnd.TOUCH_ACTION) void {
+    fn on_touch(w: *c_wnd, x: int, y: int, action: wnd.TOUCH_ACTION) !void {
         const this: *c_edit = @fieldParentPtr("wnd", w);
         if (action == .TOUCH_DOWN) {
-            this.on_touch_down(x, y);
+            try this.on_touch_down(x, y);
         } else {
-            this.on_touch_up(x, y);
+            try this.on_touch_up(x, y);
         }
     }
-    fn on_touch_down(this: *c_edit, x: int, y: int) void {
+    fn on_touch_down(this: *c_edit, x: int, y: int) !void {
         var kb_rect_relate_2_edit_parent: c_rect = undefined;
         const keyboardWnd = s_keyboard.asWnd();
         keyboardWnd.get_wnd_rect(&kb_rect_relate_2_edit_parent);
@@ -67,61 +67,61 @@ pub const c_edit = struct {
         if (thisWnd.m_wnd_rect.pt_in_rect(x, y)) { //click edit box
             if (.STATUS_NORMAL == thisWnd.m_status) {
                 if (thisWnd.m_parent) |m_parent| {
-                    _ = m_parent.set_child_focus(thisWnd);
+                    _ = try m_parent.set_child_focus(thisWnd);
                 }
             }
         } else if (kb_rect_relate_2_edit_parent.pt_in_rect(x, y)) { //click key board
             // 	c_wnd::on_touch(x, y, TOUCH_DOWN);
-            thisWnd.on_touch(x, y, .TOUCH_DOWN);
+            try thisWnd.on_touch(x, y, .TOUCH_DOWN);
         } else {
             if (.STATUS_PUSHED == thisWnd.m_status) {
                 thisWnd.m_status = .STATUS_FOCUSED;
-                thisWnd.on_paint();
+                try thisWnd.on_paint();
             }
         }
     }
-    fn on_touch_up(this: *c_edit, x: int, y: int) void {
+    fn on_touch_up(this: *c_edit, x: int, y: int) !void {
         const thisWnd = &this.wnd;
         if (.STATUS_FOCUSED == thisWnd.m_status) {
             thisWnd.m_status = .STATUS_PUSHED;
-            thisWnd.on_paint();
+            try thisWnd.on_paint();
         } else if (.STATUS_PUSHED == thisWnd.m_status) {
             if (thisWnd.m_wnd_rect.pt_in_rect(x, y)) { //click edit box
                 thisWnd.m_status = .STATUS_FOCUSED;
-                thisWnd.on_paint();
+                try thisWnd.on_paint();
             } else {
-                thisWnd.on_touch(x, y, .TOUCH_UP);
+                try thisWnd.on_touch(x, y, .TOUCH_UP);
             }
         }
     }
-    fn on_navigate(w: *c_wnd, key: wnd.NAVIGATION_KEY) void {
+    fn on_navigate(w: *c_wnd, key: wnd.NAVIGATION_KEY) !void {
         switch (key) {
             .NAV_ENTER => {
                 if (w.m_status == .STATUS_PUSHED) {
-                    s_keyboard.asWnd().on_navigate(key);
+                    try s_keyboard.asWnd().on_navigate(key);
                 } else {
-                    w.on_touch(w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_DOWN);
-                    w.on_touch(w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_UP);
+                    try w.on_touch(w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_DOWN);
+                    try w.on_touch(w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_UP);
                 }
             },
             .NAV_BACKWARD, .NAV_FORWARD => {
                 if (w.m_status == .STATUS_PUSHED) {
-                    s_keyboard.asWnd().on_navigate(key);
+                    try s_keyboard.asWnd().on_navigate(key);
                 } else {
-                    w.on_navigate(key);
+                    try w.on_navigate(key);
                 }
             },
         }
     }
-    fn on_kill_focus(this: *c_wnd) void {
+    fn on_kill_focus(this: *c_wnd) !void {
         this.m_status = .STATUS_NORMAL;
-        this.on_paint();
+        try this.on_paint();
     }
-    fn on_focus(this: *c_wnd) void {
+    fn on_focus(this: *c_wnd) !void {
         this.m_status = .STATUS_FOCUSED;
-        this.on_paint();
+        try this.on_paint();
     }
-    fn on_paint(this: *c_wnd) void {
+    fn on_paint(this: *c_wnd) !void {
         const edit: *c_edit = @fieldParentPtr("wnd", this);
         var rect = c_rect.init();
         var kb_rect = c_rect.init();
@@ -163,7 +163,7 @@ pub const c_edit = struct {
             .STATUS_PUSHED => {
                 if ((s_keyboard.asWnd().get_attr() & wnd.ATTR_VISIBLE) != wnd.ATTR_VISIBLE) {
                     this.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS | wnd.ATTR_PRIORITY);
-                    _ = s_keyboard.open_keyboard(this, IDD_KEY_BOARD, edit.m_kb_style, wnd.WND_CALLBACK.init(edit, c_edit.on_key_board_click));
+                    _ = try s_keyboard.open_keyboard(this, IDD_KEY_BOARD, edit.m_kb_style, wnd.WND_CALLBACK.init(edit, c_edit.on_key_board_click));
                 }
                 if (this.m_surface) |m_surface| {
                     if (this.m_parent) |m_parent| {
@@ -186,7 +186,7 @@ pub const c_edit = struct {
             },
         }
     }
-    fn on_key_board_click(this: *c_edit, id: int, param: int) void {
+    fn on_key_board_click(this: *c_edit, id: int, param: int) !void {
         // _ = this;
         _ = id;
         // _ = param;
@@ -195,24 +195,24 @@ pub const c_edit = struct {
         switch (clickStatus) {
             .CLICK_CHAR => {
                 api.strcpy(&this.m_str_input, s_keyboard.get_str());
-                thisWnd.on_paint();
+                try thisWnd.on_paint();
             },
             .CLICK_ENTER => {
                 if (api.strlen(&this.m_str_input) > 0) {
                     @memcpy(&this.m_str, &this.m_str_input);
                 }
                 thisWnd.m_status = .STATUS_FOCUSED;
-                thisWnd.on_paint();
+                try thisWnd.on_paint();
             },
             .CLICK_ESC => {
                 // memset(m_str_input, 0, sizeof(m_str_input));
                 @memset(&this.m_str_input, 0);
                 thisWnd.m_status = .STATUS_FOCUSED;
-                thisWnd.on_paint();
+                try thisWnd.on_paint();
             },
         }
     }
-    fn pre_create_wnd(this: *c_wnd) void {
+    fn pre_create_wnd(this: *c_wnd) !void {
         this.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
         const edit: *c_edit = @fieldParentPtr("wnd", this);
         edit.m_kb_style = .STYLE_ALL_BOARD;

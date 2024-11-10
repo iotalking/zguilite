@@ -9,7 +9,7 @@ pub fn main() !void {
     // const screen_width: int = 240;
     // const screen_height: int = 320;
     const screen_width: int = 1024;
-    const screen_height: int = 600;
+    const screen_height: int = 800;
     var color_bytes: int = 0;
     // const devfb = try get_dev_fb("/dev/fb0", &screen_width, &screen_height, &color_bytes);
     // if (devfb == null) {
@@ -99,6 +99,7 @@ pub fn main() !void {
             .width = 200,
             .height = 60,
             .p_child_tree = null,
+            .user_data = @ptrCast(&[_][]const u8{ "1", "2" }),
         },
         &guilite.WND_TREE{
             .p_wnd = spin_box.asWnd(), //
@@ -112,9 +113,9 @@ pub fn main() !void {
         },
         null,
     };
-    list_box.clear_item();
-    try list_box.add_item("里江");
-    try list_box.add_item("猿声啼不住");
+    // list_box.clear_item();
+    // try list_box.add_item("里江");
+    // try list_box.add_item("猿声啼不住");
     spin_box.asWnd().m_font = guilite.c_theme.get_font(.FONT_CUSTOM1);
     spin_box.m_bt_down.button.wnd.m_font = guilite.c_theme.get_font(.FONT_CUSTOM1);
     spin_box.m_bt_up.button.wnd.m_font = guilite.c_theme.get_font(.FONT_CUSTOM1);
@@ -141,15 +142,15 @@ pub fn main() !void {
 
     surface.draw_line(0, 0, screen_width - 1, 500, guilite.GL_RGB(255, 200, 100), guilite.Z_ORDER_LEVEL_1);
     desktop.asWnd().set_surface(surface);
-    _ = desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, i16_width, i16_height, &s_desktop_children);
+    try desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, i16_width, i16_height, &s_desktop_children);
 
-    desktop.asWnd().show_window();
+    try desktop.asWnd().show_window();
 
     // try dialog.open_dialog(true);
 
     var keyboard = guilite.c_keyboard{};
 
-    _ = keyboard.open_keyboard(edit.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD, guilite.WND_CALLBACK.init(&keyboard, &struct {
+    _ = try keyboard.open_keyboard(edit.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD, guilite.WND_CALLBACK.init(&keyboard, &struct {
         fn onclick(kb: *guilite.c_keyboard, id: int, param: int) void {
             std.log.debug("onkbclick.onclick keyboard:{*}", .{kb});
             // _ = this;
@@ -157,7 +158,7 @@ pub fn main() !void {
             _ = param;
         }
     }.onclick));
-    keyboard.asWnd().show_window();
+    try keyboard.asWnd().show_window();
 
     // _ = _display.flush_screen(&_display, 0, 0, screen_width, screen_height, @ptrCast(mem_fb), screen_width);
     // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
@@ -194,7 +195,7 @@ const c_desktop = struct {
         this.wnd.m_vtable.on_paint = c_desktop.on_paint;
         return &this.wnd;
     }
-    fn on_paint(this: *guilite.c_wnd) void {
+    fn on_paint(this: *guilite.c_wnd) !void {
         _ = this;
         std.log.debug("c_desktop on paint", .{});
     }

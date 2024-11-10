@@ -40,7 +40,7 @@ pub const c_button = struct {
         this.on_click = on_click;
     }
     // protected:
-    fn on_paint(w: *c_wnd) void {
+    fn on_paint(w: *c_wnd) !void {
         std.log.debug("button on_paint font:{*}", .{w.m_font});
         // const this: *c_button = @fieldParentPtr("wnd", w);
         var rect: c_rect = c_rect.init();
@@ -73,15 +73,15 @@ pub const c_button = struct {
             },
         }
     }
-    fn on_focus(w: *c_wnd) void {
+    fn on_focus(w: *c_wnd) !void {
         w.m_status = .STATUS_FOCUSED;
-        w.on_paint();
+        try w.on_paint();
     }
-    fn on_kill_focus(w: *c_wnd) void {
+    fn on_kill_focus(w: *c_wnd) !void {
         w.m_status = .STATUS_NORMAL;
-        w.on_paint();
+        try w.on_paint();
     }
-    pub fn pre_create_wnd(w: *c_wnd) void {
+    pub fn pre_create_wnd(w: *c_wnd) !void {
         const this: *c_button = @fieldParentPtr("wnd", w);
         this.on_click = null;
         std.log.debug("button pre_create_wnd set on_click = null", .{});
@@ -91,35 +91,37 @@ pub const c_button = struct {
         std.log.debug("button pre_create_wnd font:{*} font_color:{any}", .{ w.m_font, w.m_font_color });
     }
 
-    pub fn on_touch(w: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void {
+    pub fn on_touch(w: *c_wnd, x: int, y: int, action: TOUCH_ACTION) !void {
         std.log.debug("button.on_touch(x:{any},y:{any},action:{any})", .{ x, y, action });
         // _ = x;
         // _ = y;
         const this: *c_button = @fieldParentPtr("wnd", w);
         std.log.debug("button on_touch this:{*}", .{this});
-        api.ASSERT(w.m_parent != null);
+        if (w.m_parent != null) {
+            return error.parent_null;
+        }
         if (action == .TOUCH_DOWN) {
-            _ = w.m_parent.?.set_child_focus(w);
+            _ = try w.m_parent.?.set_child_focus(w);
             w.m_status = .STATUS_PUSHED;
-            w.on_paint();
+            try w.on_paint();
         } else {
             w.m_status = .STATUS_FOCUSED;
-            w.on_paint();
+            try w.on_paint();
             if (this.on_click) |click| {
                 // (m_parent.*(on_click))(m_id, 0);
                 std.log.debug("button call click", .{});
-                click.on(w.m_id, 0);
+                try click.on(w.m_id, 0);
             } else {
                 std.log.debug("button on_touch up on_click == null", .{});
             }
         }
     }
-    pub fn on_navigate(w: *c_wnd, key: wnd.NAVIGATION_KEY) void {
+    pub fn on_navigate(w: *c_wnd, key: wnd.NAVIGATION_KEY) !void {
         std.log.debug("button.on_navigate key:{any}", .{key});
         switch (key) {
             .NAV_ENTER => {
-                on_touch(w, w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_DOWN);
-                on_touch(w, w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_UP);
+                try on_touch(w, w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_DOWN);
+                try on_touch(w, w.m_wnd_rect.m_left, w.m_wnd_rect.m_top, .TOUCH_UP);
             },
             .NAV_FORWARD, .NAV_BACKWARD => {},
         }

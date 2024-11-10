@@ -68,7 +68,7 @@ pub const c_spin_box = struct {
         this.on_change = on_change;
     }
 
-    fn pre_create_wnd(thisWnd: *c_wnd) void {
+    fn pre_create_wnd(thisWnd: *c_wnd) !void {
         var this: *c_spin_box = @fieldParentPtr("wnd", thisWnd);
         thisWnd.m_attr = @enumFromInt(wnd.ATTR_VISIBLE);
         thisWnd.m_font = c_theme.get_font(.FONT_DEFAULT);
@@ -83,10 +83,10 @@ pub const c_spin_box = struct {
         const x: i16 = @truncate(rect.m_left + @divFloor(rect.width() * @as(int, 2), @as(int, 3)));
         const y: i16 = @truncate(rect.m_top);
         const y2: i16 = @truncate(rect.m_top + @divFloor(rect.height(), 2));
-        _ = this.m_bt_up.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_UP, "+", x, y, @truncate(@divFloor(rect.width(), 3)), @truncate(@divFloor(rect.height(), 3)), null);
-        _ = this.m_bt_up.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_UP, "-", x, y2, @truncate(@divFloor(rect.width(), 3)), @truncate(@divFloor(rect.height(), 3)), null);
+        try this.m_bt_up.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_UP, "+", x, y, @truncate(@divFloor(rect.width(), 3)), @truncate(@divFloor(rect.height(), 3)), null);
+        try this.m_bt_up.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_UP, "-", x, y2, @truncate(@divFloor(rect.width(), 3)), @truncate(@divFloor(rect.height(), 3)), null);
     }
-    fn on_paint(thisWnd: *c_wnd) void {
+    fn on_paint(thisWnd: *c_wnd) !void {
         // const this: *c_spin_box = @fieldParentPtr("wnd", thisWnd);
 
         var rect = c_rect.init();
@@ -105,27 +105,27 @@ pub const c_spin_box = struct {
         }
     }
 
-    fn on_arrow_up_bt_click(this: *c_spin_box) void {
+    fn on_arrow_up_bt_click(this: *c_spin_box) !void {
         // _ = this;
         if (this.m_cur_value + this.m_step > this.m_max) {
             return;
         }
         this.m_cur_value += this.m_step;
         if (this.on_change) |on_change| {
-            on_change.on(this.asWnd().m_id, this.m_cur_value);
+            try on_change.on(this.asWnd().m_id, this.m_cur_value);
         }
-        this.wnd.on_paint();
+        try this.wnd.on_paint();
     }
-    fn on_arrow_down_bt_click(this: *c_spin_box) void {
+    fn on_arrow_down_bt_click(this: *c_spin_box) !void {
         // _ = this;
         if (this.m_cur_value - this.m_step < this.m_min) {
             return;
         }
         this.m_cur_value -= this.m_step;
         if (this.on_change) |on_change| {
-            on_change.on(this.asWnd().m_id, this.m_cur_value);
+            try on_change.on(this.asWnd().m_id, this.m_cur_value);
         }
-        this.wnd.on_paint();
+        try this.wnd.on_paint();
     }
 };
 
@@ -145,16 +145,16 @@ pub const c_spin_button = struct {
     pub fn asWnd(this: *c_spin_button) *c_wnd {
         return this.button.asWnd();
     }
-    fn on_touch(thisWnd: *c_wnd, x: int, y: int, action: wnd.TOUCH_ACTION) void {
+    fn on_touch(thisWnd: *c_wnd, x: int, y: int, action: wnd.TOUCH_ACTION) !void {
         const _button: *button.c_button = @fieldParentPtr("wnd", thisWnd);
         const this: *c_spin_button = @fieldParentPtr("button", _button);
         if (action == .TOUCH_UP) {
             if (thisWnd.m_id == ID_BT_ARROW_UP) {
-                this.m_spin_box.on_arrow_up_bt_click();
+                try this.m_spin_box.on_arrow_up_bt_click();
             } else {
-                this.m_spin_box.on_arrow_down_bt_click();
+                try this.m_spin_box.on_arrow_down_bt_click();
             }
         }
-        button.c_button.on_touch(thisWnd, x, y, action);
+        try button.c_button.on_touch(thisWnd, x, y, action);
     }
 };

@@ -27,7 +27,7 @@ pub const c_label = struct {
         return w;
     }
     // public:
-    fn on_paint(w: *c_wnd) void {
+    fn on_paint(w: *c_wnd) !void {
         std.log.debug("label on_paint", .{});
         var rect: c_rect = c_rect.init();
         const bg_color = if (w.m_bg_color != 0) w.m_bg_color else w.m_parent.?.get_bg_color();
@@ -41,7 +41,7 @@ pub const c_label = struct {
         }
     }
     // protected:
-    fn pre_create_wnd(w: *c_wnd) void {
+    fn pre_create_wnd(w: *c_wnd) !void {
         w.m_attr = .ATTR_VISIBLE;
         w.m_font_color = c_theme.get_color(.COLOR_WND_FONT);
         w.m_font = c_theme.get_font(.FONT_DEFAULT);

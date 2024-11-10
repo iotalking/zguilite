@@ -36,13 +36,13 @@ pub const c_list_box = struct {
     pub fn asWnd(this: *c_list_box) *c_wnd {
         return &this.wnd;
     }
-    fn pre_create_wnd(thisWnd: *c_wnd) void {
+    fn pre_create_wnd(thisWnd: *c_wnd) !void {
         thisWnd.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
         thisWnd.m_font = c_theme.get_font(.FONT_DEFAULT);
         thisWnd.m_font_color = c_theme.get_color(.COLOR_WND_FONT);
         thisWnd.m_status = .STATUS_PUSHED;
     }
-    fn on_paint(thisWnd: *c_wnd) void {
+    fn on_paint(thisWnd: *c_wnd) !void {
         const this: *c_list_box = @fieldParentPtr("wnd", thisWnd);
 
         var rect = c_rect.init();
@@ -114,26 +114,26 @@ pub const c_list_box = struct {
             }
         }
     }
-    fn on_focus(thisWnd: *c_wnd) void {
+    fn on_focus(thisWnd: *c_wnd) !void {
         thisWnd.m_status = .STATUS_FOCUSED;
-        thisWnd.on_paint();
+        try thisWnd.on_paint();
     }
-    fn on_kill_focus(thisWnd: *c_wnd) void {
+    fn on_kill_focus(thisWnd: *c_wnd) !void {
         thisWnd.m_status = .STATUS_NORMAL;
-        thisWnd.on_paint();
+        try thisWnd.on_paint();
     }
-    fn on_navigate(thisWnd: *c_wnd, key: wnd.NAVIGATION_KEY) void {
+    fn on_navigate(thisWnd: *c_wnd, key: wnd.NAVIGATION_KEY) !void {
         const this: *c_list_box = @fieldParentPtr("wnd", thisWnd);
         if (thisWnd.m_parent) |_| {
             switch (key) {
                 .NAV_ENTER => {
                     if (thisWnd.m_status == .STATUS_PUSHED) {
                         if (this.on_change) |onchange| {
-                            onchange.on(thisWnd.m_id, this.m_selected_item);
+                            try onchange.on(thisWnd.m_id, this.m_selected_item);
                         }
                     }
-                    thisWnd.on_touch(thisWnd.m_wnd_rect.m_left, thisWnd.m_wnd_rect.m_top, .TOUCH_DOWN);
-                    thisWnd.on_touch(thisWnd.m_wnd_rect.m_left, thisWnd.m_wnd_rect.m_top, .TOUCH_UP);
+                    try thisWnd.on_touch(thisWnd.m_wnd_rect.m_left, thisWnd.m_wnd_rect.m_top, .TOUCH_DOWN);
+                    try thisWnd.on_touch(thisWnd.m_wnd_rect.m_left, thisWnd.m_wnd_rect.m_top, .TOUCH_UP);
                 },
                 .NAV_BACKWARD => {
                     if (thisWnd.m_status != .STATUS_PUSHED) {
@@ -154,50 +154,50 @@ pub const c_list_box = struct {
             api.ASSERT(false);
         }
     }
-    fn on_touch(thisWnd: *c_wnd, x: int, y: int, action: wnd.TOUCH_ACTION) void {
+    fn on_touch(thisWnd: *c_wnd, x: int, y: int, action: wnd.TOUCH_ACTION) !void {
         const this: *c_list_box = @fieldParentPtr("wnd", thisWnd);
         if (action == .TOUCH_DOWN) {
-            this.on_touch_down(x, y);
+            try this.on_touch_down(x, y);
         } else {
-            this.on_touch_up(x, y);
+            try this.on_touch_up(x, y);
         }
     }
-    fn on_touch_down(this: *c_list_box, x: int, y: int) void {
+    fn on_touch_down(this: *c_list_box, x: int, y: int) !void {
         if (this.wnd.m_parent) |parent| {
             if (this.wnd.m_wnd_rect.pt_in_rect(x, y)) { //click base
                 if (.STATUS_NORMAL == this.wnd.m_status) {
-                    _ = parent.set_child_focus(null);
+                    _ = try parent.set_child_focus(null);
                 }
             } else if (this.m_list_wnd_rect.pt_in_rect(x, y)) { //click extend list
-                this.wnd.on_touch(x, y, .TOUCH_DOWN);
+                try this.wnd.on_touch(x, y, .TOUCH_DOWN);
             } else {
                 if (.STATUS_PUSHED == this.wnd.m_status) {
                     this.wnd.m_status = .STATUS_FOCUSED;
-                    this.wnd.on_paint();
+                    try this.wnd.on_paint();
                     if (this.on_change) |on_change| {
-                        on_change.on(this.wnd.m_id, this.m_selected_item);
+                        try on_change.on(this.wnd.m_id, this.m_selected_item);
                     }
                 }
             }
         }
     }
-    fn on_touch_up(this: *c_list_box, x: int, y: int) void {
+    fn on_touch_up(this: *c_list_box, x: int, y: int) !void {
         if (.STATUS_FOCUSED == this.wnd.m_status) {
             this.wnd.m_status = .STATUS_PUSHED;
-            this.wnd.on_paint();
+            try this.wnd.on_paint();
         } else if (.STATUS_PUSHED == this.wnd.m_status) {
             if (this.wnd.m_wnd_rect.pt_in_rect(x, y)) { //click base
                 this.wnd.m_status = .STATUS_FOCUSED;
-                this.wnd.on_paint();
+                try this.wnd.on_paint();
             } else if (this.m_list_wnd_rect.pt_in_rect(x, y)) { //click extend list
                 this.wnd.m_status = .STATUS_FOCUSED;
                 this.select_item(@intCast(@divExact((y - this.m_list_wnd_rect.m_top), @as(int, ITEM_HEIGHT))));
-                this.wnd.on_paint();
+                try this.wnd.on_paint();
                 if (this.on_change) |on_change| {
-                    on_change.on(this.wnd.m_id, this.m_selected_item);
+                    try on_change.on(this.wnd.m_id, this.m_selected_item);
                 }
             } else {
-                this.wnd.on_touch(x, y, .TOUCH_UP);
+                try this.wnd.on_touch(x, y, .TOUCH_UP);
             }
         }
     }

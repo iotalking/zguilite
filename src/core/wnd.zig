@@ -52,6 +52,7 @@ pub const struct_wnd_tree = struct {
     width: i16 = 0,
     height: i16 = 0,
     p_child_tree: ?[]?*struct_wnd_tree = null, //sub tree
+    user_data: ?*const anyopaque = null,
 };
 pub const WND_TREE = struct_wnd_tree;
 
@@ -60,15 +61,15 @@ pub const WND_TREE = struct_wnd_tree;
 pub const WND_CALLBACK = struct {
     m_callback: CALLBACK,
     m_user: *const anyopaque,
-    const CALLBACK = *const fn (user: *const anyopaque, id: int, param: int) void;
+    const CALLBACK = *const fn (user: *const anyopaque, id: int, param: int) anyerror!void;
     pub fn init(user: *const anyopaque, callback: anytype) WND_CALLBACK {
         return .{
             .m_user = user,
             .m_callback = @ptrCast(&callback),
         };
     }
-    pub fn on(this: *const WND_CALLBACK, id: int, param: int) void {
-        this.m_callback(this.m_user, id, param);
+    pub fn on(this: *const WND_CALLBACK, id: int, param: int) !void {
+        try this.m_callback(this.m_user, id, param);
     }
 };
 
@@ -84,24 +85,23 @@ pub const c_wnd = struct {
         _ = this;
     }
     // 	virtual ~c_wnd() {};
-    pub fn connect_impl(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int {
+    pub fn connect_impl(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) !void {
         if (0 == resource_id) {
             api.ASSERT(false);
-            return -1;
+            return error.resource_id_zero;
         }
         std.log.debug("wnd.class:{s}", .{this.m_class});
         this.m_id = resource_id;
         this.set_str(str);
         this.m_parent = parent;
         this.m_status = .STATUS_NORMAL;
-
         if (parent) |_parent| {
             this.m_z_order = _parent.m_z_order;
             this.m_surface = _parent.m_surface;
         }
         if (null == this.m_surface) {
             api.ASSERT(false);
-            return -2;
+            return error.surface_null;
         }
 
         // /* (cs.x = x * 1024 / 768) for 1027*768=>800*600 quickly*/
@@ -110,16 +110,15 @@ pub const c_wnd = struct {
         this.m_wnd_rect.m_right = (x + width - 1);
         this.m_wnd_rect.m_bottom = (y + height - 1);
 
-        this.pre_create_wnd();
+        try this.pre_create_wnd();
 
         if (parent) |p| {
             p.add_child_2_tail(this);
         }
 
-        if (this.load_child_wnd(p_child_tree) >= 0) {
-            this.on_init_children();
+        if (try this.load_child_wnd(p_child_tree) >= 0) {
+            try this.on_init_children();
         }
-        return 0;
     }
 
     pub fn disconnect(this: *c_wnd) void {
@@ -141,20 +140,20 @@ pub const c_wnd = struct {
         this.m_attr = .ATTR_UNKNOWN;
     }
 
-    pub fn on_init_children_impl(this: *c_wnd) void {
+    pub fn on_init_children_impl(this: *c_wnd) !void {
         _ = this;
     }
-    pub fn on_paint_impl(this: *c_wnd) void {
+    pub fn on_paint_impl(this: *c_wnd) !void {
         _ = this;
     }
-    pub fn show_window(this: *c_wnd) void {
+    pub fn show_window(this: *c_wnd) !void {
         std.log.debug("show_window class:{s}", .{this.m_class});
         if (ATTR_VISIBLE == (@intFromEnum(this.m_attr) & ATTR_VISIBLE)) {
-            this.on_paint();
+            try this.on_paint();
             var _child: ?*c_wnd = this.m_top_child;
             while (_child) |child| {
                 std.log.debug("child:{*} font:{*}", .{ child, child.m_font });
-                child.show_window();
+                try child.show_window();
                 _child = child.m_next_sibling;
             }
         } else {
@@ -224,7 +223,7 @@ pub const c_wnd = struct {
         rect.set_rect(l, t, this.m_wnd_rect.width(), this.m_wnd_rect.height());
     }
 
-    pub fn set_child_focus(this: *c_wnd, _focus_child: ?*c_wnd) ?*c_wnd {
+    pub fn set_child_focus(this: *c_wnd, _focus_child: ?*c_wnd) !?*c_wnd {
         api.ASSERT(null != _focus_child);
         const focus_child = _focus_child.?;
         api.ASSERT(focus_child.m_parent != null);
@@ -234,10 +233,10 @@ pub const c_wnd = struct {
         if (focus_child.is_focus_wnd()) {
             if (focus_child != old_focus_child) {
                 if (old_focus_child) |child| {
-                    child.on_kill_focus();
+                    try child.on_kill_focus();
                 }
                 this.m_focus_child = focus_child;
-                focus_child.on_focus();
+                try focus_child.on_focus();
             }
         }
         return this.m_focus_child;
@@ -330,7 +329,7 @@ pub const c_wnd = struct {
         return priority_wnd;
     }
 
-    pub fn on_touch_impl(this: *c_wnd, _x: int, _y: int, action: TOUCH_ACTION) void {
+    pub fn on_touch_impl(this: *c_wnd, _x: int, _y: int, action: TOUCH_ACTION) !void {
         var x = _x;
         var y = _y;
         x -= this.m_wnd_rect.m_left;
@@ -353,7 +352,7 @@ pub const c_wnd = struct {
             _child = child.m_next_sibling;
         }
     }
-    pub fn on_navigate_impl(this: *c_wnd, key: NAVIGATION_KEY) void {
+    pub fn on_navigate_impl(this: *c_wnd, key: NAVIGATION_KEY) !void {
         std.log.debug("wnd.on_navigate_impl", .{});
         const priority_wnd = this.search_priority_sibling(this.m_top_child);
         if (priority_wnd) |w| {
@@ -366,7 +365,7 @@ pub const c_wnd = struct {
         }
         if (key != .NAV_BACKWARD and key != .NAV_FORWARD) {
             if (this.m_focus_child) |child| {
-                child.on_navigate(key);
+                try child.on_navigate(key);
             } else {
                 std.log.debug("wnd.on_navigate_impl no m_focus_child", .{});
             }
@@ -384,7 +383,7 @@ pub const c_wnd = struct {
                     new_focus_wnd = child;
                     if (new_focus_wnd) |nw| {
                         if (nw.m_parent) |parent| {
-                            _ = parent.set_child_focus(nw);
+                            _ = try parent.set_child_focus(nw);
                         }
                     }
                     _child = child.m_top_child;
@@ -413,7 +412,7 @@ pub const c_wnd = struct {
             }
         }
         if (_next_focus_wnd) |next_focus_wnd| {
-            _ = next_focus_wnd.m_parent.?.set_child_focus(next_focus_wnd);
+            _ = try next_focus_wnd.m_parent.?.set_child_focus(next_focus_wnd);
         }
     }
 
@@ -464,31 +463,21 @@ pub const c_wnd = struct {
         }
     }
 
-    pub fn load_child_wnd(this: *c_wnd, _p_child_tree: ?[]?*const WND_TREE) int {
+    pub fn load_child_wnd(this: *c_wnd, _p_child_tree: ?[]?*const WND_TREE) !int {
         std.log.debug("load_child_wnd", .{});
-        // if (null == _p_child_tree) {
-        //     return 0;
-        // }
-        // const p_child_tree = _p_child_tree.?;
         var sum: int = 0;
 
-        // std.log.debug("p_child_tree.resource_id:{d}", .{p_child_tree.resource_id});
-        // var _p_cur: [*]?*WND_TREE = @ptrCast(p_child_tree);
-
-        // std.log.debug("_p_child_tree:{*} p_child_tree:{*} _p_cur:{*}", .{ _p_child_tree, p_child_tree, _p_cur[0] });
-        // while (_p_child_tree[0]) |p_cur| {
         if (_p_child_tree) |p_child_tree| {
             for (p_child_tree, 0..) |op_cur, i| {
                 std.log.debug("class:{s} loop wnd i:{d}", .{ this.m_class, i });
                 if (op_cur) |p_cur| {
                     std.log.debug("loop wnd tree resource_id:{d}", .{p_cur.resource_id});
                     if (p_cur.p_wnd) |p_wnd| {
-                        _ = p_wnd.connect(this, p_cur.resource_id, p_cur.str, p_cur.x, p_cur.y, p_cur.width, p_cur.height, p_cur.p_child_tree);
+                        try p_wnd.connect(this, p_cur.resource_id, p_cur.str, p_cur.x, p_cur.y, p_cur.width, p_cur.height, p_cur.p_child_tree);
                     } else {
                         api.ASSERT(false);
                     }
                 }
-                // _p_cur += 1;
                 sum += 1;
             }
         }
@@ -497,50 +486,50 @@ pub const c_wnd = struct {
     pub fn set_active_child(this: *c_wnd, child: *c_wnd) void {
         this.m_focus_child = child;
     }
-    pub fn on_focus_impl(this: *c_wnd) void {
+    pub fn on_focus_impl(this: *c_wnd) !void {
         _ = this;
     }
-    pub fn on_kill_focus_impl(this: *c_wnd) void {
+    pub fn on_kill_focus_impl(this: *c_wnd) !void {
         _ = this;
     }
-    pub fn pre_create_wnd_impl(this: *c_wnd) void {
+    pub fn pre_create_wnd_impl(this: *c_wnd) !void {
         _ = this;
     }
 
-    pub fn connect(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int {
+    pub fn connect(this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) !void {
         return this.m_vtable.connect(this, parent, resource_id, str, x, y, width, height, p_child_tree);
     }
-    pub fn on_init_children(this: *c_wnd) void {
+    pub fn on_init_children(this: *c_wnd) !void {
         return this.m_vtable.on_init_children(this);
     }
-    pub fn on_paint(this: *c_wnd) void {
+    pub fn on_paint(this: *c_wnd) !void {
         std.log.debug("on_paint class:{s}", .{this.m_class});
-        this.m_vtable.on_paint(this);
+        try this.m_vtable.on_paint(this);
     }
-    pub fn on_touch(this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void {
-        this.m_vtable.on_touch(this, x, y, action);
+    pub fn on_touch(this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) !void {
+        try this.m_vtable.on_touch(this, x, y, action);
     }
-    pub fn on_focus(this: *c_wnd) void {
-        this.m_vtable.on_focus(this);
+    pub fn on_focus(this: *c_wnd) !void {
+        try this.m_vtable.on_focus(this);
     }
-    pub fn on_kill_focus(this: *c_wnd) void {
-        this.m_vtable.on_kill_focus(this);
+    pub fn on_kill_focus(this: *c_wnd) !void {
+        try this.m_vtable.on_kill_focus(this);
     }
-    pub fn pre_create_wnd(this: *c_wnd) void {
-        this.m_vtable.pre_create_wnd(this);
+    pub fn pre_create_wnd(this: *c_wnd) !void {
+        try this.m_vtable.pre_create_wnd(this);
     }
-    pub fn on_navigate(this: *c_wnd, key: NAVIGATION_KEY) void {
-        this.m_vtable.on_navigate(this, key);
+    pub fn on_navigate(this: *c_wnd, key: NAVIGATION_KEY) !void {
+        try this.m_vtable.on_navigate(this, key);
     }
     pub const vtable = struct {
-        connect: *const fn (this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) int = connect_impl,
-        on_init_children: *const fn (this: *c_wnd) void = on_init_children_impl,
-        on_paint: *const fn (this: *c_wnd) void = on_paint_impl,
-        on_touch: *const fn (this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) void = on_touch_impl,
-        on_focus: *const fn (this: *c_wnd) void = on_focus_impl,
-        on_kill_focus: *const fn (this: *c_wnd) void = on_kill_focus_impl,
-        on_navigate: *const fn (this: *c_wnd, key: NAVIGATION_KEY) void = on_navigate_impl,
-        pre_create_wnd: *const fn (this: *c_wnd) void = pre_create_wnd_impl,
+        connect: *const fn (this: *c_wnd, parent: ?*c_wnd, resource_id: u16, str: ?[]const u8, x: i16, y: i16, width: i16, height: i16, p_child_tree: ?[]?*const WND_TREE) anyerror!void = connect_impl,
+        on_init_children: *const fn (this: *c_wnd) anyerror!void = on_init_children_impl,
+        on_paint: *const fn (this: *c_wnd) anyerror!void = on_paint_impl,
+        on_touch: *const fn (this: *c_wnd, x: int, y: int, action: TOUCH_ACTION) anyerror!void = on_touch_impl,
+        on_focus: *const fn (this: *c_wnd) anyerror!void = on_focus_impl,
+        on_kill_focus: *const fn (this: *c_wnd) anyerror!void = on_kill_focus_impl,
+        on_navigate: *const fn (this: *c_wnd, key: NAVIGATION_KEY) anyerror!void = on_navigate_impl,
+        pre_create_wnd: *const fn (this: *c_wnd) anyerror!void = pre_create_wnd_impl,
     };
     // protected:
     m_vtable: vtable = .{},
@@ -562,4 +551,6 @@ pub const c_wnd = struct {
 
     m_z_order: int = 0, //the graphic level for rendering
     m_surface: ?*c_surface = null,
+
+    m_user_data: ?*anyopaque = null,
 };

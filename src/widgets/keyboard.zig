@@ -51,11 +51,11 @@ pub const c_keyboard_button = struct {
         const w = this.base.asWnd();
         return w;
     }
-    pub fn pre_create_wnd(w: *c_wnd) void {
+    pub fn pre_create_wnd(w: *c_wnd) !void {
         const base: *button.c_button = @fieldParentPtr("wnd", w);
         const this: *c_keyboard_button = @fieldParentPtr("base", base);
         _ = this;
-        button.c_button.pre_create_wnd(w);
+        try button.c_button.pre_create_wnd(w);
         w.m_font = c_theme.get_font(.FONT_CUSTOM1);
     }
 };
@@ -450,14 +450,13 @@ pub const c_keyboard = struct {
         return w;
     }
 
-    pub fn open_keyboard(this: *c_keyboard, user: *wnd.c_wnd, resource_id: u16, style: KEYBOARD_STYLE, click: ?wnd.WND_CALLBACK) types.int {
+    pub fn open_keyboard(this: *c_keyboard, user: *wnd.c_wnd, resource_id: u16, style: KEYBOARD_STYLE, click: ?wnd.WND_CALLBACK) !void {
         // _ = this;
         // _ = user;
         // _ = resource_id;
         // _ = style;
         const thisWnd: *c_wnd = this.asWnd();
         var user_rect: c_rect = c_rect.init();
-        var ret: int = -1;
         user.get_wnd_rect(&user_rect);
         this.m_on_click = click;
         if (style == .STYLE_ALL_BOARD) { //Place keyboard at the bottom of user's parent window.
@@ -467,17 +466,16 @@ pub const c_keyboard = struct {
             }
             const ix: i16 = @truncate(0 - user_rect.m_left);
             const iy: i16 = @truncate(user_parent_rect.height() - user_rect.m_top - KEYBOARD_HEIGHT);
-            ret = thisWnd.connect(user, resource_id, null, ix, iy, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, &g_key_board_children);
+            try thisWnd.connect(user, resource_id, null, ix, iy, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, &g_key_board_children);
         } else if (style == .STYLE_NUM_BOARD) { //Place keyboard below the user window.
             const ix: i16 = 0;
             const iy: i16 = @truncate(user_rect.height());
-            ret = thisWnd.connect(user, resource_id, null, ix, iy, NUM_BOARD_WIDTH, NUM_BOARD_HEIGHT, &g_number_board_children);
+            try thisWnd.connect(user, resource_id, null, ix, iy, NUM_BOARD_WIDTH, NUM_BOARD_HEIGHT, &g_number_board_children);
         } else {
             api.ASSERT(false);
         }
-        return ret;
     }
-    pub fn on_init_children(this: *c_wnd) void {
+    pub fn on_init_children(this: *c_wnd) !void {
         var next = this.m_top_child;
         const keyboard: *c_keyboard = @fieldParentPtr("wnd", this);
         while (next) |child| {
@@ -487,58 +485,58 @@ pub const c_keyboard = struct {
             next = child.get_next_sibling();
         }
     }
-    fn on_key_clicked(this: *c_keyboard, id: int, param: int) void {
+    fn on_key_clicked(this: *c_keyboard, id: int, param: int) !void {
         std.log.debug("keyboard.on_key_clicked(id:{any},param:{any})", .{ id, param });
         // _ = this;
         switch (id) {
             0x14 => {
-                this.on_caps_clicked(id, param);
+                try this.on_caps_clicked(id, param);
             },
             '\n' => {
-                this.on_enter_clicked(id, param);
+                try this.on_enter_clicked(id, param);
             },
             0x1B => {
-                this.on_esc_clicked(id, param);
+                try this.on_esc_clicked(id, param);
             },
             0x7F => {
-                this.on_del_clicked(id, param);
+                try this.on_del_clicked(id, param);
             },
             else => {
-                this.on_char_clicked(id, param);
+                try this.on_char_clicked(id, param);
             },
         }
     }
 
-    fn on_caps_clicked(this: *c_keyboard, id: int, param: int) void {
+    fn on_caps_clicked(this: *c_keyboard, id: int, param: int) !void {
         _ = id;
         _ = param;
         var _wnd = this.asWnd();
         this.m_cap_status = if (this.m_cap_status == .STATUS_LOWERCASE) .STATUS_UPPERCASE else .STATUS_LOWERCASE;
-        _wnd.show_window();
+        try _wnd.show_window();
     }
-    fn on_enter_clicked(this: *c_keyboard, id: int, param: int) void {
+    fn on_enter_clicked(this: *c_keyboard, id: int, param: int) !void {
         // _ = this;
         _ = id;
         _ = param;
         @memset(&this.m_str, 0);
         if (this.m_on_click) |on_click| {
-            on_click.on(this.asWnd().m_id, @intFromEnum(CLICK_STATUS.CLICK_ENTER));
+            try on_click.on(this.asWnd().m_id, @intFromEnum(CLICK_STATUS.CLICK_ENTER));
         } else {
             api.ASSERT(false);
         }
     }
-    fn on_esc_clicked(this: *c_keyboard, id: int, param: int) void {
+    fn on_esc_clicked(this: *c_keyboard, id: int, param: int) !void {
         // _ = this;
         _ = id;
         _ = param;
         @memset(&this.m_str, 0);
         if (this.m_on_click) |on_click| {
-            on_click.on(this.asWnd().m_id, @intFromEnum(CLICK_STATUS.CLICK_ESC));
+            try on_click.on(this.asWnd().m_id, @intFromEnum(CLICK_STATUS.CLICK_ESC));
         } else {
             api.ASSERT(false);
         }
     }
-    fn on_del_clicked(this: *c_keyboard, id: int, param: int) void {
+    fn on_del_clicked(this: *c_keyboard, id: int, param: int) !void {
         // _ = this;
         _ = id;
         _ = param;
@@ -549,12 +547,12 @@ pub const c_keyboard = struct {
         this.m_str[this.m_str_len] = 0;
 
         if (this.m_on_click) |on_click| {
-            on_click.on(this.asWnd().m_id, @intFromEnum(CLICK_STATUS.CLICK_CHAR));
+            try on_click.on(this.asWnd().m_id, @intFromEnum(CLICK_STATUS.CLICK_CHAR));
         } else {
             api.ASSERT(false);
         }
     }
-    fn on_char_clicked(this: *c_keyboard, _id: int, param: int) void {
+    fn on_char_clicked(this: *c_keyboard, _id: int, param: int) !void {
         // _ = this;
         var id = _id;
         _ = param;
@@ -581,19 +579,19 @@ pub const c_keyboard = struct {
         this.m_str[this.m_str_len] = @truncate(@as(u32, @bitCast(id)));
 
         if (this.m_on_click) |click| {
-            click.on(id, @intFromEnum(CLICK_STATUS.CLICK_CHAR));
+            try click.on(id, @intFromEnum(CLICK_STATUS.CLICK_CHAR));
         }
     }
 
     pub fn get_str(this: *const c_keyboard) []const u8 {
         return &this.m_str;
     }
-    fn pre_create_wnd(w: *c_wnd) void {
+    fn pre_create_wnd(w: *c_wnd) !void {
         const this: *c_keyboard = @fieldParentPtr("wnd", w);
         w.m_font = c_theme.get_font(.FONT_CUSTOM1);
         _ = this;
     }
-    fn on_paint(w: *c_wnd) void {
+    fn on_paint(w: *c_wnd) !void {
         const this: *c_keyboard = @fieldParentPtr("wnd", w);
         const _w = this.asWnd();
         var rect = c_rect.init();
