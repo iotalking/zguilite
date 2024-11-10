@@ -473,6 +473,9 @@ pub const c_wnd = struct {
                 if (op_cur) |p_cur| {
                     std.log.debug("loop wnd tree resource_id:{d}", .{p_cur.resource_id});
                     if (p_cur.p_wnd) |p_wnd| {
+                        if (p_cur.user_data) |userData| {
+                            p_wnd.m_user_data = userData;
+                        }
                         try p_wnd.connect(this, p_cur.resource_id, p_cur.str, p_cur.x, p_cur.y, p_cur.width, p_cur.height, p_cur.p_child_tree);
                     } else {
                         api.ASSERT(false);
@@ -552,5 +555,5 @@ pub const c_wnd = struct {
     m_z_order: int = 0, //the graphic level for rendering
     m_surface: ?*c_surface = null,
 
-    m_user_data: ?*anyopaque = null,
+    m_user_data: ?*const anyopaque = null,
 };

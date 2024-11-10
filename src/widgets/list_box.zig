@@ -16,6 +16,10 @@ const uint = types.uint;
 
 const MAX_ITEM_NUM = 4;
 const ITEM_HEIGHT = 45;
+pub const ListBoxData = struct {
+    items: []const []const u8,
+    selected: usize,
+};
 
 pub const c_list_box = struct {
     wnd: wnd.c_wnd = .{ .m_class = "c_list_box", .m_vtable = .{
@@ -37,10 +41,19 @@ pub const c_list_box = struct {
         return &this.wnd;
     }
     fn pre_create_wnd(thisWnd: *c_wnd) !void {
+        const this: *c_list_box = @fieldParentPtr("wnd", thisWnd);
         thisWnd.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
         thisWnd.m_font = c_theme.get_font(.FONT_DEFAULT);
         thisWnd.m_font_color = c_theme.get_color(.COLOR_WND_FONT);
         thisWnd.m_status = .STATUS_PUSHED;
+
+        if (thisWnd.m_user_data) |userData| {
+            const data: *align(1) const ListBoxData = @ptrCast(userData);
+            for (data.items) |item| {
+                try this.add_item(item);
+            }
+            this.select_item(data.selected);
+        }
     }
     fn on_paint(thisWnd: *c_wnd) !void {
         const this: *c_list_box = @fieldParentPtr("wnd", thisWnd);

@@ -47,7 +47,6 @@ pub fn main() !void {
     const ID_EDIT = 6;
     const ID_LIST_BOX = 7;
     const ID_SPIN_BOX = 8;
-
     // _ = btn;
     var s_desktop_children = [_]?*const guilite.WND_TREE{
         &guilite.WND_TREE{
@@ -99,7 +98,7 @@ pub fn main() !void {
             .width = 200,
             .height = 60,
             .p_child_tree = null,
-            .user_data = @ptrCast(&[_][]const u8{ "1", "2" }),
+            .user_data = @ptrCast(&guilite.ListBoxData{ .items = &[_][]const u8{ "item1", "item2" }, .selected = 1 }),
         },
         &guilite.WND_TREE{
             .p_wnd = spin_box.asWnd(), //
@@ -113,6 +112,7 @@ pub fn main() !void {
         },
         null,
     };
+
     // list_box.clear_item();
     // try list_box.add_item("里江");
     // try list_box.add_item("猿声啼不住");
