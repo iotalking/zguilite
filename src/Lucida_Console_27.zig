@@ -1961,7 +1961,7 @@ const lattice_array = [_]guilite.LATTICE{
     .{ .utf8_code = 15113402, .width = 22, .pixel_buffer = &_15113402 },
     .{ .utf8_code = 15174023, .width = 22, .pixel_buffer = &_15174023 },
 };
-pub const Lucida_Console_27: guilite.LATTICE_FONT_INFO = .{
+pub const Lucida_Console_27: guilite.LatticeFontInfo = .{
     .height = 27, //
     .count = 10,
     .lattice_array = &lattice_array,

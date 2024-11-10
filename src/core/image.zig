@@ -3,39 +3,39 @@ const api = @import("./api.zig");
 const resource = @import("./resource.zig");
 const display = @import("./display.zig");
 
-const c_surface = display.c_surface;
-const c_rect = api.c_rect;
+const Surface = display.Surface;
+const Rect = api.Rect;
 const int = types.int;
 const uint = types.uint;
 const BITMAP_INFO = resource.BITMAP_INFO;
 
 pub const DEFAULT_MASK_COLOR = 0xFF080408;
-// class c_surface;
+// class Surface;
 
-pub const c_image_operator = struct {
+pub const ImageOperator = struct {
     // public:
-    draw_image: ?*const fn (surface: *c_surface, z_order: int, image_info: *anyopaque, x: int, y: int, mask_rgb: uint) void = null,
+    draw_image: ?*const fn (surface: *Surface, z_order: int, image_info: *anyopaque, x: int, y: int, mask_rgb: uint) void = null,
 
-    draw_image_from_src: ?*const fn (surface: *c_surface, z_order: int, image_info: *anyopaque, x: int, y: int, src_x: int, src_y: int, width: int, height: int, mask_rgb: uint) void = null,
+    draw_image_from_src: ?*const fn (surface: *Surface, z_order: int, image_info: *anyopaque, x: int, y: int, src_x: int, src_y: int, width: int, height: int, mask_rgb: uint) void = null,
 };
 
-pub const c_bitmap_operator = struct {
-    parent: c_image_operator,
+pub const BitmapOperator = struct {
+    parent: ImageOperator,
 
-    fn init() c_bitmap_operator {
+    fn init() BitmapOperator {
         return .{ .parent = .{
-            .draw_pixel = c_bitmap_operator.draw_image,
-            .draw_image_from_src = c_bitmap_operator.draw_image_from_src,
+            .draw_pixel = BitmapOperator.draw_image,
+            .draw_image_from_src = BitmapOperator.draw_image_from_src,
         } };
     }
     // public:
-    fn draw_image(surface: *c_surface, z_order: int, image_info: *anyopaque, x: int, y: int, mask_rgb: uint) void {
+    fn draw_image(surface: *Surface, z_order: int, image_info: *anyopaque, x: int, y: int, mask_rgb: uint) void {
         api.ASSERT(image_info != null);
         const pBitmap: *BITMAP_INFO = @ptrCast(image_info);
         var lower_fb_16: ?[*]u16 = null;
         var lower_fb_32: ?[*]uint = null;
         var lower_fb_width = 0;
-        var lower_fb_rect: c_rect = c_rect.init();
+        var lower_fb_rect: Rect = Rect.init();
         if (z_order >= .Z_ORDER_LEVEL_1) {
             lower_fb_16 = @ptrCast(surface.m_layers[z_order - 1].fb);
             lower_fb_32 = @ptrCast(surface.m_layers[z_order - 1].fb);
@@ -64,7 +64,7 @@ pub const c_bitmap_operator = struct {
         }
     }
 
-    fn draw_image_from_src(surface: *c_surface, z_order: int, image_info: *anyopaque, x: int, y: int, src_x: int, src_y: int, width: int, height: int, mask_rgb: uint) void {
+    fn draw_image_from_src(surface: *Surface, z_order: int, image_info: *anyopaque, x: int, y: int, src_x: int, src_y: int, width: int, height: int, mask_rgb: uint) void {
         api.ASSERT(image_info != null);
         const pBitmap: ?*BITMAP_INFO = @ptrCast(image_info);
         if (null == pBitmap or (src_x + width > pBitmap.width) or (src_y + height > pBitmap.height)) {
@@ -74,7 +74,7 @@ pub const c_bitmap_operator = struct {
         var lower_fb_16: ?[*]u16 = null;
         var lower_fb_32: ?[*]uint = null;
         var lower_fb_width = 0;
-        var lower_fb_rect: c_rect = c_rect.init();
+        var lower_fb_rect: Rect = Rect.init();
         if (z_order >= .Z_ORDER_LEVEL_1) {
             lower_fb_16 = @ptrCast(surface.m_layers[z_order - 1].fb);
             lower_fb_32 = @ptrCast(surface.m_layers[z_order - 1].fb);
@@ -103,15 +103,15 @@ pub const c_bitmap_operator = struct {
     }
 };
 
-pub const c_image = struct {
+pub const Image = struct {
     // public:
-    fn draw_image(surface: *c_surface, z_order: int, image_info: *anyopaque, x: int, y: int, mask_rgb: uint) void {
+    fn draw_image(surface: *Surface, z_order: int, image_info: *anyopaque, x: int, y: int, mask_rgb: uint) void {
         image_operator.draw_image(surface, z_order, image_info, x, y, mask_rgb);
     }
 
-    fn draw_image_from_src(surface: *c_surface, z_order: int, image_info: *anyopaque, x: int, y: int, src_x: int, src_y: int, width: int, height: int, mask_rgb: uint) void {
+    fn draw_image_from_src(surface: *Surface, z_order: int, image_info: *anyopaque, x: int, y: int, src_x: int, src_y: int, width: int, height: int, mask_rgb: uint) void {
         image_operator.draw_image_from_src(surface, z_order, image_info, x, y, src_x, src_y, width, height, mask_rgb);
     }
 
-    const image_operator = c_image_operator.init();
+    const image_operator = ImageOperator.init();
 };

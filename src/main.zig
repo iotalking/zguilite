@@ -117,9 +117,9 @@ pub fn main() !void {
     }
 
     std.log.debug("s_desktop_children[0]:{*},s_desktop_children[0].resource_id:{d}", .{ s_desktop_children[0], s_desktop_children[0].?.resource_id });
-    var _display: guilite.c_display = .{};
+    var _display: guilite.Display = .{};
     try _display.init2(fbuf, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
-    const surface = try _display.alloc_surface(.Z_ORDER_LEVEL_1, guilite.c_rect.init2(0, 0, screen_width, screen_height));
+    const surface = try _display.alloSurface(.Z_ORDER_LEVEL_1, guilite.Rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
 
     // try showFont.showFont(allocator, surface);
@@ -147,7 +147,7 @@ pub fn main() !void {
     // _ = _display.flush_screen(&_display, 0, 0, screen_width, screen_height, @ptrCast(mem_fb), screen_width);
     // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
     // surface.draw_rect_pos(0, 0, 100, 100, guilite.GL_RGB(200, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1), 10);
-    // surface.fill_rect(guilite.c_rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
+    // surface.fill_rect(guilite.Rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
     // try _3d.create_ui(&_display);
     std.log.debug("main end", .{});
 

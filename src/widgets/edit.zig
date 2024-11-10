@@ -8,8 +8,8 @@ const theme = @import("../core/theme.zig");
 const types = @import("../core/types.zig");
 const keyboard = @import("./keyboard.zig");
 const Wnd = wnd.Wnd;
-const c_rect = api.c_rect;
-const c_word = word.c_word;
+const Rect = api.Rect;
+const Word = word.Word;
 const Theme = theme.Theme;
 const int = types.int;
 const uint = types.uint;
@@ -54,7 +54,7 @@ pub const Edit = struct {
         }
     }
     fn on_touch_down(this: *Edit, x: int, y: int) !void {
-        var kb_rect_relate_2_edit_parent: c_rect = undefined;
+        var kb_rect_relate_2_edit_parent: Rect = undefined;
         const keyboardWnd = s_keyboard.asWnd();
         keyboardWnd.get_wnd_rect(&kb_rect_relate_2_edit_parent);
 
@@ -123,8 +123,8 @@ pub const Edit = struct {
     }
     fn on_paint(this: *Wnd) !void {
         const edit: *Edit = @fieldParentPtr("wnd", this);
-        var rect = c_rect.init();
-        var kb_rect = c_rect.init();
+        var rect = Rect.init();
+        var kb_rect = Rect.init();
         this.get_screen_rect(&rect);
         const keyboard_wnd = s_keyboard.asWnd();
         keyboard_wnd.get_screen_rect(&kb_rect);
@@ -138,7 +138,7 @@ pub const Edit = struct {
                     // m_surface.fill_rect(rect, api.GL_RGB(255, 0, 0), this.m_z_order);
                     m_surface.fill_rect(rect, Theme.get_color(.COLOR_WND_NORMAL), this.m_z_order);
                     if (this.m_parent) |m_parent| {
-                        c_word.draw_string_in_rect(m_surface, m_parent.get_z_order(), &edit.m_str, rect, this.m_font, this.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                        Word.draw_string_in_rect(m_surface, m_parent.get_z_order(), &edit.m_str, rect, this.m_font, this.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                     } else {
                         api.ASSERT(false);
                     }
@@ -153,7 +153,7 @@ pub const Edit = struct {
                     m_surface.fill_rect(rect, Theme.get_color(.COLOR_WND_FOCUS), this.m_z_order);
                     if (this.m_str) |m_str| {
                         if (this.m_parent) |m_parent| {
-                            c_word.draw_string_in_rect(m_surface, m_parent.get_z_order(), m_str, rect, this.m_font, this.m_font_color, Theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                            Word.draw_string_in_rect(m_surface, m_parent.get_z_order(), m_str, rect, this.m_font, this.m_font_color, Theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                         } else {
                             api.ASSERT(false);
                         }
@@ -170,10 +170,10 @@ pub const Edit = struct {
                         m_surface.fill_rect(rect, Theme.get_color(.COLOR_WND_PUSHED), m_parent.get_z_order());
                         m_surface.draw_rect(rect, Theme.get_color(.COLOR_WND_BORDER), m_parent.get_z_order(), 2);
                         if (api.strlen(edit.m_str_input[0..]) > 0) {
-                            c_word.draw_string_in_rect(m_surface, m_parent.get_z_order(), edit.m_str_input[0..], rect, this.m_font, this.m_font_color, Theme.get_color(.COLOR_WND_PUSHED), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                            Word.draw_string_in_rect(m_surface, m_parent.get_z_order(), edit.m_str_input[0..], rect, this.m_font, this.m_font_color, Theme.get_color(.COLOR_WND_PUSHED), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                         } else {
                             if (this.m_str) |m_str| {
-                                c_word.draw_string_in_rect(m_surface, m_parent.get_z_order(), m_str, rect, this.m_font, this.m_font_color, Theme.get_color(.COLOR_WND_PUSHED), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                                Word.draw_string_in_rect(m_surface, m_parent.get_z_order(), m_str, rect, this.m_font, this.m_font_color, Theme.get_color(.COLOR_WND_PUSHED), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                             }
                         }
                     } else {

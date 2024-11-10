@@ -6,10 +6,10 @@ const display = @import("../core/display.zig");
 const theme = @import("../core/theme.zig");
 const types = @import("../core/types.zig");
 const Wnd = wnd.Wnd;
-const c_rect = api.c_rect;
-const c_word = word.c_word;
+const Rect = api.Rect;
+const Word = word.Word;
 const Theme = theme.Theme;
-const c_surface = display.c_surface;
+const Surface = display.Surface;
 const int = types.int;
 const uint = types.uint;
 
@@ -19,7 +19,7 @@ const SURFACE_CNT_MAX = display.SURFACE_CNT_MAX;
 
 pub const DIALOG_ARRAY = struct {
     dialog: ?*Dialog = null,
-    surface: ?*c_surface = null,
+    surface: ?*Surface = null,
 };
 
 pub const Dialog = struct {
@@ -45,7 +45,7 @@ pub const Dialog = struct {
 
                 cur_dlg.wnd.set_attr(.ATTR_UNKNOWN);
             }
-            var rc: c_rect = c_rect.init();
+            var rc: Rect = Rect.init();
 
             p_dlg.wnd.get_screen_rect(&rc);
             surface.activate_layer(rc, p_dlg.wnd.m_z_order);
@@ -58,11 +58,11 @@ pub const Dialog = struct {
         }
     }
 
-    pub fn close_dialog(surface: *c_surface) !void {
+    pub fn close_dialog(surface: *Surface) !void {
         const _dlg = get_the_dialog(surface);
         if (_dlg) |dlg| {
             dlg.wnd.set_attr(.ATTR_UNKNOWN);
-            surface.activate_layer(c_rect(), dlg.m_z_order); //inactivate the layer of dialog by empty rect.
+            surface.activate_layer(Rect(), dlg.m_z_order); //inactivate the layer of dialog by empty rect.
 
             //clear the dialog
             // for (int i = 0; i < SURFACE_CNT_MAX; i++)
@@ -75,7 +75,7 @@ pub const Dialog = struct {
         }
     }
 
-    pub fn get_the_dialog(surface: *c_surface) ?*Dialog {
+    pub fn get_the_dialog(surface: *Surface) ?*Dialog {
         // for (int i = 0; i < SURFACE_CNT_MAX; i++)
         for (0..SURFACE_CNT_MAX) |i| {
             if (ms_the_dialogs[i].surface == surface) {
@@ -91,14 +91,14 @@ pub const Dialog = struct {
         w.m_bg_color = api.GL_RGB(33, 42, 53);
     }
     fn on_paint(w: *Wnd) !void {
-        var rect: c_rect = c_rect.init();
+        var rect: Rect = Rect.init();
         w.get_screen_rect(&rect);
         w.m_surface.?.fill_rect(rect, w.m_bg_color, w.m_z_order);
 
         if (w.m_str) |str| {
             if (w.m_surface) |surface| {
                 if (Theme.get_font(.FONT_DEFAULT)) |font| {
-                    c_word.draw_string(surface, w.m_z_order, str, rect.m_left + 35, rect.m_top, font, api.GL_RGB(255, 255, 255), api.GL_ARGB(0, 0, 0, 0));
+                    Word.draw_string(surface, w.m_z_order, str, rect.m_left + 35, rect.m_top, font, api.GL_RGB(255, 255, 255), api.GL_ARGB(0, 0, 0, 0));
                 }
             }
         }

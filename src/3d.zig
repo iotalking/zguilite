@@ -111,8 +111,8 @@ pub const Shape = struct {
     angle: f64 = 0,
 };
 
-var s_surface: ?*guilite.c_surface = null;
-pub fn draw_line(surface: *guilite.c_surface, x1: f64, y1: f64, x2: f64, y2: f64, rgb: u32, z_order: guilite.Z_ORDER_LEVEL) void {
+var s_surface: ?*guilite.Surface = null;
+pub fn draw_line(surface: *guilite.Surface, x1: f64, y1: f64, x2: f64, y2: f64, rgb: u32, z_order: guilite.Z_ORDER_LEVEL) void {
     std.log.debug("draw_line({d:.0},{d:.0})({d:.0},{d:.0}) rgb:{d:.2}", .{ x1, y1, x2, y2, rgb });
     const fx1 = @as(i32, @bitCast(@as(u32, @truncate(@as(u64, @bitCast(x1))))));
     const fx2 = @as(i32, @bitCast(@as(u32, @truncate(@as(u64, @bitCast(x2))))));
@@ -242,11 +242,11 @@ pub const Pyramid = struct {
     points2d: [5][2]f64 = undefined,
 };
 
-pub fn create_ui(display: *guilite.c_display) !void {
-    s_surface = try display.alloc_surface(.Z_ORDER_LEVEL_0, guilite.c_rect.init2(300, 300, UI_WIDTH, UI_HEIGHT));
+pub fn create_ui(display: *guilite.Display) !void {
+    s_surface = try display.alloSurface(.Z_ORDER_LEVEL_0, guilite.Rect.init2(300, 300, UI_WIDTH, UI_HEIGHT));
 
     if (s_surface) |surface| {
-        const rect = guilite.c_rect.init2(0, 0, UI_WIDTH - 1, UI_HEIGHT - 1);
+        const rect = guilite.Rect.init2(0, 0, UI_WIDTH - 1, UI_HEIGHT - 1);
         surface.set_active(true);
         surface.fill_rect(rect, guilite.GL_RGB(0, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_0));
 

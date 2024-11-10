@@ -4,14 +4,14 @@ const resource = @import("./resource.zig");
 const display = @import("./display.zig");
 const types = @import("./types.zig");
 
-const c_surface = display.c_surface;
-const c_rect = api.c_rect;
+const Surface = display.Surface;
+const Rect = api.Rect;
 const int = types.int;
 const uint = types.uint;
 const BITMAP_INFO = resource.BITMAP_INFO;
-const LATTICE_FONT_INFO = resource.LATTICE_FONT_INFO;
+const LatticeFontInfo = resource.LatticeFontInfo;
 // class Wnd;
-// class c_surface;
+// class Surface;
 
 pub const WND_ATTRIBUTION = enum(u32) {
     ATTR_UNKNOWN = 0x0,
@@ -206,17 +206,17 @@ pub const Wnd = struct {
     pub fn get_bg_color(this: *Wnd) uint {
         return this.m_bg_color;
     }
-    pub fn set_font_type(this: *Wnd, font_type: *LATTICE_FONT_INFO) void {
+    pub fn set_font_type(this: *Wnd, font_type: *LatticeFontInfo) void {
         this.m_font = font_type;
     }
     pub fn get_font_type(this: *Wnd) ?*Wnd {
         return this.m_font;
     }
-    pub fn get_wnd_rect(this: *Wnd, rect: *c_rect) void {
+    pub fn get_wnd_rect(this: *Wnd, rect: *Rect) void {
         rect.* = this.m_wnd_rect;
     }
 
-    pub fn get_screen_rect(this: *Wnd, rect: *c_rect) void {
+    pub fn get_screen_rect(this: *Wnd, rect: *Rect) void {
         var l: int = 0;
         var t: int = 0;
         this.wnd2screen(&l, &t);
@@ -343,7 +343,7 @@ pub const Wnd = struct {
         var _child: ?*Wnd = this.m_top_child;
         while (_child) |child| {
             if (child.is_focus_wnd()) {
-                var rect = c_rect.init();
+                var rect = Rect.init();
                 child.get_wnd_rect(&rect);
                 if (true == rect.pt_in_rect(x, y)) {
                     return child.on_touch(x, y, action);
@@ -416,10 +416,10 @@ pub const Wnd = struct {
         }
     }
 
-    pub fn get_surface(this: *Wnd) ?*c_surface {
+    pub fn get_surface(this: *Wnd) ?*Surface {
         return this.m_surface;
     }
-    pub fn set_surface(this: *Wnd, surface: *c_surface) void {
+    pub fn set_surface(this: *Wnd, surface: *Surface) void {
         this.m_surface = surface;
     }
     // protected:
@@ -449,7 +449,7 @@ pub const Wnd = struct {
 
     pub fn wnd2screen(this: *Wnd, x: *int, y: *int) void {
         var _parent = this.m_parent;
-        var rect = c_rect.init();
+        var rect = Rect.init();
 
         x.* += this.m_wnd_rect.m_left;
         y.* += this.m_wnd_rect.m_top;
@@ -540,7 +540,7 @@ pub const Wnd = struct {
     m_id: u16 = 0,
     m_status: WND_STATUS = .STATUS_NORMAL,
     m_attr: WND_ATTRIBUTION = .ATTR_VISIBLE,
-    m_wnd_rect: c_rect = c_rect.init(), //position relative to parent window.
+    m_wnd_rect: Rect = Rect.init(), //position relative to parent window.
     m_parent: ?*Wnd = null, //parent window
     m_top_child: ?*Wnd = null, //the first sub window would be navigated
     m_prev_sibling: ?*Wnd = null, //previous brother
@@ -553,7 +553,7 @@ pub const Wnd = struct {
     m_bg_color: uint = 0,
 
     m_z_order: int = 0, //the graphic level for rendering
-    m_surface: ?*c_surface = null,
+    m_surface: ?*Surface = null,
 
     m_user_data: ?*const anyopaque = null,
 };

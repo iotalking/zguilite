@@ -4,12 +4,12 @@ const resource = @import("./resource.zig");
 const display = @import("./display.zig");
 const types = @import("./types.zig");
 
-const c_surface = display.c_surface;
-const c_rect = api.c_rect;
+const Surface = display.Surface;
+const Rect = api.Rect;
 const int = types.int;
 const uint = types.uint;
 const BITMAP_INFO = resource.BITMAP_INFO;
-const LATTICE_FONT_INFO = resource.LATTICE_FONT_INFO;
+const LatticeFontInfo = resource.LatticeFontInfo;
 const LATTICE = resource.LATTICE;
 const GL_RGB_B = api.GL_RGB_B;
 const GL_RGB_G = api.GL_RGB_G;
@@ -19,11 +19,11 @@ const GL_ARGB_A = api.GL_ARGB_A;
 
 pub const VALUE_STR_LEN = 16;
 
-// class c_surface;
-pub const c_font_operator = struct {
+// class Surface;
+pub const FontOperator = struct {
     // public:
     fn draw_string(
-        surface: *c_surface, //
+        surface: *Surface, //
         z_order: int,
         string: [*]const u8,
         x: int,
@@ -42,10 +42,10 @@ pub const c_font_operator = struct {
         _ = bg_color;
     }
     fn draw_string_in_rect(
-        surface: *c_surface, //
+        surface: *Surface, //
         z_order: int,
         string: [*]const u8,
-        rect: c_rect,
+        rect: Rect,
         font: *anyopaque,
         font_color: int,
         bg_color: int,
@@ -61,7 +61,7 @@ pub const c_font_operator = struct {
         _ = align_type;
     }
     fn draw_value(
-        surface: *c_surface, //
+        surface: *Surface, //
         z_order: int,
         value: int,
         dot_position: int,
@@ -82,11 +82,11 @@ pub const c_font_operator = struct {
         _ = dot_position;
     }
     fn draw_value_in_rect(
-        surface: *c_surface, //
+        surface: *Surface, //
         z_order: int,
         value: int,
         dot_position: int,
-        rect: c_rect,
+        rect: Rect,
         font: *anyopaque,
         font_color: int,
         bg_color: int,
@@ -110,7 +110,7 @@ pub const c_font_operator = struct {
         return 0;
     }
 
-    pub fn get_string_pos(string: []const u8, font: *anyopaque, rect: c_rect, align_type: int, x: *int, y: *int) void {
+    pub fn get_string_pos(string: []const u8, font: *anyopaque, rect: Rect, align_type: int, x: *int, y: *int) void {
         var x_size: int = 0;
         var y_size: int = 0;
         _ = fontOperator.get_str_size(string, font, &x_size, &y_size);
@@ -163,12 +163,12 @@ pub const c_font_operator = struct {
     }
 };
 
-// class c_lattice_font_op : public c_font_operator
-pub const c_lattice_font_op = struct {
-    // parent: c_font_operator,
+// class LatticeFontOp : public FontOperator
+pub const LatticeFontOp = struct {
+    // parent: FontOperator,
 
     // public:
-    fn draw_string(surface: *c_surface, z_order: int, string: []const u8, x: int, y: int, font: ?*anyopaque, font_color: int, bg_color: uint) void {
+    fn draw_string(surface: *Surface, z_order: int, string: []const u8, x: int, y: int, font: ?*anyopaque, font_color: int, bg_color: uint) void {
         var offset: usize = 0;
         var strcur = string[offset..];
         var xoffset: int = 0;
@@ -177,34 +177,34 @@ pub const c_lattice_font_op = struct {
             const uchar = @as(usize, @intCast(get_utf8_code(strcur, &utf8_code)));
             offset += uchar;
             strcur = string[offset..];
-            const _font: ?*LATTICE_FONT_INFO = @ptrCast(@alignCast(font));
+            const _font: ?*LatticeFontInfo = @ptrCast(@alignCast(font));
             xoffset += draw_single_char(surface, z_order, utf8_code, (x + xoffset), y, _font, font_color, bg_color);
         }
     }
 
-    fn draw_string_in_rect(surface: *c_surface, z_order: int, string: []const u8, rect: c_rect, font: ?*anyopaque, font_color: uint, bg_color: uint, align_type: uint) void {
+    fn draw_string_in_rect(surface: *Surface, z_order: int, string: []const u8, rect: Rect, font: ?*anyopaque, font_color: uint, bg_color: uint, align_type: uint) void {
         var x: int = 0;
         var y: int = 0;
         std.log.debug("draw_string_in_rect font:{*}", .{font});
         if (font) |_anyfont| {
-            const _font: *LATTICE_FONT_INFO = @ptrCast(@alignCast(_anyfont));
-            c_font_operator.get_string_pos(string, _font, rect, align_type, &x, &y);
+            const _font: *LatticeFontInfo = @ptrCast(@alignCast(_anyfont));
+            FontOperator.get_string_pos(string, _font, rect, align_type, &x, &y);
             std.log.debug("draw_string_in_rect ({d},{d}) ({d},{d})", .{ rect.m_left, rect.m_top, x, y });
-            c_lattice_font_op.draw_string(surface, z_order, string, rect.m_left + x, rect.m_top + y, font, font_color, bg_color);
+            LatticeFontOp.draw_string(surface, z_order, string, rect.m_left + x, rect.m_top + y, font, font_color, bg_color);
         }
     }
 
-    fn draw_value(surface: *c_surface, z_order: int, value: int, dot_position: int, x: int, y: int, font: *anyopaque, font_color: uint, bg_color: uint) void {
+    fn draw_value(surface: *Surface, z_order: int, value: int, dot_position: int, x: int, y: int, font: *anyopaque, font_color: uint, bg_color: uint) void {
         const buf: [VALUE_STR_LEN]u8 = undefined;
-        const _font: *LATTICE_FONT_INFO = @ptrCast(font);
+        const _font: *LatticeFontInfo = @ptrCast(font);
         value_2_string(value, dot_position, buf, VALUE_STR_LEN);
-        c_lattice_font_op.draw_string(surface, z_order, buf, x, y, _font, font_color, bg_color);
+        LatticeFontOp.draw_string(surface, z_order, buf, x, y, _font, font_color, bg_color);
     }
 
-    fn draw_value_in_rect(surface: *c_surface, z_order: int, value: int, dot_position: int, rect: c_rect, font: *anyopaque, font_color: uint, bg_color: uint, align_type: uint) !void {
+    fn draw_value_in_rect(surface: *Surface, z_order: int, value: int, dot_position: int, rect: Rect, font: *anyopaque, font_color: uint, bg_color: uint, align_type: uint) !void {
         var buf: [VALUE_STR_LEN]u8 = undefined;
         try value_2_string(value, dot_position, &buf);
-        const _font: *LATTICE_FONT_INFO = @alignCast(@ptrCast(@constCast(font)));
+        const _font: *LatticeFontInfo = @alignCast(@ptrCast(@constCast(font)));
         draw_string_in_rect(surface, z_order, &buf, rect, _font, font_color, bg_color, align_type);
     }
 
@@ -214,7 +214,7 @@ pub const c_lattice_font_op = struct {
         var lattice_width: int = 0;
         var utf8_code: uint = 0;
         var utf8_bytes: usize = 0;
-        const _font: *LATTICE_FONT_INFO = @alignCast(@ptrCast(font));
+        const _font: *LatticeFontInfo = @alignCast(@ptrCast(font));
         while (strcur.len > 0) {
             // std.log.debug("strcur:{s}", .{strcur});
             utf8_bytes = @as(u32, @bitCast(get_utf8_code(strcur, &utf8_code)));
@@ -260,7 +260,7 @@ pub const c_lattice_font_op = struct {
         }
     }
 
-    fn draw_single_char(surface: *c_surface, z_order: int, utf8_code: uint, x: int, y: int, _font: ?*LATTICE_FONT_INFO, font_color: uint, bg_color: uint) int {
+    fn draw_single_char(surface: *Surface, z_order: int, utf8_code: uint, x: int, y: int, _font: ?*LatticeFontInfo, font_color: uint, bg_color: uint) int {
         var error_color: uint = @bitCast(@as(u32, 0xFF_FF_FF_FF));
         if (_font) |font| {
             const p_lattice = get_lattice(font, utf8_code);
@@ -291,7 +291,7 @@ pub const c_lattice_font_op = struct {
         return len;
     }
 
-    fn draw_lattice(surface: *c_surface, z_order: int, x: int, y: int, width: int, height: int, _p_data: [*]const u8, font_color: uint, bg_color: uint) void {
+    fn draw_lattice(surface: *Surface, z_order: int, x: int, y: int, width: int, height: int, _p_data: [*]const u8, font_color: uint, bg_color: uint) void {
         var r: uint = 0;
         var g: uint = 0;
         var b: uint = 0;
@@ -334,7 +334,7 @@ pub const c_lattice_font_op = struct {
         }
     }
 
-    fn get_lattice(font: *LATTICE_FONT_INFO, utf8_code: uint) ?*const LATTICE {
+    fn get_lattice(font: *LatticeFontInfo, utf8_code: uint) ?*const LATTICE {
         var first: usize = 0;
         var last: usize = @as(u32, @bitCast(font.count)) - 1;
         var middle: usize = (first + last) / 2;
@@ -406,10 +406,10 @@ pub const c_lattice_font_op = struct {
     fn init() void {}
 };
 
-pub const c_word = struct {
+pub const Word = struct {
     // public:
     pub fn draw_string(
-        surface: *c_surface, //
+        surface: *Surface, //
         z_order: int,
         string: []const u8,
         x: int,
@@ -421,10 +421,10 @@ pub const c_word = struct {
         fontOperator.draw_string(surface, z_order, string, x, y, font, font_color, bg_color);
     }
     pub fn draw_string_in_rect(
-        surface: *c_surface, //
+        surface: *Surface, //
         z_order: int,
         string: []const u8,
-        rect: c_rect,
+        rect: Rect,
         font: ?*anyopaque,
         font_color: int,
         bg_color: int,
@@ -434,11 +434,11 @@ pub const c_word = struct {
         fontOperator.draw_string_in_rect(surface, z_order, string, rect, font, font_color, bg_color, align_type);
     }
     pub fn draw_value_in_rect(
-        surface: *c_surface, //
+        surface: *Surface, //
         z_order: int,
         value: int,
         dot_position: int,
-        rect: c_rect,
+        rect: Rect,
         font: *anyopaque,
         font_color: int,
         bg_color: int,
@@ -447,7 +447,7 @@ pub const c_word = struct {
         try fontOperator.draw_value_in_rect(surface, z_order, value, dot_position, rect, font, font_color, bg_color, align_type);
     }
     fn draw_value(
-        surface: *c_surface, //
+        surface: *Surface, //
         z_order: int,
         value: int,
         dot_position: int,
@@ -465,5 +465,5 @@ pub const c_word = struct {
 };
 
 const fontOperator = blk: {
-    break :blk c_lattice_font_op;
+    break :blk LatticeFontOp;
 };

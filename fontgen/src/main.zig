@@ -38,12 +38,12 @@ pub fn main() !void {
         \\
     , .{});
 
-    const struct_lattice = struct {
+    const StructLattice = struct {
         utf8_code: u32,
         width: u8,
     };
 
-    const Map = std.AutoArrayHashMap(u32, struct_lattice);
+    const Map = std.AutoArrayHashMap(u32, StructLattice);
     var codeMap = Map.init(allocator);
     defer codeMap.deinit();
     var it = (try std.unicode.Utf8View.init(textData)).iterator();
@@ -63,7 +63,7 @@ pub fn main() !void {
             const ftBitmap = try tf.glyphBitmap(allocator, &buffer, i, scale, scale);
             const pixels = buffer.items;
 
-            var latticeData: struct_lattice = .{ .utf8_code = utf8Code, .width = @truncate(ftBitmap.width) };
+            var latticeData: StructLattice = .{ .utf8_code = utf8Code, .width = @truncate(ftBitmap.width) };
 
             var value: u8 = 0;
             var count: usize = 1;
@@ -144,7 +144,7 @@ pub fn main() !void {
         \\
     , .{});
     _ = try stdout.print(
-        \\pub const {[fontName]s}_{[fontHeight]d}B = guilite.LATTICE_FONT_INFO{{
+        \\pub const {[fontName]s}_{[fontHeight]d}B = guilite.LatticeFontInfo{{
         \\    .height = {[fontHeight]d}, //
         \\    .count = {[count]d},
         \\    .lattice_array = &lattice_array,

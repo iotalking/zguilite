@@ -7,8 +7,8 @@ const display = @import("../core/display.zig");
 const theme = @import("../core/theme.zig");
 const types = @import("../core/types.zig");
 const Wnd = wnd.Wnd;
-const c_rect = api.c_rect;
-const c_word = word.c_word;
+const Rect = api.Rect;
+const Word = word.Word;
 const Theme = theme.Theme;
 const int = types.int;
 const uint = types.uint;
@@ -43,7 +43,7 @@ pub const Button = struct {
     fn on_paint(w: *Wnd) !void {
         std.log.debug("button on_paint font:{*}", .{w.m_font});
         // const this: *Button = @fieldParentPtr("wnd", w);
-        var rect: c_rect = c_rect.init();
+        var rect: Rect = Rect.init();
         w.get_screen_rect(&rect);
         std.log.debug("screen ({},{},{},{})", .{ rect.m_left, rect.m_top, rect.width(), rect.height() });
 
@@ -52,20 +52,20 @@ pub const Button = struct {
             .STATUS_NORMAL => {
                 surface.fill_rect(rect, Theme.get_color(.COLOR_WND_NORMAL), w.m_z_order);
                 if (w.m_str) |str| {
-                    c_word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font, w.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                    Word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font, w.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                 }
             },
             .STATUS_FOCUSED => {
                 surface.fill_rect(rect, Theme.get_color(.COLOR_WND_FOCUS), w.m_z_order);
                 if (w.m_str) |str| {
-                    c_word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font, w.m_font_color, Theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                    Word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font, w.m_font_color, Theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                 }
             },
             .STATUS_PUSHED => {
                 surface.fill_rect(rect, Theme.get_color(.COLOR_WND_PUSHED), w.m_z_order);
                 surface.draw_rect(rect, Theme.get_color(.COLOR_WND_BORDER), 2, w.m_z_order);
                 if (w.m_str) |str| {
-                    c_word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font.?, w.m_font_color, Theme.get_color(.COLOR_WND_PUSHED), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                    Word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font.?, w.m_font_color, Theme.get_color(.COLOR_WND_PUSHED), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                 }
             },
             else => {

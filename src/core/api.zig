@@ -140,9 +140,9 @@ pub const c_fifo = struct {
     m_write_mutex: *anyopaque,
 };
 
-pub const c_rect = struct {
+pub const Rect = struct {
     // public:
-    pub fn init() c_rect {
+    pub fn init() Rect {
         return .{
             .m_left = 0,
             .m_top = 0,
@@ -150,13 +150,13 @@ pub const c_rect = struct {
             .m_bottom = 0,
         };
     }
-    pub fn init2(left: types.int, top: types.int, _width: types.int, _height: types.int) c_rect {
-        var rect = c_rect{};
+    pub fn init2(left: types.int, top: types.int, _width: types.int, _height: types.int) Rect {
+        var rect = Rect{};
         rect.set_rect(left, top, _width, _height);
         return rect;
     }
     pub fn set_rect(
-        this: *c_rect,
+        this: *Rect,
         left: types.int,
         top: types.int,
         _width: types.int,
@@ -168,25 +168,25 @@ pub const c_rect = struct {
         this.m_right = left + _width - 1;
         this.m_bottom = top + _height - 1;
     }
-    pub fn pt_in_rect(this: c_rect, x: types.int, y: types.int) bool {
+    pub fn pt_in_rect(this: Rect, x: types.int, y: types.int) bool {
         return x >= this.m_left and x <= this.m_right and y >= this.m_top and y <= this.m_bottom;
     }
-    pub fn eql(this: c_rect, rect: c_rect) bool {
+    pub fn eql(this: Rect, rect: Rect) bool {
         return (this.m_left == rect.m_left) and //
             (this.m_top == rect.m_top) and //
             (this.m_right == rect.m_right) and //
             (this.m_bottom == rect.m_bottom);
     }
-    pub fn add(this: *c_rect, other: c_rect) void {
+    pub fn add(this: *Rect, other: Rect) void {
         this.m_left +%= other.m_left;
         this.m_top +%= other.m_top;
         this.m_right +%= other.m_right;
         this.m_bottom +%= other.m_bottom;
     }
-    pub fn width(this: c_rect) types.int {
+    pub fn width(this: Rect) types.int {
         return this.m_right - this.m_left + 1;
     }
-    pub fn height(this: c_rect) types.int {
+    pub fn height(this: Rect) types.int {
         return this.m_bottom - this.m_top + 1;
     }
 

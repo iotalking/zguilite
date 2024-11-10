@@ -4,7 +4,7 @@ const api = @import("./api.zig");
 const core = @import("./core.zig");
 const int = types.int;
 const uint = types.uint;
-const c_rect = api.c_rect;
+const Rect = api.Rect;
 pub const SURFACE_CNT_MAX = 6; //root + pages
 
 pub const Z_ORDER_LEVEL = enum {
@@ -26,12 +26,12 @@ pub const DISPLAY_DRIVER = struct {
     fill_rect: ?*const fn (x0: int, y0: int, x1: int, y1: int, rgb: int) void,
 };
 
-// class c_surface;
-pub const c_display = struct {
-    // 	friend class c_surface;
+// class Surface;
+pub const Display = struct {
+    // 	friend class Surface;
     // public:
-    pub inline fn init(phy_fb: *anyopaque, display_width: int, display_height: int, surface: *c_surface, driver: *DISPLAY_DRIVER) c_display {
-        const this = c_display{};
+    pub inline fn init(phy_fb: *anyopaque, display_width: int, display_height: int, surface: *Surface, driver: *DISPLAY_DRIVER) Display {
+        const this = Display{};
         this.m_phy_fb = phy_fb;
         this.m_width = display_width;
         this.m_height = display_height;
@@ -46,8 +46,8 @@ pub const c_display = struct {
         surface.*.attach_display(this);
         return this;
     }
-    pub inline fn init2(this: *c_display, phy_fb: [*]u8, display_width: int, display_height: int, surface_width: int, surface_height: int, color_bytes: uint, surface_cnt: int, driver: ?*DISPLAY_DRIVER) !void {
-        this.* = c_display{
+    pub inline fn init2(this: *Display, phy_fb: [*]u8, display_width: int, display_height: int, surface_width: int, surface_height: int, color_bytes: uint, surface_cnt: int, driver: ?*DISPLAY_DRIVER) !void {
+        this.* = Display{
             .m_phy_fb = phy_fb,
             .m_width = display_width,
             .m_height = display_height,
@@ -72,23 +72,23 @@ pub const c_display = struct {
             }
         }
         while (i < this.m_surface_cnt) : (i += 1) {
-            // const tmp_surface = try core.allocator.create(c_surface);
-            // tmp_surface = c_surface.init(width: uint, height: uint, color_bytes: uint, max_zorder: Z_ORDER_LEVEL, overlpa_rect: c_rect)
-            const tmp_surface = try c_surface.init(core.allocator, surface_width, surface_height, color_bytes, .Z_ORDER_LEVEL_0, c_rect.init());
+            // const tmp_surface = try core.allocator.create(Surface);
+            // tmp_surface = Surface.init(width: uint, height: uint, color_bytes: uint, max_zorder: Z_ORDER_LEVEL, overlpa_rect: Rect)
+            const tmp_surface = try Surface.init(core.allocator, surface_width, surface_height, color_bytes, .Z_ORDER_LEVEL_0, Rect.init());
             this.m_surface_group[i] = tmp_surface;
             // 		m_surface_group[i]->attach_display(this);
             tmp_surface.attach_display(this);
         }
         return;
     }
-    pub inline fn alloc_surface(this: *c_display, max_zorder: Z_ORDER_LEVEL, layer_rect: c_rect) !*c_surface {
-        std.log.debug("display alloc_surface max_zorder:{}", .{max_zorder});
+    pub inline fn alloSurface(this: *Display, max_zorder: Z_ORDER_LEVEL, layer_rect: Rect) !*Surface {
+        std.log.debug("display alloSurface max_zorder:{}", .{max_zorder});
         api.ASSERT(@intFromEnum(max_zorder) < @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX) and this.m_surface_index < this.m_surface_cnt);
-        std.log.debug("alloc_surface m_surface_index:{}", .{this.m_surface_index});
+        std.log.debug("alloSurface m_surface_index:{}", .{this.m_surface_index});
         const m_surface_index: usize = @intCast(this.m_surface_index);
-        if (layer_rect.eql(c_rect.init())) {
+        if (layer_rect.eql(Rect.init())) {
             if (this.m_surface_group[m_surface_index]) |surface| {
-                try surface.set_surface(max_zorder, c_rect.init2(0, 0, this.m_width, this.m_height));
+                try surface.set_surface(max_zorder, Rect.init2(0, 0, this.m_width, this.m_height));
             }
         } else {
             if (this.m_surface_group[m_surface_index]) |surface| {
@@ -99,7 +99,7 @@ pub const c_display = struct {
         this.m_surface_index += 1;
         return ret;
     }
-    inline fn swipe_surface(this: *c_display, s0: *c_surface, s1: *c_surface, x0: int, x1: int, y0: int, y1: int, offset: int) int {
+    inline fn swipe_surface(this: *Display, s0: *Surface, s1: *Surface, x0: int, x1: int, y0: int, y1: int, offset: int) int {
         const surface_width = s0.m_width;
         const surface_height = s0.m_height;
         if (offset < 0 and offset > surface_width and y0 < 0 and y0 >= surface_height or
@@ -183,20 +183,20 @@ pub const c_display = struct {
         return 0;
     }
 
-    // 	inline c_display(void* phy_fb, int display_width, int display_height, int surface_width, int surface_height, unsigned int color_bytes, int surface_cnt, DISPLAY_DRIVER* driver = 0);//multiple surface
-    // 	inline c_surface* alloc_surface(Z_ORDER_LEVEL max_zorder, c_rect layer_rect = c_rect());//for slide group
-    // 	inline int swipe_surface(c_surface* s0, c_surface* s1, int x0, int x1, int y0, int y1, int offset);
-    fn get_width(this: c_display) int {
+    // 	inline Display(void* phy_fb, int display_width, int display_height, int surface_width, int surface_height, unsigned int color_bytes, int surface_cnt, DISPLAY_DRIVER* driver = 0);//multiple surface
+    // 	inline Surface* alloSurface(Z_ORDER_LEVEL max_zorder, Rect layer_rect = Rect());//for slide group
+    // 	inline int swipe_surface(Surface* s0, Surface* s1, int x0, int x1, int y0, int y1, int offset);
+    fn get_width(this: Display) int {
         return this.m_width;
     }
-    fn get_height(this: c_display) int {
+    fn get_height(this: Display) int {
         return this.m_height;
     }
-    fn get_phy_fb(this: c_display) [*]u8 {
+    fn get_phy_fb(this: Display) [*]u8 {
         return this.m_phy_fb;
     }
 
-    fn get_updated_fb(this: *c_display, width: *int, height: *int, force_update: bool) ?*anyopaque {
+    fn get_updated_fb(this: *Display, width: *int, height: *int, force_update: bool) ?*anyopaque {
         // if (width and height)
         // 		{
         width.* = this.m_width;
@@ -212,7 +212,7 @@ pub const c_display = struct {
         return this.m_phy_fb;
     }
 
-    fn snap_shot(this: *c_display, file_name: [*]const u8) !int {
+    fn snap_shot(this: *Display, file_name: [*]const u8) !int {
         if (this.m_phy_fb or (this.m_color_bytes != 2 and this.m_color_bytes != 4)) {
             return -1;
         }
@@ -242,7 +242,7 @@ pub const c_display = struct {
     }
 
     // protected:
-    fn draw_pixel_impl(this: *c_display, x: int, y: int, rgb: uint) void {
+    fn draw_pixel_impl(this: *Display, x: int, y: int, rgb: uint) void {
         // std.log.debug("display draw_pixel_impl({},{},{})", .{ x, y, rgb });
         if ((x >= this.m_width) or (y >= this.m_height)) {
             return;
@@ -264,7 +264,7 @@ pub const c_display = struct {
         }
     }
 
-    fn fill_rect_impl(this: *c_display, x0: int, y0: int, x1: int, y1: int, rgb: uint) void {
+    fn fill_rect_impl(this: *Display, x0: int, y0: int, x1: int, y1: int, rgb: uint) void {
         const ux0: usize = @intCast(x0);
         const uy0: usize = @intCast(y0);
         const ux1: usize = @intCast(x1);
@@ -323,7 +323,7 @@ pub const c_display = struct {
         }
     }
 
-    fn flush_screen_impl(this: *c_display, left: int, top: int, right: int, bottom: int, fb: *anyopaque, fb_width: int) int {
+    fn flush_screen_impl(this: *Display, left: int, top: int, right: int, bottom: int, fb: *anyopaque, fb_width: int) int {
         if ((null == this.m_phy_fb)) {
             return -1;
         }
@@ -358,13 +358,13 @@ pub const c_display = struct {
 
     // vtable
     draw_pixel: *const fn (
-        *c_display, //
+        *Display, //
         int,
         int,
         uint,
     ) void = draw_pixel_impl,
     fill_rect: *const fn (
-        *c_display, //
+        *Display, //
         int,
         int,
         int,
@@ -372,7 +372,7 @@ pub const c_display = struct {
         uint,
     ) void = fill_rect_impl,
     flush_screen: *const fn (
-        this: *c_display, //
+        this: *Display, //
         left: int,
         top: int,
         right: int,
@@ -389,29 +389,29 @@ pub const c_display = struct {
 
     m_phy_read_index: int = 0,
     m_phy_write_index: int = 0,
-    m_surface_group: [SURFACE_CNT_MAX]?*c_surface = undefined,
+    m_surface_group: [SURFACE_CNT_MAX]?*Surface = undefined,
     m_surface_cnt: int = 0, //surface count
     m_surface_index: int = 0,
 };
 
-pub const c_layer = struct {
+pub const Layer = struct {
     // public:
-    // 	c_layer() { fb = 0; }
+    // 	Layer() { fb = 0; }
     fb: ?*anyopaque = null, //framebuffer
-    rect: c_rect = .{}, //framebuffer area
-    active_rect: c_rect = .{},
+    rect: Rect = .{}, //framebuffer area
+    active_rect: Rect = .{},
 };
 
-pub const c_surface = struct {
-    // 	friend class c_display; friend class c_bitmap_operator;
+pub const Surface = struct {
+    // 	friend class Display; friend class BitmapOperator;
     // public:
     // 	Z_ORDER_LEVEL get_max_z_order() { return m_max_zorder; }
 
-    inline fn init(allocator: std.mem.Allocator, width: uint, height: uint, color_bytes: uint, max_zorder: Z_ORDER_LEVEL, overlpa_rect: c_rect) !*c_surface
+    inline fn init(allocator: std.mem.Allocator, width: uint, height: uint, color_bytes: uint, max_zorder: Z_ORDER_LEVEL, overlpa_rect: Rect) !*Surface
     // : m_width(width), m_height(height), m_color_bytes(color_bytes), m_fb(0), m_is_active(false),
     // m_top_zorder(Z_ORDER_LEVEL_0), m_phy_write_index(0), m_display(0)
     {
-        var this = try allocator.create(c_surface);
+        var this = try allocator.create(Surface);
         errdefer allocator.destroy(this);
         this.* = .{
             .m_width = width,
@@ -422,9 +422,9 @@ pub const c_surface = struct {
             .m_phy_write_index = null,
         };
 
-        // if(overlpa_rect.eql(.{})  set_surface(max_zorder, c_rect(0, 0, width, height)) : set_surface(max_zorder, overlpa_rect);
+        // if(overlpa_rect.eql(.{})  set_surface(max_zorder, Rect(0, 0, width, height)) : set_surface(max_zorder, overlpa_rect);
         if (overlpa_rect.eql(.{})) {
-            _ = try this.set_surface(max_zorder, c_rect.init2(0, 0, width, height));
+            _ = try this.set_surface(max_zorder, Rect.init2(0, 0, width, height));
         } else {
             _ = try this.set_surface(max_zorder, overlpa_rect);
         }
@@ -452,7 +452,7 @@ pub const c_surface = struct {
         return 0;
     }
 
-    fn draw_pixel_impl(this: *c_surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void {
+    fn draw_pixel_impl(this: *Surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void {
         // std.log.debug("surface draw_pixel_impl(this:{*},x:{},y:{},rgb:{},z_order:{})", .{ this, x, y, rgb, z_order });
         if (x >= this.m_width or y >= this.m_height or x < 0 or y < 0) {
             return;
@@ -503,7 +503,7 @@ pub const c_surface = struct {
         }
     }
 
-    fn fill_rect_impl(this: *c_surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: uint, z_order: uint) void {
+    fn fill_rect_impl(this: *Surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: uint, z_order: uint) void {
         const x0 = if (_x0 < 0) 0 else _x0;
         var y0 = if (_y0 < 0) 0 else _y0;
         const x1 = if (_x1 > (this.m_width - 1)) (this.m_width - 1) else _x1;
@@ -545,7 +545,7 @@ pub const c_surface = struct {
         }
     }
 
-    pub fn draw_hline(this: *c_surface, _x0: int, _x1: int, y: int, rgb: uint, z_order: uint) void {
+    pub fn draw_hline(this: *Surface, _x0: int, _x1: int, y: int, rgb: uint, z_order: uint) void {
         const x0: usize = @as(u32, @bitCast(_x0));
         const x1: usize = @as(u32, @bitCast(_x1));
         // 		for (; x0 <= x1; x0++)
@@ -555,7 +555,7 @@ pub const c_surface = struct {
         }
     }
 
-    pub fn draw_vline(this: *c_surface, x: int, y0: int, y1: int, rgb: uint, z_order: uint) void {
+    pub fn draw_vline(this: *Surface, x: int, y0: int, y1: int, rgb: uint, z_order: uint) void {
         // for (; y0 <= y1; y0++)
         const _y0: usize = @as(usize, @as(u32, @bitCast(y0)));
         const _y1: usize = @as(usize, @as(u32, @bitCast(y1)));
@@ -565,7 +565,7 @@ pub const c_surface = struct {
         }
     }
 
-    pub fn draw_line(this: *c_surface, _x1: int, _y1: int, _x2: int, _y2: int, rgb: uint, z_order: uint) void {
+    pub fn draw_line(this: *Surface, _x1: int, _y1: int, _x2: int, _y2: int, rgb: uint, z_order: uint) void {
         // int dx, dy, x, y, e;
         var dx: int = 0;
         var dy: int = 0;
@@ -619,7 +619,7 @@ pub const c_surface = struct {
         }
     }
 
-    pub fn draw_rect_pos(this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint, size: uint) void {
+    pub fn draw_rect_pos(this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint, size: uint) void {
         // for (unsigned int offset = 0; offset < size; offset++)
 
         std.log.debug("draw_rect_pos({d},{d},{d},{d},{d})", .{ x0, y0, x1, y1, rgb });
@@ -633,11 +633,11 @@ pub const c_surface = struct {
         }
     }
 
-    pub fn draw_rect(this: *c_surface, rect: c_rect, rgb: int, z_order: uint, size: uint) void {
+    pub fn draw_rect(this: *Surface, rect: Rect, rgb: int, z_order: uint, size: uint) void {
         this.draw_rect_pos(rect.m_left, rect.m_top, rect.m_right, rect.m_bottom, rgb, z_order, size);
     }
 
-    pub fn flush_screen(this: *c_surface, left: int, top: int, right: int, bottom: int) int {
+    pub fn flush_screen(this: *Surface, left: int, top: int, right: int, bottom: int) int {
         if (!this.m_is_active) {
             return -1;
         }
@@ -656,14 +656,14 @@ pub const c_surface = struct {
         return 0;
     }
 
-    fn is_active(this: c_surface) bool {
+    fn is_active(this: Surface) bool {
         return this.m_is_active;
     }
-    fn get_display(this: c_surface) *c_display {
+    fn get_display(this: Surface) *Display {
         return this.m_display;
     }
 
-    pub fn activate_layer(this: *c_surface, active_rect: c_rect, active_z_order: uint) void //empty active rect means inactivating the layer
+    pub fn activate_layer(this: *Surface, active_rect: Rect, active_z_order: uint) void //empty active rect means inactivating the layer
     {
         api.ASSERT(active_z_order > Z_ORDER_LEVEL_0 and active_z_order <= Z_ORDER_LEVEL_MAX);
 
@@ -702,11 +702,11 @@ pub const c_surface = struct {
         this.m_layers[uactive_z_order].active_rect = active_rect; //set the new acitve rect.
     }
 
-    pub fn set_active(this: *c_surface, flag: bool) void {
+    pub fn set_active(this: *Surface, flag: bool) void {
         this.m_is_active = flag;
     }
     // protected:
-    fn fill_rect_low_level_impl(this: *c_surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: int) void { //fill rect on framebuffer of surface
+    fn fill_rect_low_level_impl(this: *Surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: int) void { //fill rect on framebuffer of surface
         const x0: usize = @as(u32, @bitCast(_x0));
         const y0: usize = @as(u32, @bitCast(_y0));
         const x1: usize = @as(u32, @bitCast(_x1));
@@ -752,7 +752,7 @@ pub const c_surface = struct {
         }
     }
 
-    fn draw_pixel_low_level_impl(this: *c_surface, x: int, y: int, rgb: uint) void {
+    fn draw_pixel_low_level_impl(this: *Surface, x: int, y: int, rgb: uint) void {
         // std.log.debug("draw_pixel_low_level_impl x:{d} y:{d} rgb:{d}", .{ x, y, rgb });
         if (this.m_fb != null) { //draw pixel on framebuffer of surface
             const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_fb));
@@ -771,12 +771,12 @@ pub const c_surface = struct {
         }
     }
 
-    fn attach_display(this: *c_surface, display: *c_display) void {
+    fn attach_display(this: *Surface, display: *Display) void {
         this.m_display = display;
         this.m_phy_write_index = &display.m_phy_write_index;
     }
 
-    fn set_surface(this: *c_surface, max_z_order: Z_ORDER_LEVEL, layer_rect: c_rect) !void {
+    fn set_surface(this: *Surface, max_z_order: Z_ORDER_LEVEL, layer_rect: Rect) !void {
         this.m_max_zorder = max_z_order;
         // std.log.debug("surface.set_surface m_display:{*}", .{this.m_display});
         // std.debug.dumpCurrentStackTrace(null);
@@ -813,26 +813,26 @@ pub const c_surface = struct {
         // 		m_layers[Z_ORDER_LEVEL_0].active_rect = layer_rect;
     }
 
-    pub fn draw_pixel(this: *c_surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void {
+    pub fn draw_pixel(this: *Surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void {
         this.m_vtable.draw_pixel(this, x, y, rgb, z_order);
     }
-    // pub fn fill_rect(this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint) void {
+    // pub fn fill_rect(this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint) void {
     //     this.m_vtable.fill_rect(this, x0, y0, x1, y1, rgb, z_order);
     // }
-    pub fn fill_rect(this: *c_surface, rect: c_rect, rgb: uint, z_order: uint) void {
+    pub fn fill_rect(this: *Surface, rect: Rect, rgb: uint, z_order: uint) void {
         this.m_vtable.fill_rect(this, rect.m_left, rect.m_top, rect.m_right, rect.m_bottom, rgb, z_order);
     }
-    pub fn fill_rect_low_level(this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: int) void {
+    pub fn fill_rect_low_level(this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: int) void {
         this.m_vtable.fill_rect_low_level(this, x0, y0, x1, y1, rgb);
     }
-    pub fn draw_pixel_low_level(this: *c_surface, x: int, y: int, rgb: uint) void {
+    pub fn draw_pixel_low_level(this: *Surface, x: int, y: int, rgb: uint) void {
         this.m_vtable.draw_pixel_low_level(this, x, y, rgb);
     }
     const VTable = struct {
-        draw_pixel: *const fn (this: *c_surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void = draw_pixel_impl,
-        fill_rect: *const fn (this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint) void = fill_rect_impl,
-        fill_rect_low_level: *const fn (this: *c_surface, x0: int, y0: int, x1: int, y1: int, rgb: int) void = fill_rect_low_level_impl,
-        draw_pixel_low_level: *const fn (this: *c_surface, x: int, y: int, rgb: uint) void = draw_pixel_low_level_impl,
+        draw_pixel: *const fn (this: *Surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void = draw_pixel_impl,
+        fill_rect: *const fn (this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint) void = fill_rect_impl,
+        fill_rect_low_level: *const fn (this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: int) void = fill_rect_low_level_impl,
+        draw_pixel_low_level: *const fn (this: *Surface, x: int, y: int, rgb: uint) void = draw_pixel_low_level_impl,
     };
 
     m_vtable: VTable = .{},
@@ -840,22 +840,22 @@ pub const c_surface = struct {
     m_height: int = 0, //in pixels
     m_color_bytes: int = 0, //16 bits, 32 bits for default
     m_fb: ?[*]u8 = null, //frame buffer you could see
-    m_layers: [@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX)]c_layer = undefined, //all graphic layers
+    m_layers: [@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX)]Layer = undefined, //all graphic layers
     m_is_active: bool, //active flag
     m_max_zorder: Z_ORDER_LEVEL = .Z_ORDER_LEVEL_0, //the highest graphic layer the surface will have
     m_top_zorder: Z_ORDER_LEVEL = .Z_ORDER_LEVEL_0, //the current highest graphic layer the surface have
     m_phy_write_index: ?*int = null,
-    m_display: ?*c_display = null,
+    m_display: ?*Display = null,
 };
 
-// inline c_display::c_display(void* phy_fb, int display_width, int display_height, c_surface* surface, DISPLAY_DRIVER* driver) : m_phy_fb(phy_fb), m_width(display_width), m_height(display_height), m_driver(driver), m_phy_read_index(0), m_phy_write_index(0), m_surface_cnt(1), m_surface_index(0)
+// inline Display::Display(void* phy_fb, int display_width, int display_height, Surface* surface, DISPLAY_DRIVER* driver) : m_phy_fb(phy_fb), m_width(display_width), m_height(display_height), m_driver(driver), m_phy_read_index(0), m_phy_write_index(0), m_surface_cnt(1), m_surface_index(0)
 // {
 // 	m_color_bytes = surface->m_color_bytes;
 // 	surface->m_is_active = true;
 // 	(m_surface_group[0] = surface)->attach_display(this);
 // }
 
-// inline c_display::c_display(void* phy_fb, int display_width, int display_height, int surface_width, int surface_height, unsigned int color_bytes, int surface_cnt, DISPLAY_DRIVER* driver) : m_phy_fb(phy_fb), m_width(display_width), m_height(display_height), m_color_bytes(color_bytes), m_phy_read_index(0), m_phy_write_index(0), m_surface_cnt(surface_cnt), m_driver(driver), m_surface_index(0)
+// inline Display::Display(void* phy_fb, int display_width, int display_height, int surface_width, int surface_height, unsigned int color_bytes, int surface_cnt, DISPLAY_DRIVER* driver) : m_phy_fb(phy_fb), m_width(display_width), m_height(display_height), m_color_bytes(color_bytes), m_phy_read_index(0), m_phy_write_index(0), m_surface_cnt(surface_cnt), m_driver(driver), m_surface_index(0)
 // {
 // 	ASSERT(color_bytes == 2 or color_bytes == 4);
 // 	ASSERT(m_surface_cnt <= SURFACE_CNT_MAX);
@@ -863,19 +863,19 @@ pub const c_surface = struct {
 
 // 	for (int i = 0; i < m_surface_cnt; i++)
 // 	{
-// 		m_surface_group[i] = new c_surface(surface_width, surface_height, color_bytes);
+// 		m_surface_group[i] = new Surface(surface_width, surface_height, color_bytes);
 // 		m_surface_group[i]->attach_display(this);
 // 	}
 // }
 
-// inline c_surface* c_display::alloc_surface(Z_ORDER_LEVEL max_zorder, c_rect layer_rect)
+// inline Surface* Display::alloSurface(Z_ORDER_LEVEL max_zorder, Rect layer_rect)
 // {
 // 	ASSERT(max_zorder < Z_ORDER_LEVEL_MAX and m_surface_index < m_surface_cnt);
-// 	(layer_rect == c_rect()) ? m_surface_group[m_surface_index]->set_surface(max_zorder, c_rect(0, 0, m_width, m_height)) : m_surface_group[m_surface_index]->set_surface(max_zorder, layer_rect);
+// 	(layer_rect == Rect()) ? m_surface_group[m_surface_index]->set_surface(max_zorder, Rect(0, 0, m_width, m_height)) : m_surface_group[m_surface_index]->set_surface(max_zorder, layer_rect);
 // 	return m_surface_group[m_surface_index++];
 // }
 
-// inline int c_display::swipe_surface(c_surface* s0, c_surface* s1, int x0, int x1, int y0, int y1, int offset)
+// inline int Display::swipe_surface(Surface* s0, Surface* s1, int x0, int x1, int y0, int y1, int offset)
 // {
 // 	int surface_width = s0->m_width;
 // 	int surface_height = s0->m_height;

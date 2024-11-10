@@ -8,8 +8,8 @@ const theme = @import("../core/theme.zig");
 const types = @import("../core/types.zig");
 const button = @import("./button.zig");
 const Wnd = wnd.Wnd;
-const c_rect = api.c_rect;
-const c_word = word.c_word;
+const Rect = api.Rect;
+const Word = word.Word;
 const Theme = theme.Theme;
 const int = types.int;
 const uint = types.uint;
@@ -74,7 +74,7 @@ pub const SpinBox = struct {
         thisWnd.m_font = Theme.get_font(.FONT_DEFAULT);
         thisWnd.m_font_color = Theme.get_color(.COLOR_WND_FONT);
 
-        var rect = c_rect.init();
+        var rect = Rect.init();
         thisWnd.get_screen_rect(&rect);
 
         this.m_bt_down.m_spin_box = this;
@@ -87,16 +87,16 @@ pub const SpinBox = struct {
         try this.m_bt_up.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_UP, "-", x, y2, @truncate(@divFloor(rect.width(), 3)), @truncate(@divFloor(rect.height(), 3)), null);
     }
     fn on_paint(thisWnd: *Wnd) !void {
-        // const this: *SpinBox = @fieldParentPtr("wnd", thisWnd);
+        const this: *SpinBox = @fieldParentPtr("wnd", thisWnd);
 
-        var rect = c_rect.init();
+        var rect = Rect.init();
         thisWnd.get_screen_rect(&rect);
         rect.m_right = rect.m_left + (@divFloor(rect.width() * 2, 3));
 
         if (thisWnd.m_parent) |_| {
             if (thisWnd.m_surface) |surface| {
                 surface.draw_rect(rect, Theme.get_color(.COLOR_WND_NORMAL), thisWnd.m_z_order, 1);
-                // c_word.draw_value_in_rect(surface, thisWnd.m_z_order, this.m_cur_value, this.m_digit, rect, thisWnd.m_font.?, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER) catch {};
+                Word.draw_value_in_rect(surface, thisWnd.m_z_order, this.m_cur_value, this.m_digit, rect, thisWnd.m_font.?, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER) catch {};
             } else {
                 api.ASSERT(false);
             }

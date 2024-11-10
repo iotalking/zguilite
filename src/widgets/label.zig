@@ -7,10 +7,10 @@ const display = @import("../core/display.zig");
 const theme = @import("../core/theme.zig");
 const types = @import("../core/types.zig");
 const Wnd = wnd.Wnd;
-const c_rect = api.c_rect;
-const c_word = word.c_word;
+const Rect = api.Rect;
+const Word = word.Word;
 const Theme = theme.Theme;
-const c_surface = display.c_surface;
+const Surface = display.Surface;
 const int = types.int;
 const uint = types.uint;
 
@@ -29,14 +29,14 @@ pub const Label = struct {
     // public:
     fn on_paint(w: *Wnd) !void {
         std.log.debug("label on_paint", .{});
-        var rect: c_rect = c_rect.init();
+        var rect: Rect = Rect.init();
         const bg_color = if (w.m_bg_color != 0) w.m_bg_color else w.m_parent.?.get_bg_color();
         w.get_screen_rect(&rect);
         if (w.m_str) |str| {
             if (w.m_surface) |surface| {
-                const _rect = c_rect.init2(rect.m_left, rect.m_top, rect.m_right, rect.m_bottom);
+                const _rect = Rect.init2(rect.m_left, rect.m_top, rect.m_right, rect.m_bottom);
                 surface.fill_rect(_rect, bg_color, w.m_z_order);
-                c_word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font, w.m_font_color, bg_color, api.ALIGN_LEFT | api.ALIGN_VCENTER);
+                Word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font, w.m_font_color, bg_color, api.ALIGN_LEFT | api.ALIGN_VCENTER);
             }
         }
     }

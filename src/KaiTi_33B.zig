@@ -12635,7 +12635,7 @@ const lattice_array = [_]guilite.LATTICE{
     .{ .utf8_code = 15308724, .width = 21, .pixel_buffer = &_15308724 },
     .{ .utf8_code = 15309237, .width = 23, .pixel_buffer = &_15309237 },
 };
-pub const KaiTi_33B = guilite.LATTICE_FONT_INFO{
+pub const KaiTi_33B = guilite.LatticeFontInfo{
     .height = 33, //
     .count = 91,
     .lattice_array = &lattice_array,

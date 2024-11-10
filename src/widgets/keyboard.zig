@@ -8,10 +8,10 @@ const display = @import("../core/display.zig");
 const theme = @import("../core/theme.zig");
 const types = @import("../core/types.zig");
 const Wnd = wnd.Wnd;
-const c_rect = api.c_rect;
-const c_word = word.c_word;
+const Rect = api.Rect;
+const Word = word.Word;
 const Theme = theme.Theme;
-const c_surface = display.c_surface;
+const Surface = display.Surface;
 const int = types.int;
 const uint = types.uint;
 
@@ -456,11 +456,11 @@ pub const Keyboard = struct {
         // _ = resource_id;
         // _ = style;
         const thisWnd: *Wnd = this.asWnd();
-        var user_rect: c_rect = c_rect.init();
+        var user_rect: Rect = Rect.init();
         user.get_wnd_rect(&user_rect);
         this.m_on_click = click;
         if (style == .STYLE_ALL_BOARD) { //Place keyboard at the bottom of user's parent window.
-            var user_parent_rect = c_rect.init();
+            var user_parent_rect = Rect.init();
             if (user.get_parent()) |p| {
                 p.get_wnd_rect(&user_parent_rect);
             }
@@ -594,7 +594,7 @@ pub const Keyboard = struct {
     fn on_paint(w: *Wnd) !void {
         const this: *Keyboard = @fieldParentPtr("wnd", w);
         const _w = this.asWnd();
-        var rect = c_rect.init();
+        var rect = Rect.init();
         _w.get_screen_rect(&rect);
         if (_w.m_surface) |m_surface| {
             m_surface.fill_rect(rect, api.GL_RGB(0, 0, 0), _w.m_z_order);
@@ -604,7 +604,7 @@ pub const Keyboard = struct {
         const w = this.asWnd();
         w.disconnect();
         if (w.m_surface) |surface| {
-            surface.activate_layer(c_rect.init(), w.m_z_order); //inactivate the layer of keyboard by empty rect.
+            surface.activate_layer(Rect.init(), w.m_z_order); //inactivate the layer of keyboard by empty rect.
         }
     }
 };

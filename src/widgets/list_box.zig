@@ -8,8 +8,8 @@ const theme = @import("../core/theme.zig");
 const types = @import("../core/types.zig");
 const keyboard = @import("./keyboard.zig");
 const Wnd = wnd.Wnd;
-const c_rect = api.c_rect;
-const c_word = word.c_word;
+const Rect = api.Rect;
+const Word = word.Word;
 const Theme = theme.Theme;
 const int = types.int;
 const uint = types.uint;
@@ -33,8 +33,8 @@ pub const ListBox = struct {
     m_selected_item: u16 = 0,
     m_item_total: u16 = 0,
     m_item_array: [MAX_ITEM_NUM][]const u8 = std.mem.zeroes([MAX_ITEM_NUM][]const u8),
-    m_list_wnd_rect: c_rect = c_rect.init(), //rect relative to parent wnd.
-    m_list_screen_rect: c_rect = c_rect.init(), //rect relative to physical screen(frame buffer)
+    m_list_wnd_rect: Rect = Rect.init(), //rect relative to parent wnd.
+    m_list_screen_rect: Rect = Rect.init(), //rect relative to physical screen(frame buffer)
     on_change: ?wnd.WND_CALLBACK = null,
 
     pub fn asWnd(this: *ListBox) *Wnd {
@@ -58,7 +58,7 @@ pub const ListBox = struct {
     fn on_paint(thisWnd: *Wnd) !void {
         const this: *ListBox = @fieldParentPtr("wnd", thisWnd);
 
-        var rect = c_rect.init();
+        var rect = Rect.init();
         thisWnd.get_screen_rect(&rect);
         this.update_list_size();
 
@@ -72,7 +72,7 @@ pub const ListBox = struct {
                             thisWnd.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
                         }
                         surface.draw_rect(rect, Theme.get_color(.COLOR_WND_NORMAL), thisWnd.m_z_order, 1);
-                        c_word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                        Word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                         std.log.debug("ListBox drawed {s} {*}", .{ this.m_item_array[0], this });
                     },
                     .STATUS_FOCUSED => {
@@ -82,11 +82,11 @@ pub const ListBox = struct {
                             thisWnd.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
                         }
                         surface.draw_rect(rect, Theme.get_color(.COLOR_WND_FOCUS), thisWnd.m_z_order, 1);
-                        c_word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                        Word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                     },
                     .STATUS_PUSHED => {
                         surface.fill_rect(rect, Theme.get_color(.COLOR_WND_PUSHED), thisWnd.m_z_order);
-                        c_word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, api.GL_RGB(2, 124, 165), api.GL_ARGB(0, 0, 0, 0), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                        Word.draw_string_in_rect(surface, thisWnd.m_z_order, this.m_item_array[this.m_selected_item], rect, thisWnd.m_font, api.GL_RGB(2, 124, 165), api.GL_ARGB(0, 0, 0, 0), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                         //draw list
                         if (this.m_item_total > 0) {
                             if (thisWnd.m_z_order > parent.m_z_order) {
@@ -108,7 +108,7 @@ pub const ListBox = struct {
     }
     fn show_list(this: *ListBox) void {
         //draw all items
-        var tmp_rect = c_rect.init();
+        var tmp_rect = Rect.init();
         if (this.wnd.m_surface) |surface| {
             for (0..this.m_item_total) |i| {
                 const _i: i32 = @bitCast(@as(u32, @truncate(i)));
@@ -119,10 +119,10 @@ pub const ListBox = struct {
 
                 if (this.m_selected_item == i) {
                     surface.fill_rect(tmp_rect, Theme.get_color(.COLOR_WND_FOCUS), this.wnd.m_z_order);
-                    c_word.draw_string_in_rect(surface, this.wnd.m_z_order, this.m_item_array[i], tmp_rect, this.wnd.m_font, this.wnd.m_font_color, Theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                    Word.draw_string_in_rect(surface, this.wnd.m_z_order, this.m_item_array[i], tmp_rect, this.wnd.m_font, this.wnd.m_font_color, Theme.get_color(.COLOR_WND_FOCUS), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                 } else {
                     surface.fill_rect(tmp_rect, api.GL_RGB(17, 17, 17), this.wnd.m_z_order);
-                    c_word.draw_string_in_rect(surface, this.wnd.m_z_order, this.m_item_array[i], tmp_rect, this.wnd.m_font, this.wnd.m_font_color, api.GL_RGB(17, 17, 17), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
+                    Word.draw_string_in_rect(surface, this.wnd.m_z_order, this.m_item_array[i], tmp_rect, this.wnd.m_font, this.wnd.m_font_color, api.GL_RGB(17, 17, 17), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                 }
             }
         }
