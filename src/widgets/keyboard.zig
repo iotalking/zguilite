@@ -465,11 +465,11 @@ pub const Keyboard = struct {
                 p.get_wnd_rect(&user_parent_rect);
             }
             const ix: i16 = @truncate(0 - user_rect.m_left);
-            const iy: i16 = @truncate(user_parent_rect.height() - user_rect.m_top - KEYBOARD_HEIGHT);
+            const iy: i16 = @truncate(@as(i32, @bitCast(user_parent_rect.height() - @as(u32, @bitCast(user_rect.m_top)) - KEYBOARD_HEIGHT)));
             try thisWnd.connect(user, resource_id, null, ix, iy, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, &g_key_board_children);
         } else if (style == .STYLE_NUM_BOARD) { //Place keyboard below the user window.
             const ix: i16 = 0;
-            const iy: i16 = @truncate(user_rect.height());
+            const iy: i16 = @truncate(@as(i32, @bitCast(user_rect.height())));
             try thisWnd.connect(user, resource_id, null, ix, iy, NUM_BOARD_WIDTH, NUM_BOARD_HEIGHT, &g_number_board_children);
         } else {
             api.ASSERT(false);

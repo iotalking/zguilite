@@ -7,6 +7,7 @@ const label = @import("./widgets/label.zig");
 const edit = @import("./widgets/edit.zig");
 const list_box = @import("./widgets/list_box.zig");
 const spin_box = @import("./widgets/spinbox.zig");
+const table = @import("./widgets/table.zig");
 const dialog = @import("./widgets/dialog.zig");
 const keyboard = @import("./widgets/keyboard.zig");
 const word = @import("./core/word.zig");
@@ -15,6 +16,7 @@ const theme = @import("./core/theme.zig");
 const Lucida_Console_27 = @import("./Lucida_Console_27.zig");
 const KaiTi_33B = @import("./KaiTi_33B.zig");
 const Consolas_24B = @import("./Consolas_24B.zig");
+const colors = @import("./core/colors.zig");
 pub usingnamespace api;
 pub usingnamespace display;
 pub usingnamespace wnd;
@@ -24,10 +26,12 @@ pub usingnamespace edit;
 pub usingnamespace list_box;
 pub usingnamespace spin_box;
 pub usingnamespace dialog;
+pub usingnamespace table;
 pub usingnamespace keyboard;
 pub usingnamespace word;
 pub usingnamespace resource;
 pub usingnamespace theme;
+pub usingnamespace colors;
 
 const Theme = theme.Theme;
 

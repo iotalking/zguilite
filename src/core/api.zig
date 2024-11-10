@@ -7,31 +7,31 @@ pub inline fn MAX(a: type, b: type) @TypeOf(a) {
 pub inline fn MIN(a: type, b: type) @TypeOf(a) {
     return @min(a, b);
 }
-pub inline fn GL_ARGB(a: types.int, r: types.int, g: types.int, b: types.int) types.int {
+pub inline fn GL_ARGB(a: types.uint, r: types.uint, g: types.uint, b: types.uint) types.uint {
     return ((((a)) << 24) | (((r)) << 16) | (((g)) << 8) | ((b)));
 }
-pub inline fn GL_ARGB_A(rgb: types.int) types.int {
+pub inline fn GL_ARGB_A(rgb: types.uint) types.uint {
     return ((rgb >> 24) & 0xFF);
 }
-pub inline fn GL_RGB(r: types.int, g: types.int, b: types.int) types.int {
-    const ret = ((@as(usize, 0xFF) << 24) | ((@as(usize, @as(u32, @bitCast(r)))) << 16) | (((@as(usize, @as(u32, @bitCast(g))))) << 8) | ((@as(usize, @as(u32, @bitCast(b))))));
-    return @bitCast(@as(u32, @truncate(ret)));
+pub inline fn GL_RGB(r: types.uint, g: types.uint, b: types.uint) types.uint {
+    const ret: types.uint = ((@as(types.uint, 0xFF) << 24) | ((@as(types.uint, @as(u32, @bitCast(r)))) << 16) | (((@as(types.uint, @as(u32, @bitCast(g))))) << 8) | ((@as(types.uint, @as(u32, @bitCast(b))))));
+    return ret;
 }
-pub inline fn GL_RGB_R(rgb: types.int) types.int {
+pub inline fn GL_RGB_R(rgb: types.uint) types.uint {
     return ((((rgb)) >> 16) & 0xFF);
 }
-pub inline fn GL_RGB_G(rgb: types.int) types.int {
+pub inline fn GL_RGB_G(rgb: types.uint) types.uint {
     return ((((rgb)) >> 8) & 0xFF);
 }
-pub inline fn GL_RGB_B(rgb: types.int) types.int {
+pub inline fn GL_RGB_B(rgb: types.uint) types.uint {
     return (((rgb)) & 0xFF);
 }
-pub inline fn GL_RGB_32_to_16(rgb: types.int) u16 {
-    const ret: i16 = @truncate(((((rgb)) & 0xFF) >> 3) | ((((rgb)) & 0xFC00) >> 5) | ((((rgb)) & 0xF80000) >> 8));
-    return @bitCast(ret);
+pub inline fn GL_RGB_32_to_16(rgb: types.uint) u16 {
+    const ret: u16 = @truncate(((((rgb)) & 0xFF) >> 3) | ((((rgb)) & 0xFC00) >> 5) | ((((rgb)) & 0xF80000) >> 8));
+    return ret;
 }
-pub inline fn GL_RGB_16_to_32(rgb: types.int) types.int {
-    return ((@as(types.int, 0xFF) << 24) | ((((rgb)) & 0x1F) << 3) | ((((rgb)) & 0x7E0) << 5) | ((((rgb)) & 0xF800) << 8));
+pub inline fn GL_RGB_16_to_32(rgb: types.uint) types.uint {
+    return ((@as(types.uint, 0xFF) << 24) | ((((rgb)) & 0x1F) << 3) | ((((rgb)) & 0x7E0) << 5) | ((((rgb)) & 0xF800) << 8));
 }
 
 pub const ALIGN_HCENTER = 0x00000000;
@@ -150,7 +150,7 @@ pub const Rect = struct {
             .m_bottom = 0,
         };
     }
-    pub fn init2(left: types.int, top: types.int, _width: types.int, _height: types.int) Rect {
+    pub fn init2(left: types.int, top: types.int, _width: types.uint, _height: types.uint) Rect {
         var rect = Rect{};
         rect.set_rect(left, top, _width, _height);
         return rect;
@@ -159,14 +159,14 @@ pub const Rect = struct {
         this: *Rect,
         left: types.int,
         top: types.int,
-        _width: types.int,
-        _height: types.int,
+        _width: types.uint,
+        _height: types.uint,
     ) void {
         ASSERT(_width > 0 and _height > 0);
         this.m_left = left;
         this.m_top = top;
-        this.m_right = left + _width - 1;
-        this.m_bottom = top + _height - 1;
+        this.m_right = left + @as(i32, @bitCast(_width)) - 1;
+        this.m_bottom = top + @as(i32, @bitCast(_height)) - 1;
     }
     pub fn pt_in_rect(this: Rect, x: types.int, y: types.int) bool {
         return x >= this.m_left and x <= this.m_right and y >= this.m_top and y <= this.m_bottom;
@@ -183,11 +183,11 @@ pub const Rect = struct {
         this.m_right +%= other.m_right;
         this.m_bottom +%= other.m_bottom;
     }
-    pub fn width(this: Rect) types.int {
-        return this.m_right - this.m_left + 1;
+    pub fn width(this: Rect) types.uint {
+        return @as(u32, @bitCast(this.m_right - this.m_left + 1));
     }
-    pub fn height(this: Rect) types.int {
-        return this.m_bottom - this.m_top + 1;
+    pub fn height(this: Rect) types.uint {
+        return @as(types.uint, @bitCast(this.m_bottom - this.m_top + 1));
     }
 
     m_left: types.int = -1,

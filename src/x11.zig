@@ -3,6 +3,7 @@ const xlib = @cImport({
     @cInclude("X11/Xlib.h");
 });
 const int = c_int;
+const uint = c_uint;
 var appWindow: ?xlib.Window = null;
 var display: ?*xlib.Display = null;
 var screen: int = 0;
@@ -10,7 +11,7 @@ var winImage: ?*xlib.XImage = null;
 var winWidth: c_uint = 0;
 var winHeight: c_uint = 0;
 
-pub fn createFrameBuffer(allocator: std.mem.Allocator, w: int, h: int, colorBytes: *int) ![]u8 {
+pub fn createFrameBuffer(allocator: std.mem.Allocator, w: uint, h: uint, colorBytes: *uint) ![]u8 {
     display = xlib.XOpenDisplay("");
     var buffer: []u8 = undefined;
     if (display) |_display| {

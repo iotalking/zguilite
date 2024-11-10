@@ -3,12 +3,14 @@ const guilite = @import("./guilite.zig");
 const _3d = @import("./3d.zig");
 const x11 = @import("./x11.zig");
 const int = c_int;
+const uint = c_uint;
+
 pub fn main() !void {
     guilite.init();
 
     const screen_width: int = 1024;
     const screen_height: int = 800;
-    var color_bytes: int = 0;
+    var color_bytes: uint = 0;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
@@ -26,6 +28,7 @@ pub fn main() !void {
     var list_box: guilite.ListBox = guilite.ListBox{};
     var dialog = guilite.Dialog{};
     var spin_box: guilite.SpinBox = guilite.SpinBox{};
+    var table: guilite.Table = guilite.Table{};
     const ID_BTN = 1;
     const ID_DESKTOP = 2;
     const ID_LABEL = 3;
@@ -96,6 +99,40 @@ pub fn main() !void {
             .width = 100,
             .height = 30,
             .p_child_tree = null,
+        },
+        &.{
+            .p_wnd = table.asWnd(), //
+            .resource_id = ID_SPIN_BOX,
+            .str = "table",
+            .x = 10,
+            .y = 540,
+            .width = 300,
+            .height = 30,
+            .p_child_tree = null,
+            .user_data = @ptrCast(&guilite.TableData{
+                .items = &.{
+                    &.{
+                        .{
+                            .str = "1",
+                            .color = guilite.BLACK,
+                        },
+                        .{
+                            .str = "2",
+                            .color = guilite.WHITE,
+                        },
+                    },
+                    &.{
+                        .{
+                            .str = "3",
+                            .color = guilite.RED,
+                        },
+                        .{
+                            .str = "4",
+                            .color = guilite.RED,
+                        },
+                    },
+                },
+            }),
         },
         null,
     };

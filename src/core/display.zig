@@ -21,9 +21,9 @@ pub const Z_ORDER_LEVEL_MAX = @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX);
 
 pub const DISPLAY_DRIVER = struct {
     // void(*draw_pixel)(int x, int y, unsigned int rgb);
-    draw_pixel: ?*const fn (x: int, y: int, rgb: int) void,
+    draw_pixel: ?*const fn (x: int, y: int, rgb: uint) void,
     // void(*fill_rect)(int x0, int y0, int x1, int y1, unsigned int rgb);
-    fill_rect: ?*const fn (x0: int, y0: int, x1: int, y1: int, rgb: int) void,
+    fill_rect: ?*const fn (x0: int, y0: int, x1: int, y1: int, rgb: uint) void,
 };
 
 // class Surface;
@@ -88,7 +88,7 @@ pub const Display = struct {
         const m_surface_index: usize = @intCast(this.m_surface_index);
         if (layer_rect.eql(Rect.init())) {
             if (this.m_surface_group[m_surface_index]) |surface| {
-                try surface.set_surface(max_zorder, Rect.init2(0, 0, this.m_width, this.m_height));
+                try surface.set_surface(max_zorder, Rect.init2(0, 0, @as(u32, @bitCast(this.m_width)), @as(u32, @bitCast(this.m_height))));
             }
         } else {
             if (this.m_surface_group[m_surface_index]) |surface| {
@@ -383,7 +383,7 @@ pub const Display = struct {
 
     m_width: int = 0, //in pixels
     m_height: int = 0, //in pixels
-    m_color_bytes: int = 0, //16/32 bits for default
+    m_color_bytes: uint = 0, //16/32 bits for default
     m_phy_fb: ?[*]u8 = null, //physical framebuffer for default
     m_driver: ?*DISPLAY_DRIVER = null, //Rendering by external method without default physical framebuffer
 
@@ -473,7 +473,7 @@ pub const Surface = struct {
 
         if (this.m_layers[uz_order].rect.pt_in_rect(x, y)) {
             const layer_rect = this.m_layers[uz_order].rect;
-            const idx: usize = @intCast(@as(u32, @bitCast((x - layer_rect.m_left) + (y - layer_rect.m_top) * layer_rect.width())));
+            const idx: usize = @intCast(@as(u32, @bitCast((x - layer_rect.m_left) + (y - layer_rect.m_top) * @as(i32, @bitCast(layer_rect.width())))));
             const fb = this.m_layers[uz_order].fb.?;
             if (this.m_color_bytes == 2) {
                 const fb_u16: [*]u16 = @ptrCast(@alignCast(fb));
@@ -503,11 +503,13 @@ pub const Surface = struct {
         }
     }
 
-    fn fill_rect_impl(this: *Surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: uint, z_order: uint) void {
+    fn fill_rect_impl(this: *Surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: uint, z_order: int) void {
         const x0 = if (_x0 < 0) 0 else _x0;
         var y0 = if (_y0 < 0) 0 else _y0;
-        const x1 = if (_x1 > (this.m_width - 1)) (this.m_width - 1) else _x1;
-        const y1 = if (_y1 > (this.m_height - 1)) (this.m_height - 1) else _y1;
+        const iw = @as(i32, @bitCast(this.m_width));
+        const ih = @as(i32, @bitCast(this.m_height));
+        const x1 = if (_x1 > (iw - 1)) (iw - 1) else _x1;
+        const y1 = if (_y1 > (ih - 1)) (ih - 1) else _y1;
 
         const ez_order: Z_ORDER_LEVEL = @enumFromInt(z_order);
         const uz_order: usize = @intCast(z_order);
@@ -545,7 +547,7 @@ pub const Surface = struct {
         }
     }
 
-    pub fn draw_hline(this: *Surface, _x0: int, _x1: int, y: int, rgb: uint, z_order: uint) void {
+    pub fn draw_hline(this: *Surface, _x0: int, _x1: int, y: int, rgb: uint, z_order: int) void {
         const x0: usize = @as(u32, @bitCast(_x0));
         const x1: usize = @as(u32, @bitCast(_x1));
         // 		for (; x0 <= x1; x0++)
@@ -555,7 +557,7 @@ pub const Surface = struct {
         }
     }
 
-    pub fn draw_vline(this: *Surface, x: int, y0: int, y1: int, rgb: uint, z_order: uint) void {
+    pub fn draw_vline(this: *Surface, x: int, y0: int, y1: int, rgb: uint, z_order: int) void {
         // for (; y0 <= y1; y0++)
         const _y0: usize = @as(usize, @as(u32, @bitCast(y0)));
         const _y1: usize = @as(usize, @as(u32, @bitCast(y1)));
@@ -619,7 +621,7 @@ pub const Surface = struct {
         }
     }
 
-    pub fn draw_rect_pos(this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint, size: uint) void {
+    pub fn draw_rect_pos(this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: int, size: uint) void {
         // for (unsigned int offset = 0; offset < size; offset++)
 
         std.log.debug("draw_rect_pos({d},{d},{d},{d},{d})", .{ x0, y0, x1, y1, rgb });
@@ -633,7 +635,7 @@ pub const Surface = struct {
         }
     }
 
-    pub fn draw_rect(this: *Surface, rect: Rect, rgb: int, z_order: uint, size: uint) void {
+    pub fn draw_rect(this: *Surface, rect: Rect, rgb: uint, z_order: int, size: uint) void {
         this.draw_rect_pos(rect.m_left, rect.m_top, rect.m_right, rect.m_bottom, rgb, z_order, size);
     }
 
@@ -663,7 +665,7 @@ pub const Surface = struct {
         return this.m_display;
     }
 
-    pub fn activate_layer(this: *Surface, active_rect: Rect, active_z_order: uint) void //empty active rect means inactivating the layer
+    pub fn activate_layer(this: *Surface, active_rect: Rect, active_z_order: int) void //empty active rect means inactivating the layer
     {
         api.ASSERT(active_z_order > Z_ORDER_LEVEL_0 and active_z_order <= Z_ORDER_LEVEL_MAX);
 
@@ -706,7 +708,7 @@ pub const Surface = struct {
         this.m_is_active = flag;
     }
     // protected:
-    fn fill_rect_low_level_impl(this: *Surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: int) void { //fill rect on framebuffer of surface
+    fn fill_rect_low_level_impl(this: *Surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: uint) void { //fill rect on framebuffer of surface
         const x0: usize = @as(u32, @bitCast(_x0));
         const y0: usize = @as(u32, @bitCast(_y0));
         const x1: usize = @as(u32, @bitCast(_x1));
@@ -757,7 +759,7 @@ pub const Surface = struct {
         if (this.m_fb != null) { //draw pixel on framebuffer of surface
             const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_fb));
             const fb_uint: [*]uint = @ptrCast(@alignCast(this.m_fb));
-            const fb_idx: usize = @as(usize, @as(u32, @bitCast(y * this.m_width + x)));
+            const fb_idx: usize = @as(usize, @as(u32, @bitCast(y * @as(int, @bitCast(this.m_width)) + x)));
             if (this.m_color_bytes == 2) fb_u16[fb_idx] = api.GL_RGB_32_to_16(rgb) else fb_uint[fb_idx] = rgb;
         }
         if (this.m_is_active == false) {
@@ -819,10 +821,10 @@ pub const Surface = struct {
     // pub fn fill_rect(this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint) void {
     //     this.m_vtable.fill_rect(this, x0, y0, x1, y1, rgb, z_order);
     // }
-    pub fn fill_rect(this: *Surface, rect: Rect, rgb: uint, z_order: uint) void {
+    pub fn fill_rect(this: *Surface, rect: Rect, rgb: uint, z_order: int) void {
         this.m_vtable.fill_rect(this, rect.m_left, rect.m_top, rect.m_right, rect.m_bottom, rgb, z_order);
     }
-    pub fn fill_rect_low_level(this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: int) void {
+    pub fn fill_rect_low_level(this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: uint) void {
         this.m_vtable.fill_rect_low_level(this, x0, y0, x1, y1, rgb);
     }
     pub fn draw_pixel_low_level(this: *Surface, x: int, y: int, rgb: uint) void {
@@ -830,15 +832,15 @@ pub const Surface = struct {
     }
     const VTable = struct {
         draw_pixel: *const fn (this: *Surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void = draw_pixel_impl,
-        fill_rect: *const fn (this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: uint) void = fill_rect_impl,
-        fill_rect_low_level: *const fn (this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: int) void = fill_rect_low_level_impl,
+        fill_rect: *const fn (this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: uint, z_order: int) void = fill_rect_impl,
+        fill_rect_low_level: *const fn (this: *Surface, x0: int, y0: int, x1: int, y1: int, rgb: uint) void = fill_rect_low_level_impl,
         draw_pixel_low_level: *const fn (this: *Surface, x: int, y: int, rgb: uint) void = draw_pixel_low_level_impl,
     };
 
     m_vtable: VTable = .{},
-    m_width: int = 0, //in pixels
-    m_height: int = 0, //in pixels
-    m_color_bytes: int = 0, //16 bits, 32 bits for default
+    m_width: uint = 0, //in pixels
+    m_height: uint = 0, //in pixels
+    m_color_bytes: uint = 0, //16 bits, 32 bits for default
     m_fb: ?[*]u8 = null, //frame buffer you could see
     m_layers: [@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX)]Layer = undefined, //all graphic layers
     m_is_active: bool, //active flag

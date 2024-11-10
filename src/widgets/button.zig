@@ -63,7 +63,7 @@ pub const Button = struct {
             },
             .STATUS_PUSHED => {
                 surface.fill_rect(rect, Theme.get_color(.COLOR_WND_PUSHED), w.m_z_order);
-                surface.draw_rect(rect, Theme.get_color(.COLOR_WND_BORDER), 2, w.m_z_order);
+                surface.draw_rect(rect, Theme.get_color(.COLOR_WND_BORDER), w.m_z_order, 2);
                 if (w.m_str) |str| {
                     Word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font.?, w.m_font_color, Theme.get_color(.COLOR_WND_PUSHED), api.ALIGN_HCENTER | api.ALIGN_VCENTER);
                 }

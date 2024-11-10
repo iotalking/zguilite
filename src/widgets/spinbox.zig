@@ -80,23 +80,25 @@ pub const SpinBox = struct {
         this.m_bt_down.m_spin_box = this;
         this.m_bt_up.m_spin_box = this;
 
-        const x: i16 = @truncate(rect.m_left + @divFloor(rect.width() * @as(int, 2), @as(int, 3)));
+        const x: i16 = @truncate(rect.m_left + @as(int, @bitCast(@divFloor(rect.width() * 2, 3))));
         const y: i16 = @truncate(rect.m_top);
-        const y2: i16 = @truncate(rect.m_top + @divFloor(rect.height(), 2));
-        try this.m_bt_up.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_UP, "+", x, y, @truncate(@divFloor(rect.width(), 3)), @truncate(@divFloor(rect.height(), 3)), null);
-        try this.m_bt_up.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_UP, "-", x, y2, @truncate(@divFloor(rect.width(), 3)), @truncate(@divFloor(rect.height(), 3)), null);
+        const y2: i16 = @truncate(rect.m_top + @as(int, @bitCast(@divFloor(rect.height(), 2))));
+        const btnWidth: i16 = @truncate(@as(i32, @bitCast(@divFloor(rect.width(), 3))));
+        const btnHeight: i16 = @truncate(@as(i32, @bitCast(@divFloor(rect.height(), 2))));
+        try this.m_bt_up.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_UP, "", x, y, btnWidth, btnHeight, null);
+        try this.m_bt_down.asWnd().connect(thisWnd.m_parent, ID_BT_ARROW_DOWN, "", x, y2, btnWidth, btnHeight, null);
     }
     fn on_paint(thisWnd: *Wnd) !void {
-        const this: *SpinBox = @fieldParentPtr("wnd", thisWnd);
+        // const this: *SpinBox = @fieldParentPtr("wnd", thisWnd);
 
         var rect = Rect.init();
         thisWnd.get_screen_rect(&rect);
-        rect.m_right = rect.m_left + (@divFloor(rect.width() * 2, 3));
+        rect.m_right = rect.m_left + @as(int, @bitCast(@divFloor(rect.width() * 2, 3)));
 
         if (thisWnd.m_parent) |_| {
             if (thisWnd.m_surface) |surface| {
                 surface.draw_rect(rect, Theme.get_color(.COLOR_WND_NORMAL), thisWnd.m_z_order, 1);
-                Word.draw_value_in_rect(surface, thisWnd.m_z_order, this.m_cur_value, this.m_digit, rect, thisWnd.m_font.?, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER) catch {};
+                // Word.draw_value_in_rect(surface, thisWnd.m_z_order, this.m_cur_value, this.m_digit, rect, thisWnd.m_font.?, thisWnd.m_font_color, Theme.get_color(.COLOR_WND_NORMAL), api.ALIGN_HCENTER | api.ALIGN_VCENTER) catch {};
             } else {
                 api.ASSERT(false);
             }

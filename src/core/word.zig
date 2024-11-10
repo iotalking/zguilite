@@ -110,7 +110,7 @@ pub const FontOperator = struct {
         return 0;
     }
 
-    pub fn get_string_pos(string: []const u8, font: *anyopaque, rect: Rect, align_type: int, x: *int, y: *int) void {
+    pub fn get_string_pos(string: []const u8, font: *anyopaque, rect: Rect, align_type: uint, x: *int, y: *int) void {
         var x_size: int = 0;
         var y_size: int = 0;
         _ = fontOperator.get_str_size(string, font, &x_size, &y_size);
@@ -168,11 +168,11 @@ pub const LatticeFontOp = struct {
     // parent: FontOperator,
 
     // public:
-    fn draw_string(surface: *Surface, z_order: int, string: []const u8, x: int, y: int, font: ?*anyopaque, font_color: int, bg_color: uint) void {
+    fn draw_string(surface: *Surface, z_order: int, string: []const u8, x: int, y: int, font: ?*anyopaque, font_color: uint, bg_color: uint) void {
         var offset: usize = 0;
         var strcur = string[offset..];
         var xoffset: int = 0;
-        var utf8_code: int = 0;
+        var utf8_code: uint = 0;
         while (strcur.len > 0) {
             const uchar = @as(usize, @intCast(get_utf8_code(strcur, &utf8_code)));
             offset += uchar;
@@ -354,7 +354,7 @@ pub const LatticeFontOp = struct {
         return null;
     }
 
-    fn get_utf8_code(s: []const u8, output_utf8_code: *int) int {
+    fn get_utf8_code(s: []const u8, output_utf8_code: *uint) int {
         const s_utf8_length_table: [256]u8 =
             .{
             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //
@@ -377,24 +377,24 @@ pub const LatticeFontOp = struct {
 
         const us = s;
         const utf8_bytes: int = @intCast(s_utf8_length_table[us[0]]);
-        const us0: i32 = @as(i32, us[0]);
+        const us0: u32 = @as(u32, us[0]);
         switch (utf8_bytes) {
             1 => {
                 output_utf8_code.* = us0;
             },
             2 => {
-                const us1: i32 = @as(i32, us[1]);
+                const us1: u32 = @as(u32, us[1]);
                 output_utf8_code.* = (us0 << 8) | (us1);
             },
             3 => {
-                const us1: i32 = @as(i32, us[1]);
-                const us2: i32 = @as(i32, us[2]);
+                const us1: u32 = @as(u32, us[1]);
+                const us2: u32 = @as(u32, us[2]);
                 output_utf8_code.* = (us0 << 16) | ((us1) << 8) | us2;
             },
             4 => {
-                const us1: i32 = @as(i32, us[1]);
-                const us2: i32 = @as(i32, us[2]);
-                const us3: i32 = @as(i32, us[3]);
+                const us1: u32 = @as(u32, us[1]);
+                const us2: u32 = @as(u32, us[2]);
+                const us3: u32 = @as(u32, us[3]);
                 output_utf8_code.* = (us0 << 24) | ((us1) << 16) | (us2 << 8) | us3;
             },
             else => {
@@ -415,8 +415,8 @@ pub const Word = struct {
         x: int,
         y: int,
         font: *anyopaque,
-        font_color: int,
-        bg_color: int,
+        font_color: uint,
+        bg_color: uint,
     ) void {
         fontOperator.draw_string(surface, z_order, string, x, y, font, font_color, bg_color);
     }
@@ -426,9 +426,9 @@ pub const Word = struct {
         string: []const u8,
         rect: Rect,
         font: ?*anyopaque,
-        font_color: int,
-        bg_color: int,
-        align_type: int,
+        font_color: uint,
+        bg_color: uint,
+        align_type: uint,
     ) void {
         std.log.debug("word draw_string_in_rect string:{s}", .{string});
         fontOperator.draw_string_in_rect(surface, z_order, string, rect, font, font_color, bg_color, align_type);
