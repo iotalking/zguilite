@@ -101,19 +101,21 @@ pub fn appLoop() !void {
     }
     try refreshApp();
     while (true) {
-        std.log.debug("wait xevent", .{});
-        _ = xlib.XNextEvent(_display, &xevent);
-        std.log.debug("got xevent type:{any}", .{xevent.type});
+        if (xlib.XPending(_display) != 0) {
+            std.log.debug("wait xevent", .{});
+            _ = xlib.XNextEvent(_display, &xevent);
+            std.log.debug("got xevent type:{any}", .{xevent.type});
+        } else {
+            std.log.debug("no pending xevent", .{});
+        }
 
         if (xevent.type == xlib.Expose) {
             std.log.debug("appLoop Expose", .{});
             try refreshApp();
-
-            while (true) {
-                try wave_demo.refrushWaveCtrl();
-                try refreshApp();
-                std.time.sleep(17 * std.time.ns_per_ms);
-            }
+        } else {
+            try wave_demo.refrushWaveCtrl();
+            try refreshApp();
+            std.time.sleep(17 * std.time.ns_per_ms);
         }
     }
 }
