@@ -2,6 +2,8 @@ const std = @import("std");
 const xlib = @cImport({
     @cInclude("X11/Xlib.h");
 });
+const guilite = @import("./guilite.zig");
+const wave_demo = @import("./wave_demo.zig");
 const int = c_int;
 const uint = c_uint;
 var appWindow: ?xlib.Window = null;
@@ -72,6 +74,7 @@ pub fn refreshApp() !void {
         return error.put_image;
     }
 }
+
 pub fn appLoop() !void {
     std.log.debug("apploop enter", .{});
     if (appWindow == null) {
@@ -105,6 +108,12 @@ pub fn appLoop() !void {
         if (xevent.type == xlib.Expose) {
             std.log.debug("appLoop Expose", .{});
             try refreshApp();
+
+            while (true) {
+                try wave_demo.refrushWaveCtrl();
+                try refreshApp();
+                std.time.sleep(17 * std.time.ns_per_ms);
+            }
         }
     }
 }

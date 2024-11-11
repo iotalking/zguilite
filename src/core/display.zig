@@ -431,23 +431,27 @@ pub const Surface = struct {
         return this;
     }
 
-    pub fn get_pixel(this: @This(), x: int, y: int, z_order: uint) !uint {
-        if (x >= this.m_width or y >= this.m_height or x < 0 or y < 0 or z_order >= .Z_ORDER_LEVEL_MAX) {
-            api.ASSERT(false);
-            return 0;
+    pub fn get_pixel(this: @This(), x: int, y: int, _z_order: int) !uint {
+        if (x >= this.m_width or y >= this.m_height or x < 0 or y < 0 or _z_order >= @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_MAX)) {
+            return error.get_pixel_error;
         }
-        if (this.m_layers[z_order].fb) {
-            const fb_u16: [*]u16 = @ptrCast(this.m_layers[z_order].fb);
-            const fb_uint: [*]uint = @ptrCast(this.m_layers[z_order].fb);
-            return if (this.m_color_bytes == 2) api.GL_RGB_16_to_32(fb_u16[y * this.m_width + x]) else fb_uint[y * this.m_width + x];
-        } else if (this.m_fb != null) {
-            const fb_u16: [*]u16 = @ptrCast(this.m_fb[z_order].fb);
-            const fb_uint: [*]uint = @ptrCast(this.m_fb[z_order].fb);
-            return if (this.m_color_bytes == 2) api.GL_RGB_16_to_32(fb_u16[y * this.m_width + x]) else fb_uint[y * this.m_width + x];
-        } else if (this.m_display.m_phy_fb != null) {
-            const fb_u16: [*]u16 = @ptrCast(this.m_display.m_phy_fb[z_order].fb);
-            const fb_uint: [*]uint = @ptrCast(this.m_display.m_phy_fb[z_order].fb);
-            return if (this.m_color_bytes == 2) api.GL_RGB_16_to_32(fb_u16[y * this.m_width + x]) else fb_uint[y * this.m_width + x];
+        if (this.m_display == null) {
+            return error.m_display_null;
+        }
+        const z_order = @as(usize, @intCast(_z_order));
+        const idx: usize = @intCast(y * @as(int, @intCast(this.m_width)) + x);
+        if (this.m_layers[z_order].fb) |fb| {
+            const fb_u16: [*]align(1) u16 = @ptrCast(fb);
+            const fb_uint: [*]align(1) uint = @ptrCast(fb);
+            return if (this.m_color_bytes == 2) api.GL_RGB_16_to_32(fb_u16[idx]) else fb_uint[idx];
+        } else if (this.m_fb) |fb| {
+            const fb_u16: [*]align(1) u16 = @ptrCast(fb);
+            const fb_uint: [*]align(1) uint = @ptrCast(fb);
+            return if (this.m_color_bytes == 2) api.GL_RGB_16_to_32(fb_u16[idx]) else fb_uint[idx];
+        } else if (this.m_display.?.m_phy_fb) |fb| {
+            const fb_u16: [*]align(1) u16 = @ptrCast(fb);
+            const fb_uint: [*]align(1) uint = @ptrCast(fb);
+            return if (this.m_color_bytes == 2) api.GL_RGB_16_to_32(fb_u16[idx]) else fb_uint[idx];
         }
         return 0;
     }

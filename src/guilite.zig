@@ -17,6 +17,8 @@ const Lucida_Console_27 = @import("./Lucida_Console_27.zig");
 const KaiTi_33B = @import("./KaiTi_33B.zig");
 const Consolas_24B = @import("./Consolas_24B.zig");
 const colors = @import("./core/colors.zig");
+const wave_buffer = @import("./widgets/wave_buffer.zig");
+const wave_ctrl = @import("./widgets/wave_ctrl.zig");
 pub usingnamespace api;
 pub usingnamespace display;
 pub usingnamespace wnd;
@@ -32,6 +34,8 @@ pub usingnamespace word;
 pub usingnamespace resource;
 pub usingnamespace theme;
 pub usingnamespace colors;
+pub usingnamespace wave_buffer;
+pub usingnamespace wave_ctrl;
 
 const Theme = theme.Theme;
 

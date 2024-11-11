@@ -2,6 +2,7 @@ const std = @import("std");
 const guilite = @import("./guilite.zig");
 const _3d = @import("./3d.zig");
 const x11 = @import("./x11.zig");
+const wave_demo = @import("./wave_demo.zig");
 const int = c_int;
 const uint = c_uint;
 
@@ -29,6 +30,18 @@ pub fn main() !void {
     var dialog = guilite.Dialog{};
     var spin_box: guilite.SpinBox = guilite.SpinBox{};
     var table: guilite.Table = guilite.Table{};
+    var wave_ctrl = guilite.WaveCtrl.init(allocator);
+    defer wave_ctrl.deinit();
+    var wave_ctrl2 = guilite.WaveCtrl.init(allocator);
+    defer wave_ctrl2.deinit();
+    var wave_ctrl3 = guilite.WaveCtrl.init(allocator);
+    defer wave_ctrl3.deinit();
+
+    wave_demo.wave1 = &wave_ctrl;
+    wave_demo.wave2 = &wave_ctrl2;
+    wave_demo.wave3 = &wave_ctrl3;
+    try wave_demo.init();
+
     const ID_BTN = 1;
     const ID_DESKTOP = 2;
     const ID_LABEL = 3;
@@ -37,6 +50,11 @@ pub fn main() !void {
     const ID_EDIT = 6;
     const ID_LIST_BOX = 7;
     const ID_SPIN_BOX = 8;
+    const ID_TABLE = 9;
+    const ID_WAVE_CTRL = 10;
+    const ID_WAVE_CTRL2 = 11;
+    const ID_WAVE_CTRL3 = 13;
+
     // _ = btn;
     var s_desktop_children = [_]?*const guilite.WND_TREE{
         &.{
@@ -102,7 +120,7 @@ pub fn main() !void {
         },
         &.{
             .p_wnd = table.asWnd(), //
-            .resource_id = ID_SPIN_BOX,
+            .resource_id = ID_TABLE,
             .str = "table",
             .x = 300,
             .y = 500,
@@ -180,6 +198,36 @@ pub fn main() !void {
                     },
                 },
             }),
+        },
+        &.{
+            .p_wnd = wave_ctrl.asWnd(), //
+            .resource_id = ID_WAVE_CTRL,
+            .str = "wavectrl",
+            .x = 300,
+            .y = 300,
+            .width = 400,
+            .height = 40,
+            .p_child_tree = null,
+        },
+        &.{
+            .p_wnd = wave_ctrl2.asWnd(), //
+            .resource_id = ID_WAVE_CTRL2,
+            .str = "wavectrl",
+            .x = 300,
+            .y = 350,
+            .width = 400,
+            .height = 40,
+            .p_child_tree = null,
+        },
+        &.{
+            .p_wnd = wave_ctrl3.asWnd(), //
+            .resource_id = ID_WAVE_CTRL3,
+            .str = "wavectrl3",
+            .x = 300,
+            .y = 400,
+            .width = 400,
+            .height = 40,
+            .p_child_tree = null,
         },
         null,
     };
