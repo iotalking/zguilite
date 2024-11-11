@@ -59,6 +59,8 @@ pub fn init() !void {
         wave.set_wave_color(guilite.GL_RGB(255, 255, 0));
         wave.set_wave(&m_wave_buffer3);
         wave.set_max_min(180, 80);
+        wave.set_wave_name("hello");
+        wave.set_wave_unit("world");
     }
 }
 var data_index1: usize = 0;

@@ -226,7 +226,7 @@ pub fn main() !void {
             .x = 300,
             .y = 400,
             .width = 400,
-            .height = 40,
+            .height = 100,
             .p_child_tree = null,
         },
         null,
