@@ -454,6 +454,7 @@ pub const Surface = struct {
 
     fn draw_pixel_impl(this: *Surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void {
         // std.log.debug("surface draw_pixel_impl(this:{*},x:{},y:{},rgb:{},z_order:{})", .{ this, x, y, rgb, z_order });
+
         if (x >= this.m_width or y >= this.m_height or x < 0 or y < 0) {
             return;
         }
@@ -518,7 +519,6 @@ pub const Surface = struct {
         if (ez_order == this.m_max_zorder) {
             return this.fill_rect_low_level(x0, y0, x1, y1, rgb);
         }
-
         if (ez_order == this.m_top_zorder) {
             const width = this.m_layers[uz_order].rect.width();
             const layer_rect = this.m_layers[uz_order].rect;
@@ -533,7 +533,8 @@ pub const Surface = struct {
                             fb_u16[(y - @as(usize, @intCast(layer_rect.m_top))) * @as(usize, @as(u32, @bitCast(width))) + (x - @as(usize, @as(u32, @bitCast(layer_rect.m_left))))] = rgb_16;
                         } else {
                             const fb_uint: [*]uint = @ptrCast(@alignCast(this.m_layers[uz_order].fb));
-                            fb_uint[(y - @as(usize, @as(u32, @bitCast(layer_rect.m_top)))) * @as(usize, @as(u32, @bitCast(width))) + (x - @as(usize, @as(u32, @bitCast(layer_rect.m_left))))] = rgb;
+                            const rgbPtr = &fb_uint[(y - @as(usize, @as(u32, @bitCast(layer_rect.m_top)))) * @as(usize, @as(u32, @bitCast(width))) + (x - @as(usize, @as(u32, @bitCast(layer_rect.m_left))))];
+                            rgbPtr.* = rgb;
                         }
                     }
                 }

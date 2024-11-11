@@ -1,4 +1,5 @@
 const std = @import("std");
+const debug_mode = @import("builtin").mode == .Debug;
 const api = @import("./api.zig");
 const resource = @import("./resource.zig");
 const display = @import("./display.zig");
@@ -190,6 +191,12 @@ pub const LatticeFontOp = struct {
             const _font: *LatticeFontInfo = @ptrCast(@alignCast(_anyfont));
             FontOperator.get_string_pos(string, _font, rect, align_type, &x, &y);
             std.log.debug("draw_string_in_rect ({d},{d}) ({d},{d})", .{ rect.m_left, rect.m_top, x, y });
+            if (debug_mode) {
+                var textRect = rect;
+                textRect.m_left += x;
+                textRect.m_top += y;
+                surface.draw_rect(textRect, api.GL_RGB(0, 0, 255), 0, 1);
+            }
             LatticeFontOp.draw_string(surface, z_order, string, rect.m_left + x, rect.m_top + y, font, font_color, bg_color);
         }
     }

@@ -104,31 +104,78 @@ pub fn main() !void {
             .p_wnd = table.asWnd(), //
             .resource_id = ID_SPIN_BOX,
             .str = "table",
-            .x = 10,
-            .y = 540,
-            .width = 300,
-            .height = 30,
+            .x = 300,
+            .y = 500,
+            .width = 500,
+            .height = 100,
             .p_child_tree = null,
             .user_data = @ptrCast(&guilite.TableData{
+                .borderColor = guilite.COLORS.RED,
+                .borderSize = 5,
+                .bgColor = guilite.GL_ARGB(255, 0, 0, 0),
                 .items = &.{
                     &.{
                         .{
                             .str = "1",
-                            .color = guilite.BLACK,
+                            .color = guilite.COLORS.BLACK,
+                            .w = 60,
+                            .h = 40,
                         },
                         .{
                             .str = "2",
-                            .color = guilite.WHITE,
+                            .color = guilite.COLORS.RED,
+                            .w = 40,
+                            .h = 40,
+                        },
+                        .{
+                            .str = "3",
+                            .color = guilite.COLORS.BLACK,
+                            .w = 60,
+                            .h = 40,
+                        },
+                        .{
+                            .str = "4",
+                            .color = guilite.COLORS.RED,
+                            .w = 40,
+                            .h = 40,
+                        },
+                        .{
+                            .str = "5",
+                            .color = guilite.COLORS.BLACK,
+                            .w = 60,
+                            .h = 40,
+                        },
+                        .{
+                            .str = "6",
+                            .color = guilite.COLORS.RED,
+                            .w = 40,
+                            .h = 40,
+                        },
+                        .{
+                            .str = "7",
+                            .color = guilite.COLORS.BLACK,
+                            .w = 60,
+                            .h = 40,
+                        },
+                        .{
+                            .str = "8",
+                            .color = guilite.COLORS.RED,
+                            .w = 100,
+                            .h = 40,
                         },
                     },
                     &.{
                         .{
                             .str = "3",
-                            .color = guilite.RED,
+                            .color = guilite.COLORS.RED,
+                            .w = 30,
+                            .h = 40,
                         },
                         .{
                             .str = "4",
-                            .color = guilite.RED,
+                            .color = guilite.GL_ARGB(100, 0, 255, 255),
+                            .w = 40,
+                            .h = 60,
                         },
                     },
                 },
@@ -187,7 +234,6 @@ pub fn main() !void {
     // surface.fill_rect(guilite.Rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
     // try _3d.create_ui(&_display);
     std.log.debug("main end", .{});
-
     try x11.appLoop();
 }
 
