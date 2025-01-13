@@ -1,5 +1,5 @@
 const std = @import("std");
-const guilite = @import("./guilite.zig");
+const guilite = @import("zguilite");
 const _3d = @import("./3d.zig");
 const x11 = @import("./x11.zig");
 const int = guilite.types.int;

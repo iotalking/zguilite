@@ -2,7 +2,7 @@ const std = @import("std");
 const xlib = @cImport({
     @cInclude("X11/Xlib.h");
 });
-const guilite = @import("./guilite.zig");
+const guilite = @import("guilite");
 const wave_demo = @import("./wave_demo.zig");
 const int = c_int;
 const uint = c_uint;

@@ -1,5 +1,5 @@
 const std = @import("std");
-const guilite = @import("./guilite.zig");
+const guilite = @import("guilite");
 const SHAPE_CNT = 2;
 
 const UI_WIDTH = 480;
