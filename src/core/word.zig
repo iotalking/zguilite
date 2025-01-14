@@ -345,7 +345,7 @@ pub const LatticeFontOp = struct {
         var first: usize = 0;
         var last: usize = @as(u32, @bitCast(font.count)) - 1;
         var middle: usize = (first + last) / 2;
-        while (first <= last and middle > 0) {
+        while (first <= last and middle >= 0) {
 
             // std.log.debug("get_lattice middle:{d}", .{middle});
             const lattice_array: []const LATTICE = font.lattice_array;
