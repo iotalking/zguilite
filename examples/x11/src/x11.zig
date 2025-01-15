@@ -89,7 +89,22 @@ pub const onTouchCallback = struct {
         };
     }
     pub fn onTouch(this: *onTouchCallback, x: usize, y: usize, action: zguilite.TOUCH_ACTION) !void {
-        try this.callback(this.obj, x, y, action);
+        
+        switch(action){
+            .TOUCH_DOWN => {
+                if(this.down == false){
+                    this.down = true;
+                    try this.callback(this.obj, x, y, action);
+                }
+            },
+            .TOUCH_UP => {
+                if(this.down == true){
+                    this.down = false;
+                    try this.callback(this.obj, x, y, action);
+                }
+            },
+        }
+        
     }
 };
 
