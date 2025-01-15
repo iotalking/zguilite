@@ -342,13 +342,14 @@ pub const Wnd = struct {
 
         var _child: ?*Wnd = this.m_top_child;
         while (_child) |child| {
-            if (child.is_focus_wnd()) {
-                var rect = Rect.init();
-                child.get_wnd_rect(&rect);
-                if (true == rect.pt_in_rect(x, y)) {
-                    return child.on_touch(x, y, action);
-                }
+            std.log.debug("on_touch_impl check focus", .{});
+            // if (child.is_focus_wnd()) {
+            var rect = Rect.init();
+            child.get_wnd_rect(&rect);
+            if (true == rect.pt_in_rect(x, y)) {
+                return child.on_touch(x, y, action);
             }
+            // }
             _child = child.m_next_sibling;
         }
     }

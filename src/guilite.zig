@@ -19,6 +19,7 @@ const Consolas_24B = @import("./Consolas_24B.zig");
 const colors = @import("./core/colors.zig");
 const wave_buffer = @import("./widgets/wave_buffer.zig");
 const wave_ctrl = @import("./widgets/wave_ctrl.zig");
+const bitmap = @import("./widgets/bitmap.zig");
 pub usingnamespace api;
 pub usingnamespace display;
 pub usingnamespace wnd;
@@ -36,6 +37,7 @@ pub usingnamespace theme;
 pub usingnamespace colors;
 pub usingnamespace wave_buffer;
 pub usingnamespace wave_ctrl;
+pub usingnamespace bitmap;
 
 const Theme = theme.Theme;
 

@@ -4,7 +4,7 @@ pub const StructBitmapInfo = struct {
     width: u16,
     height: u16,
     color_bits: u16, //support 16 bits only
-    pixel_color_array: *u16,
+    pixel_color_array: []const u16,
 };
 pub const BITMAP_INFO = StructBitmapInfo;
 

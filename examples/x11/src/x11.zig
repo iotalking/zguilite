@@ -2,7 +2,7 @@ const std = @import("std");
 const xlib = @cImport({
     @cInclude("X11/Xlib.h");
 });
-const guilite = @import("guilite");
+const zguilite = @import("zguilite");
 const wave_demo = @import("./wave_demo.zig");
 const int = c_int;
 const uint = c_uint;
@@ -75,6 +75,25 @@ pub fn refreshApp() !void {
     }
 }
 
+pub const onTouchCallback = struct {
+    down: bool = false,
+    obj: *anyopaque,
+    callback: CALLBACK,
+    const CALLBACK = *const fn (user: *anyopaque, x: usize, y: usize, action: zguilite.TOUCH_ACTION) anyerror!void;
+
+    pub fn init(obj: *anyopaque, callback: anytype) onTouchCallback {
+        return .{
+            .obj = obj,
+            .callback = @ptrCast(callback),
+        };
+    }
+    pub fn onTouch(this: *onTouchCallback, x: usize, y: usize, action: zguilite.TOUCH_ACTION) !void {
+        try this.callback(this.obj, x, y, action);
+    }
+};
+
+pub var onTouchCallbackObj: ?onTouchCallback = null;
+
 pub fn appLoop() !void {
     std.log.debug("apploop enter", .{});
     if (appWindow == null) {
@@ -96,7 +115,7 @@ pub fn appLoop() !void {
     // try refreshApp();
     var xevent: xlib.XEvent = undefined;
 
-    if (xlib.XSelectInput(display, win, xlib.ExposureMask | xlib.KeyPressMask | xlib.StructureNotifyMask | xlib.ButtonPressMask | xlib.ButtonReleaseMask | xlib.SubstructureNotifyMask) == 0) {
+    if (xlib.XSelectInput(display, win, xlib.ExposureMask | xlib.PointerMotionMask | xlib.ButtonPressMask | xlib.ButtonReleaseMask | xlib.KeyPressMask | xlib.StructureNotifyMask | xlib.ButtonPressMask | xlib.ButtonReleaseMask | xlib.SubstructureNotifyMask) == 0) {
         return error.xselect_input;
     }
     try refreshApp();
@@ -109,13 +128,31 @@ pub fn appLoop() !void {
             std.log.debug("no pending xevent", .{});
         }
 
-        if (xevent.type == xlib.Expose) {
-            std.log.debug("appLoop Expose", .{});
-            try refreshApp();
-        } else {
-            try wave_demo.refrushWaveCtrl();
-            try refreshApp();
-            std.time.sleep(17 * std.time.ns_per_ms);
+        switch (xevent.type) {
+            xlib.Expose => {
+                std.log.debug("appLoop Expose", .{});
+                try refreshApp();
+            },
+            xlib.MotionNotify => {
+                // std.log.debug("appLoop MotionNotify", .{});
+            },
+            xlib.ButtonPress => {
+                if (onTouchCallbackObj) |*_cb| {
+                    var cb = @constCast(_cb);
+                    cb.onTouch(@intCast(xevent.xmotion.x), @intCast(xevent.xmotion.y), .TOUCH_DOWN) catch {};
+                }
+            },
+            xlib.ButtonRelease => {
+                if (onTouchCallbackObj) |*_cb| {
+                    var cb = @constCast(_cb);
+                    cb.onTouch(@intCast(xevent.xmotion.x), @intCast(xevent.xmotion.y), .TOUCH_UP) catch {};
+                }
+            },
+            else => {
+                try wave_demo.refrushWaveCtrl();
+                try refreshApp();
+                std.time.sleep(17 * std.time.ns_per_ms);
+            },
         }
     }
 }

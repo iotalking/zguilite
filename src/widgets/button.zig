@@ -83,8 +83,9 @@ pub const Button = struct {
     }
     pub fn pre_create_wnd(w: *Wnd) !void {
         const this: *Button = @fieldParentPtr("wnd", w);
-        this.on_click = null;
-        std.log.debug("button pre_create_wnd set on_click = null", .{});
+        _ = this; // autofix
+        // this.on_click = null;
+        // std.log.debug("button pre_create_wnd set on_click = null", .{});
         w.m_attr = @enumFromInt(wnd.ATTR_VISIBLE | wnd.ATTR_FOCUS);
         w.m_font = Theme.get_font(.FONT_DEFAULT);
         w.m_font_color = Theme.get_color(.COLOR_WND_FONT);
@@ -97,7 +98,7 @@ pub const Button = struct {
         // _ = y;
         const this: *Button = @fieldParentPtr("wnd", w);
         std.log.debug("button on_touch this:{*}", .{this});
-        if (w.m_parent != null) {
+        if (w.m_parent == null) {
             return error.parent_null;
         }
         if (action == .TOUCH_DOWN) {

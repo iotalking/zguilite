@@ -44,6 +44,16 @@ pub const COLOR_LIST = enum(u16) {
     COLOR_MAX,
 };
 
+pub const BITMAP_TYPE = enum {
+    BITMAP_CUSTOM1, //
+    BITMAP_CUSTOM2,
+    BITMAP_CUSTOM3,
+    BITMAP_CUSTOM4,
+    BITMAP_CUSTOM5,
+    BITMAP_CUSTOM6,
+    BITMAP_MAX,
+};
+
 pub const Theme = struct {
     // public:
     pub fn add_font(index: FONT_LIST, font: *anyopaque) types.int {
@@ -106,9 +116,27 @@ pub const Theme = struct {
         }
         return 0;
     }
-
+    pub fn add_bmp(index: BITMAP_TYPE, bmp: *const resource.BITMAP_INFO) !void {
+        const uidx: usize = @intFromEnum(index);
+        if (uidx >= @intFromEnum(COLOR_LIST.COLOR_MAX)) {
+            return error.OutOfRange;
+        }
+        Theme.s_bmp_map[uidx] = bmp;
+    }
+    pub fn get_bmp(index: BITMAP_TYPE) !*const resource.BITMAP_INFO {
+        const uindex = @intFromEnum(index);
+        if (uindex >= @intFromEnum(BITMAP_TYPE.BITMAP_MAX)) {
+            return error.OutOfRange;
+        }
+        const bmp = s_bmp_map[uindex];
+        if (bmp) |b| {
+            return b;
+        }
+        return error.NullBitmap;
+    }
     // private:
     var s_font_map = std.mem.zeroes([@intFromEnum(FONT_LIST.FONT_MAX)]?*anyopaque);
     var s_image_map = std.mem.zeroes([@intFromEnum(IMAGE_LIST.IMAGE_MAX)]?*anyopaque);
     var s_color_map = std.mem.zeroes([@intFromEnum(COLOR_LIST.COLOR_MAX)]?types.uint);
+    var s_bmp_map = std.mem.zeroes([@intFromEnum(BITMAP_TYPE.BITMAP_MAX)]?*const resource.BITMAP_INFO);
 };
