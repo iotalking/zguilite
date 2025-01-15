@@ -51,6 +51,12 @@
         //    // actually used.
         //    .lazy = false,
         //},
+        .zguilite = .{
+            .path = "../../",
+        },
+        .x11 = .{
+            .path = "../x11",
+        },
     },
 
     // Specifies the set of files and directories that are included in this package.

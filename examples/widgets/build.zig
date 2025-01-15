@@ -15,9 +15,6 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const zguiliteModule = b.addModule("zguilite", .{ .root_source_file = .{
-        .cwd_relative = "../../src/guilite.zig",
-    } });
 
     const exe = b.addExecutable(.{
         .name = "examples",
@@ -26,9 +23,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe.root_module.addImport("zguilite", zguiliteModule);
-    exe.linkLibC();
-    exe.linkSystemLibrary("X11");
+    exe.root_module.addImport("zguilite", b.dependency("zguilite", .{}).module("zguilite"));
+    exe.root_module.addImport("x11", b.dependency("x11", .{}).module("x11"));
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

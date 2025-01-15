@@ -22,9 +22,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // exe.root_module.addImport("zguilite", b.dependency("zguilite", .{}).module("root"));
-    // exe.root_module.addImport("x11", b.dependency("x11", .{}).module("x11"));
-
     exe.root_module.addImport("zguilite", b.dependency("zguilite", .{}).module("zguilite"));
     exe.root_module.addImport("x11", b.dependency("x11", .{}).module("x11"));
 

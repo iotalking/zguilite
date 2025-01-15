@@ -1,8 +1,8 @@
 const std = @import("std");
 const guilite = @import("zguilite");
 const _3d = @import("./3d.zig");
-const x11 = @import("./x11.zig");
-const wave_demo = @import("./wave_demo.zig");
+const x11 = @import("x11");
+const wave_demo = x11.wave_demo;
 const int = c_int;
 const uint = c_uint;
 

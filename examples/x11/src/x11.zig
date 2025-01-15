@@ -3,7 +3,8 @@ const xlib = @cImport({
     @cInclude("X11/Xlib.h");
 });
 const zguilite = @import("zguilite");
-const wave_demo = @import("./wave_demo.zig");
+pub const wave_demo = @import("./wave_demo.zig");
+
 const int = c_int;
 const uint = c_uint;
 var appWindow: ?xlib.Window = null;
