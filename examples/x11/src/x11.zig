@@ -136,11 +136,11 @@ pub fn appLoop() !void {
     try refreshApp();
     while (true) {
         if (xlib.XPending(_display) != 0) {
-            std.log.debug("wait xevent", .{});
+            // std.log.debug("wait xevent", .{});
             _ = xlib.XNextEvent(_display, &xevent);
-            std.log.debug("got xevent type:{any}", .{xevent.type});
+            // std.log.debug("got xevent type:{any}", .{xevent.type});
         } else {
-            std.log.debug("no pending xevent", .{});
+            // std.log.debug("no pending xevent", .{});
             if (onIdleCallback) |*cb| {
                 try cb.on(0, 0);
             }

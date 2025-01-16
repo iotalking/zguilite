@@ -47,27 +47,32 @@ pub const Bitmap = struct {
         if ((src_x + width > pBitmap.width) or (src_y + height > pBitmap.height)) {
             return;
         }
-        var lower_fb: ?*u16 = null;
+        var lower_fb: ?[*]u16 = null;
         const lower_fb_width = surface.m_width;
-        if (z_order >= @as(int, @enumFromInt(.Z_ORDER_LEVEL_1))) {
-            lower_fb = surface.m_frame_layers[z_order - 1].fb;
+        if (z_order >= display.Z_ORDER_LEVEL_1) {
+            lower_fb = @alignCast(@ptrCast(surface.m_layers[@intCast(z_order - 1)].fb));
         }
         const mask_rgb_16 = api.GL_RGB_32_to_16(mask_rgb);
-        var pData = pBitmap.pixel_color_array;
+        const pData = pBitmap.pixel_color_array.ptr;
         // for (int j = 0; j < height; j++)
-        for (0..height) |j| {
-            var p = &pData[src_x + (src_y + j) * pBitmap.width];
+        for (0..@intCast(height)) |j| {
+            const isrc_x = @as(usize,@intCast(src_x));
+            const isrc_y = @as(usize,@intCast(src_y));
+            var p = pData + isrc_x + (isrc_y + j) * pBitmap.width;
             // for (int i = 0; i < width; i++)
-            for (0..width) |i| {
+            for (0..@intCast(width)) |i| {
+                const ij:i32 = @intCast(@as(u32,@truncate(j)));
+                const ii:i32 = @intCast(@as(u32,@truncate(i)));
                 // unsigned int rgb = *p++;
-                const rgb = p.*;
+                const rgb = p[0];
                 p = p + 1;
                 if (mask_rgb_16 == rgb) {
-                    if (lower_fb) { //restore lower layer
-                        surface.draw_pixel(x + i, y + j, api.GL_RGB_16_to_32(lower_fb[(y + j) * lower_fb_width + x + i]), z_order);
+                    if (lower_fb)|_fb| { //restore lower layer
+                        const idx:usize = @intCast((y + ij) * @as(i32,@intCast(lower_fb_width)) + x + ii);
+                        surface.draw_pixel(x + ii, y + ij, api.GL_RGB_16_to_32(_fb[idx]), @enumFromInt(z_order));
                     }
                 } else {
-                    surface.draw_pixel(x + i, y + j, api.GL_RGB_16_to_32(rgb), z_order);
+                    surface.draw_pixel(x + ii, y + ij, api.GL_RGB_16_to_32(rgb), @enumFromInt(z_order));
                 }
             }
         }
