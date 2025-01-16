@@ -207,8 +207,8 @@ pub const Rect = struct {
         ASSERT(_width > 0 and _height > 0);
         this.m_left = left;
         this.m_top = top;
-        this.m_right = left + @as(i32, @bitCast(_width)) - 1;
-        this.m_bottom = top + @as(i32, @bitCast(_height)) - 1;
+        this.m_right = left +| @as(i32, @bitCast(_width)) -| 1;
+        this.m_bottom = top +| @as(i32, @bitCast(_height)) -| 1;
     }
     pub fn scale_pixel(this: Rect, size: int) Rect {
         var rect = this;

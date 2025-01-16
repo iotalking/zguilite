@@ -528,9 +528,9 @@ pub const Surface = struct {
             const layer_rect = this.m_layers[uz_order].rect;
             const rgb_16 = api.GL_RGB_32_to_16(rgb);
             // 			for (int y = y0; y <= y1; y++)
-            for (@intCast(y0)..@intCast(y1 + 1)) |y| {
+            for (@intCast(@as(u32, @bitCast(y0)))..@intCast(@as(u32, @bitCast((y1 + 1))))) |y| {
                 // 				for (int x = x0; x <= x1; x++)
-                for (@intCast(x0)..@intCast(x1 + 1)) |x| {
+                for (@intCast(@as(u32, @bitCast(x0)))..@intCast(@as(u32, @bitCast(x1 + 1)))) |x| {
                     if (layer_rect.pt_in_rect(@intCast(x), @intCast(y))) {
                         if (this.m_color_bytes == 2) {
                             const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_layers[uz_order].fb));

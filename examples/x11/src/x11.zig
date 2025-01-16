@@ -89,26 +89,25 @@ pub const onTouchCallback = struct {
         };
     }
     pub fn onTouch(this: *onTouchCallback, x: usize, y: usize, action: zguilite.TOUCH_ACTION) !void {
-        
-        switch(action){
+        switch (action) {
             .TOUCH_DOWN => {
-                if(this.down == false){
+                if (this.down == false) {
                     this.down = true;
                     try this.callback(this.obj, x, y, action);
                 }
             },
             .TOUCH_UP => {
-                if(this.down == true){
+                if (this.down == true) {
                     this.down = false;
                     try this.callback(this.obj, x, y, action);
                 }
             },
         }
-        
     }
 };
 
 pub var onTouchCallbackObj: ?onTouchCallback = null;
+pub var onIdleCallback: ?zguilite.WND_CALLBACK = null;
 
 pub fn appLoop() !void {
     std.log.debug("apploop enter", .{});
@@ -142,6 +141,9 @@ pub fn appLoop() !void {
             std.log.debug("got xevent type:{any}", .{xevent.type});
         } else {
             std.log.debug("no pending xevent", .{});
+            if (onIdleCallback) |*cb| {
+                try cb.on(0, 0);
+            }
         }
 
         switch (xevent.type) {
