@@ -572,55 +572,111 @@ pub const Surface = struct {
         }
     }
 
-    pub fn draw_line(this: *Surface, _x1: int, _y1: int, _x2: int, _y2: int, rgb: uint, z_order: uint) void {
-        // int dx, dy, x, y, e;
-        var dx: int = 0;
-        var dy: int = 0;
-        var x: int = 0;
-        var y: int = 0;
-        var e: int = 0;
+    pub fn draw_line(this: *Surface, _x1: i32, _y1: i32, x2: i32, y2: i32, rgb: u32, _z_order: u32) void {
+        var dx: i32 = x2 -% _x1;
+        var dy: i32 = y2 -% _y1;
         var x1 = _x1;
-        var x2 = _x2;
         var y1 = _y1;
-        var y2 = _y2;
-        if (x1 > x2) dx = x1 - x2 else dx = x2 - x1;
-        if (y1 > y2) dy = y1 - y2 else dy = y2 - y1;
-
-        if (((dx > dy) and (x1 > x2)) or ((dx <= dy) and (y1 > y2))) {
-            x = x2;
-            y = y2;
-            x2 = x1;
-            y2 = y1;
-            x1 = x;
-            y1 = y;
-        }
-        x = x1;
-        y = y1;
-
-        if (dx > dy) {
-            e = dy - @divTrunc(dx, 2);
-            // for (; x1 <= x2; ++x1, e += dy)
-            while (x1 <= x2) : ({
-                x1 +%= 1;
-                e +%= dy;
-            }) {
-                this.draw_pixel(x1, y1, rgb, @enumFromInt(z_order));
-                if (e > 0) {
-                    e -%= dx;
-                    if (y > y2) y1 +%= 1 else y1 +%= 1;
+        var e: i32 = undefined;
+        const z_order:Z_ORDER_LEVEL = @enumFromInt(_z_order);
+        if ((dx >= 0) and (dy >= 0)) {
+            if (dx >= dy) {
+                e = dy - @divTrunc(dx , @as(i32,2));
+                var i: i32 = x1;
+                while (i <= x2) : (i += 1) {
+                    this.draw_pixel(i, y1, rgb, z_order);
+                    if (e > 0) {
+                        y1 += 1;
+                        e -= dx;
+                    }
+                    e += dy;
+                }
+            } else {
+                e = dx - @divTrunc(dx , @as(i32,2));
+                var i: i32 = y1;
+                while (i <= y2) : (i += 1) {
+                    this.draw_pixel(x1, i, rgb, z_order);
+                    if (e > 0) {
+                        x1 += 1;
+                        e -= dy;
+                    }
+                    e += dx;
                 }
             }
-        } else {
-            e = dx - @divTrunc(dy, 2);
-            // for (; y1 <= y2; ++y1, e += dx)
-            while (y1 <= y2) : ({
-                y1 +%= 1;
-                e +%= 1;
-            }) {
-                this.draw_pixel(x1, y1, rgb, @enumFromInt(z_order));
-                if (e > 0) {
-                    e -%= dy;
-                    if (x > x2) x1 +%= 1 else x1 +%= 1;
+        } else if ((dx >= 0) and (dy < 0)) {
+            dy = -dy;
+            if (dx >= dy) {
+                e = dy - @divTrunc(dx , @as(i32,2));
+                var i: i32 = x1;
+                while (i <= x2) : (i += 1) {
+                    this.draw_pixel(i, y1, rgb, z_order);
+                    if (e > 0) {
+                        y1 -= 1;
+                        e -= dx;
+                    }
+                    e += dy;
+                }
+            } else {
+                e = dx - @divTrunc(dx , @as(i32,2));
+                var i: i32 = y1;
+                while (i >= y2) : (i -= 1) {
+                    this.draw_pixel(x1, i, rgb, z_order);
+                    if (e > 0) {
+                        x1 += 1;
+                        e -= dy;
+                    }
+                    e += dx;
+                }
+            }
+        } else if ((dx < 0) and (dy >= 0)) {
+            dx = -dx;
+            if (dx >= dy) {
+                e = dy - @divTrunc(dx , @as(i32,2));
+                var i: i32 = x1;
+                while (i >= x2) : (i -= 1) {
+                    this.draw_pixel(i, y1, rgb, z_order);
+                    if (e > 0) {
+                        y1 += 1;
+                        e -= dx;
+                    }
+                    e += dy;
+                }
+            } else {
+                e = dx - @divTrunc(dx , @as(i32,2));
+                var i: i32 = y1;
+                while (i <= y2) : (i += 1) {
+                    this.draw_pixel(x1, i, rgb, z_order);
+                    if (e > 0) {
+                        x1 -= 1;
+                        e -= dy;
+                    }
+                    e += dx;
+                }
+            }
+        } else if ((dx < 0) and (dy < 0)) {
+            dx = -dx;
+            dy = -dy;
+            if (dx >= dy) {
+                e = dy - @divTrunc(dx , @as(i32,2));
+                var i: i32 = x1;
+                while (i >= x2) : (i -= 1) {
+                    this.draw_pixel(i, y1, rgb, z_order);
+                    if (e > 0) {
+                        y1 -= 1;
+                        e -= dx;
+                    }
+                    e += dy;
+                }
+            } else {
+                e = dx - @divTrunc(dx , @as(i32,2));
+                var i: i32 = y1;
+                while (i >= y2) : (i -= 1) {
+                    this.draw_pixel(x1, i, rgb, z_order);
+                    if (e > 0) {
+                        x1 -= 1;
+                        e -= dy;
+                    }
+                    e += dx;
                 }
             }
         }
