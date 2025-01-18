@@ -56,19 +56,19 @@ pub const Bitmap = struct {
         const pData = pBitmap.pixel_color_array.ptr;
         // for (int j = 0; j < height; j++)
         for (0..@intCast(height)) |j| {
-            const isrc_x = @as(usize,@intCast(src_x));
-            const isrc_y = @as(usize,@intCast(src_y));
+            const isrc_x = @as(usize, @intCast(src_x));
+            const isrc_y = @as(usize, @intCast(src_y));
             var p = pData + isrc_x + (isrc_y + j) * pBitmap.width;
             // for (int i = 0; i < width; i++)
             for (0..@intCast(width)) |i| {
-                const ij:i32 = @intCast(@as(u32,@truncate(j)));
-                const ii:i32 = @intCast(@as(u32,@truncate(i)));
+                const ij: i32 = @intCast(@as(u32, @truncate(j)));
+                const ii: i32 = @intCast(@as(u32, @truncate(i)));
                 // unsigned int rgb = *p++;
                 const rgb = p[0];
                 p = p + 1;
                 if (mask_rgb_16 == rgb) {
-                    if (lower_fb)|_fb| { //restore lower layer
-                        const idx:usize = @intCast((y + ij) * @as(i32,@intCast(lower_fb_width)) + x + ii);
+                    if (lower_fb) |_fb| { //restore lower layer
+                        const idx: usize = @intCast((y + ij) * @as(i32, @intCast(lower_fb_width)) + x + ii);
                         surface.draw_pixel(x + ii, y + ij, api.GL_RGB_16_to_32(_fb[idx]), @enumFromInt(z_order));
                     }
                 } else {

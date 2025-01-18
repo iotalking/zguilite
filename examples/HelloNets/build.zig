@@ -16,12 +16,12 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{
-        .name = "examples",
+        .name = "HelloNets",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
-
+    exe.addIncludePath(b.path("./src"));
     exe.root_module.addImport("zguilite", b.dependency("zguilite", .{}).module("zguilite"));
     exe.root_module.addImport("x11", b.dependency("x11", .{}).module("x11"));
 

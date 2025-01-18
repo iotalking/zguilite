@@ -578,10 +578,10 @@ pub const Surface = struct {
         var x1 = _x1;
         var y1 = _y1;
         var e: i32 = undefined;
-        const z_order:Z_ORDER_LEVEL = @enumFromInt(_z_order);
+        const z_order: Z_ORDER_LEVEL = @enumFromInt(_z_order);
         if ((dx >= 0) and (dy >= 0)) {
             if (dx >= dy) {
-                e = dy - @divTrunc(dx , @as(i32,2));
+                e = dy - @divTrunc(dx, @as(i32, 2));
                 var i: i32 = x1;
                 while (i <= x2) : (i += 1) {
                     this.draw_pixel(i, y1, rgb, z_order);
@@ -592,7 +592,7 @@ pub const Surface = struct {
                     e += dy;
                 }
             } else {
-                e = dx - @divTrunc(dx , @as(i32,2));
+                e = dx - @divTrunc(dx, @as(i32, 2));
                 var i: i32 = y1;
                 while (i <= y2) : (i += 1) {
                     this.draw_pixel(x1, i, rgb, z_order);
@@ -606,7 +606,7 @@ pub const Surface = struct {
         } else if ((dx >= 0) and (dy < 0)) {
             dy = -dy;
             if (dx >= dy) {
-                e = dy - @divTrunc(dx , @as(i32,2));
+                e = dy - @divTrunc(dx, @as(i32, 2));
                 var i: i32 = x1;
                 while (i <= x2) : (i += 1) {
                     this.draw_pixel(i, y1, rgb, z_order);
@@ -617,7 +617,7 @@ pub const Surface = struct {
                     e += dy;
                 }
             } else {
-                e = dx - @divTrunc(dx , @as(i32,2));
+                e = dx - @divTrunc(dx, @as(i32, 2));
                 var i: i32 = y1;
                 while (i >= y2) : (i -= 1) {
                     this.draw_pixel(x1, i, rgb, z_order);
@@ -631,7 +631,7 @@ pub const Surface = struct {
         } else if ((dx < 0) and (dy >= 0)) {
             dx = -dx;
             if (dx >= dy) {
-                e = dy - @divTrunc(dx , @as(i32,2));
+                e = dy - @divTrunc(dx, @as(i32, 2));
                 var i: i32 = x1;
                 while (i >= x2) : (i -= 1) {
                     this.draw_pixel(i, y1, rgb, z_order);
@@ -642,7 +642,7 @@ pub const Surface = struct {
                     e += dy;
                 }
             } else {
-                e = dx - @divTrunc(dx , @as(i32,2));
+                e = dx - @divTrunc(dx, @as(i32, 2));
                 var i: i32 = y1;
                 while (i <= y2) : (i += 1) {
                     this.draw_pixel(x1, i, rgb, z_order);
@@ -657,7 +657,7 @@ pub const Surface = struct {
             dx = -dx;
             dy = -dy;
             if (dx >= dy) {
-                e = dy - @divTrunc(dx , @as(i32,2));
+                e = dy - @divTrunc(dx, @as(i32, 2));
                 var i: i32 = x1;
                 while (i >= x2) : (i -= 1) {
                     this.draw_pixel(i, y1, rgb, z_order);
@@ -668,7 +668,7 @@ pub const Surface = struct {
                     e += dy;
                 }
             } else {
-                e = dx - @divTrunc(dx , @as(i32,2));
+                e = dx - @divTrunc(dx, @as(i32, 2));
                 var i: i32 = y1;
                 while (i >= y2) : (i -= 1) {
                     this.draw_pixel(x1, i, rgb, z_order);
