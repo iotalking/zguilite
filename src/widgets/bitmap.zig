@@ -12,9 +12,10 @@ const Word = word.Word;
 const Theme = theme.Theme;
 const int = types.int;
 const uint = types.uint;
+pub const DEFAULT_MASK_COLOR = 0xFF080408;
 
 pub const Bitmap = struct {
-    pub fn draw_bitmap(surface: *display.Surface, z_order: int, pBitmap: *const resource.BITMAP_INFO, x: int, y: int, mask_rgb: uint) void {
+    pub fn draw_bitmap(surface: *display.Surface, z_order: int, pBitmap: *const resource.BITMAP_INFO, x: int, y: int, mask_rgb: uint) !void {
 
         // unsigned short* lower_fb = 0;
         var lower_fb: ?*u16 = null;
@@ -34,7 +35,7 @@ pub const Bitmap = struct {
                 pData = pData + 1;
                 if (mask_rgb_16 == rgb) {
                     if (lower_fb) |_fb| { //restore lower layer
-                        const fb: [*]u16 = @constCast(@ptrCast(&_fb));
+                        const fb: [*]u16 = @constCast(@ptrCast(_fb));
                         surface.draw_pixel(@intCast(ux + i), @intCast(uy + j), api.GL_RGB_16_to_32(fb[(uy + j) * lower_fb_width + ux + i]), @enumFromInt(z_order));
                     }
                 } else {
@@ -43,7 +44,7 @@ pub const Bitmap = struct {
             }
         }
     }
-    pub fn draw_bitmap_from_rect(surface: *display.Surface, z_order: int, pBitmap: *resource.BITMAP_INFO, x: int, y: int, src_x: int, src_y: int, width: int, height: int, mask_rgb: uint) void {
+    pub fn draw_bitmap_from_rect(surface: *display.Surface, z_order: int, pBitmap: *const resource.BITMAP_INFO, x: int, y: int, src_x: int, src_y: int, width: int, height: int, mask_rgb: uint) void {
         if ((src_x + width > pBitmap.width) or (src_y + height > pBitmap.height)) {
             return;
         }

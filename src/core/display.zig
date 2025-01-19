@@ -46,7 +46,7 @@ pub const Display = struct {
         surface.*.attach_display(this);
         return this;
     }
-    pub inline fn init2(this: *Display, phy_fb: [*]u8, display_width: int, display_height: int, surface_width: int, surface_height: int, color_bytes: uint, surface_cnt: int, driver: ?*DISPLAY_DRIVER) !void {
+    pub inline fn init2(this: *Display, phy_fb: [*]u8, display_width: int, display_height: int, surface_width: int, surface_height: int, color_bytes: uint, surface_cnt: int, driver: ?*const DISPLAY_DRIVER) !void {
         this.* = Display{
             .m_phy_fb = phy_fb,
             .m_width = display_width,
@@ -385,7 +385,7 @@ pub const Display = struct {
     m_height: int = 0, //in pixels
     m_color_bytes: uint = 0, //16/32 bits for default
     m_phy_fb: ?[*]u8 = null, //physical framebuffer for default
-    m_driver: ?*DISPLAY_DRIVER = null, //Rendering by external method without default physical framebuffer
+    m_driver: ?*const DISPLAY_DRIVER = null, //Rendering by external method without default physical framebuffer
 
     m_phy_read_index: int = 0,
     m_phy_write_index: int = 0,
@@ -399,7 +399,7 @@ pub const Layer = struct {
     // 	Layer() { fb = 0; }
     fb: ?*anyopaque = null, //framebuffer
     rect: Rect = .{}, //framebuffer area
-    active_rect: Rect = .{},
+    active_rect: Rect = Rect.init(),
 };
 
 pub const Surface = struct {
@@ -726,43 +726,29 @@ pub const Surface = struct {
         return this.m_display;
     }
 
-    pub fn activate_layer(this: *Surface, active_rect: Rect, active_z_order: int) void //empty active rect means inactivating the layer
-    {
-        api.ASSERT(active_z_order > Z_ORDER_LEVEL_0 and active_z_order <= Z_ORDER_LEVEL_MAX);
-
-        const uactive_z_order: usize = @as(u32, @bitCast(active_z_order));
-        //Show the layers below the current active rect.
-        const current_active_rect = this.m_layers[uactive_z_order].active_rect;
-        // for(int low_z_order = Z_ORDER_LEVEL_0; low_z_order < active_z_order; low_z_order++)
-        for (Z_ORDER_LEVEL_0..uactive_z_order) |low_z_order| {
-            const low_layer_rect = this.m_layers[low_z_order].rect;
-            const low_active_rect = this.m_layers[low_z_order].active_rect;
-            const fb = this.m_layers[low_z_order].fb;
-            const width: usize = @as(u32, @bitCast(low_layer_rect.width()));
-            // for (int y = current_active_rect.m_top; y <= current_active_rect.m_bottom; y++)
-            const uleft: usize = @as(u32, @bitCast(current_active_rect.m_left));
-            const utop: usize = @as(u32, @bitCast(current_active_rect.m_top));
-            const uright: usize = @as(u32, @bitCast(current_active_rect.m_right));
-            const ubottom: usize = @as(u32, @bitCast(current_active_rect.m_bottom));
-            for (utop..(ubottom + 1)) |y| {
-                const iy: i32 = @truncate(@as(i64, @bitCast(y)));
-                // for (int x = current_active_rect.m_left; x <= current_active_rect.m_right; x++)
-                for (uleft..(uright + 1)) |x| {
-                    const ix: i32 = @truncate(@as(i64, @bitCast(x)));
-                    if (low_active_rect.pt_in_rect(ix, iy) and low_layer_rect.pt_in_rect(ix, iy)) //active rect maybe is bigger than layer rect
-                    {
-                        const fb_u16: [*]u16 = @alignCast(@ptrCast(fb));
-                        const fb_uint: [*]uint = @alignCast(@ptrCast(fb));
-                        const ulayer_rect_left: usize = @as(u32, @bitCast(low_layer_rect.m_left));
-                        const ulayer_rect_top: usize = @as(u32, @bitCast(low_layer_rect.m_top));
-
-                        const rgb = if (this.m_color_bytes == 2) api.GL_RGB_16_to_32(fb_u16[(x - ulayer_rect_left) + (y - ulayer_rect_top) * width]) else fb_uint[(x - ulayer_rect_left) + (y - ulayer_rect_top) * width];
-                        this.draw_pixel_low_level(ix, iy, rgb);
+    // 激活图层
+    pub fn activate_layer(self: *Surface, active_rect: Rect, active_z_order: u32) void {
+        std.debug.assert(active_z_order > @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_0) and active_z_order <= Z_ORDER_LEVEL_MAX);
+        // Show the layers below the current active rect.
+        const current_active_rect = self.m_layers[active_z_order].active_rect;
+        var low_z_order: u32 = @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_0);
+        while (low_z_order < active_z_order) : (low_z_order += 1) {
+            const low_layer_rect = self.m_layers[low_z_order].rect;
+            const low_active_rect = self.m_layers[low_z_order].active_rect;
+            const fb = self.m_layers[low_z_order].fb;
+            const width = low_layer_rect.width();
+            var y: i32 = current_active_rect.m_top;
+            while (y <= current_active_rect.m_bottom) : (y += 1) {
+                var x: i32 = current_active_rect.m_left;
+                while (x <= current_active_rect.m_right) : (x += 1) {
+                    if (low_active_rect.pt_in_rect(x, y) and low_layer_rect.pt_in_rect(x, y)) {
+                        const rgb = if (self.m_color_bytes == 2) api.GL_RGB_16_to_32(@as([*]u16,@alignCast(@ptrCast(fb)))[@as(usize,@intCast((x - low_layer_rect.m_left) + (y - low_layer_rect.m_top) * @as(i32,@intCast(width))))]) else @as([*]u32,@alignCast(@ptrCast(fb)))[@as(usize,@intCast( (x - low_layer_rect.m_left) + (y - low_layer_rect.m_top) * @as(i32,@intCast(width))))];
+                        self.draw_pixel_low_level(x, y, rgb);
                     }
                 }
             }
         }
-        this.m_layers[uactive_z_order].active_rect = active_rect; //set the new acitve rect.
+        self.m_layers[active_z_order].active_rect = active_rect;
     }
 
     pub fn set_active(this: *Surface, flag: bool) void {
@@ -865,12 +851,14 @@ pub const Surface = struct {
             }
         }
         // 		for (int i = Z_ORDER_LEVEL_0; i < m_max_zorder; i++)
-        for (@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_0)..@intFromEnum(this.m_max_zorder)) |j| {
+        for (@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_0)..@intFromEnum(this.m_max_zorder) + 1) |j| {
             i = j; //Top layber fb always be 0
+            std.log.debug("set_surface alloc layers[{d}] fb m_max_zorder:{} layer_rect:{}",.{i,this.m_max_zorder,layer_rect});
             this.m_layers[i].fb = @ptrCast(try core.allocator.alloc(u8, fb_size));
             // 			ASSERT(m_layers[i].fb = calloc(layer_rect.width() * layer_rect.height(), m_color_bytes));
             // 			m_layers[i].rect = layer_rect;
             this.m_layers[i].rect = layer_rect;
+            this.m_layers[i].active_rect = layer_rect;
         }
 
         // 		m_layers[Z_ORDER_LEVEL_0].active_rect = layer_rect;
