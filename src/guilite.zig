@@ -20,6 +20,7 @@ const colors = @import("./core/colors.zig");
 const wave_buffer = @import("./widgets/wave_buffer.zig");
 const wave_ctrl = @import("./widgets/wave_ctrl.zig");
 const bitmap = @import("./widgets/bitmap.zig");
+const slide_group = @import("./widgets/slide_group.zig");
 pub usingnamespace api;
 pub usingnamespace display;
 pub usingnamespace wnd;
@@ -38,6 +39,7 @@ pub usingnamespace colors;
 pub usingnamespace wave_buffer;
 pub usingnamespace wave_ctrl;
 pub usingnamespace bitmap;
+pub usingnamespace slide_group;
 
 const Theme = theme.Theme;
 

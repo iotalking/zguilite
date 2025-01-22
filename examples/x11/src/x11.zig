@@ -77,10 +77,10 @@ pub fn refreshApp() !void {
 }
 
 pub const onTouchCallback = struct {
-    down: bool = false,
+    index: u32 = 0,
     obj: *anyopaque,
     callback: CALLBACK,
-    const CALLBACK = *const fn (user: *anyopaque, x: usize, y: usize, action: zguilite.TOUCH_ACTION) anyerror!void;
+    const CALLBACK = *const fn (user: *anyopaque, x: i32, y: i32, action: zguilite.TOUCH_ACTION) anyerror!void;
 
     pub fn init(obj: *anyopaque, callback: anytype) onTouchCallback {
         return .{
@@ -88,21 +88,18 @@ pub const onTouchCallback = struct {
             .callback = @ptrCast(callback),
         };
     }
-    pub fn onTouch(this: *onTouchCallback, x: usize, y: usize, action: zguilite.TOUCH_ACTION) !void {
+    pub fn onTouch(this: *onTouchCallback, x: i32, y: i32, action: zguilite.TOUCH_ACTION) !void {
+        std.log.debug("onTouchCallback onTouch ({},{}) {} index:{}", .{ x, y, action, this.index });
         switch (action) {
             .TOUCH_DOWN => {
-                if (this.down == false) {
-                    this.down = true;
-                    try this.callback(this.obj, x, y, action);
-                }
+                this.index = 0;
             },
-            .TOUCH_UP => {
-                if (this.down == true) {
-                    this.down = false;
-                    try this.callback(this.obj, x, y, action);
-                }
+            .TOUCH_MOVE => {
+                this.index +|= 1;
             },
+            .TOUCH_UP => {},
         }
+        try this.callback(this.obj, x, y, action);
     }
 };
 
@@ -134,6 +131,7 @@ pub fn appLoop() !void {
         return error.xselect_input;
     }
     try refreshApp();
+    var touchDown = false;
     while (true) {
         if (xlib.XPending(_display) != 0) {
             // std.log.debug("wait xevent", .{});
@@ -152,19 +150,31 @@ pub fn appLoop() !void {
                 try refreshApp();
             },
             xlib.MotionNotify => {
-                // std.log.debug("appLoop MotionNotify", .{});
+                if (onTouchCallbackObj) |*_cb| {
+                    var cb = @constCast(_cb);
+                    if (touchDown) {
+                        cb.onTouch(@intCast(xevent.xmotion.x), @intCast(xevent.xmotion.y), .TOUCH_MOVE) catch {};
+                    }
+                    try refreshApp();
+                }
             },
             xlib.ButtonPress => {
                 if (onTouchCallbackObj) |*_cb| {
                     var cb = @constCast(_cb);
-                    cb.onTouch(@intCast(xevent.xmotion.x), @intCast(xevent.xmotion.y), .TOUCH_DOWN) catch {};
+                    if (touchDown == false) {
+                        touchDown = true;
+                        cb.onTouch(@intCast(xevent.xmotion.x), @intCast(xevent.xmotion.y), .TOUCH_DOWN) catch {};
+                    }
                 }
                 try refreshApp();
             },
             xlib.ButtonRelease => {
                 if (onTouchCallbackObj) |*_cb| {
                     var cb = @constCast(_cb);
-                    cb.onTouch(@intCast(xevent.xmotion.x), @intCast(xevent.xmotion.y), .TOUCH_UP) catch {};
+                    if (touchDown) {
+                        touchDown = false;
+                        cb.onTouch(@intCast(xevent.xmotion.x), @intCast(xevent.xmotion.y), .TOUCH_UP) catch {};
+                    }
                 }
                 try refreshApp();
             },
@@ -174,6 +184,5 @@ pub fn appLoop() !void {
                 std.time.sleep(17 * std.time.ns_per_ms);
             },
         }
-
     }
 }

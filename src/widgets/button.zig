@@ -41,7 +41,7 @@ pub const Button = struct {
     }
     // protected:
     fn on_paint(w: *Wnd) !void {
-        std.log.debug("button on_paint font:{*} str:{s}", .{w.m_font,w.m_str.?});
+        std.log.debug("button on_paint font:{*} str:{s}", .{ w.m_font, w.m_str.? });
         // const this: *Button = @fieldParentPtr("wnd", w);
         var rect: Rect = Rect.init();
         w.get_screen_rect(&rect);

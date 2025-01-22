@@ -41,6 +41,13 @@ pub const NAVIGATION_KEY = enum(u16) {
 pub const TOUCH_ACTION = enum(u16) {
     TOUCH_DOWN, //
     TOUCH_UP,
+    TOUCH_MOVE,
+};
+
+pub const KEY_TYPE = enum(u16) {
+    KEY_FORWARD,
+    KEY_BACKWARD,
+    KEY_ENTER,
 };
 
 pub const struct_wnd_tree = struct {
@@ -353,6 +360,56 @@ pub const Wnd = struct {
             _child = child.m_next_sibling;
         }
     }
+
+    pub fn on_key_impl(self: *Wnd, key: KEY_TYPE) !bool {
+        std.debug.assert(key == KEY_TYPE.KEY_FORWARD or key == KEY_TYPE.KEY_BACKWARD or key == KEY_TYPE.KEY_ENTER);
+        // Find current focus wnd.
+        var old_focus_wnd: ?*Wnd = self.m_focus_child;
+        while (old_focus_wnd != null and old_focus_wnd.?.m_focus_child != null) {
+            old_focus_wnd = old_focus_wnd.?.m_focus_child;
+        }
+        if (old_focus_wnd != null and !try old_focus_wnd.?.on_key(key)) {
+            return true;
+        }
+        // Default moving focus(Default handle KEY_FOWARD/KEY_BACKWARD)
+        if (key == KEY_TYPE.KEY_ENTER) {
+            return true;
+        }
+        if (old_focus_wnd == null) {
+            // No current focus wnd, new one.
+            var child: ?*Wnd = self.m_top_child;
+            var new_focus_wnd: ?*Wnd = null;
+            while (child) |_child| {
+                if (_child.m_attr == .ATTR_VISIBLE) {
+                    if (_child.is_focus_wnd()) {
+                        new_focus_wnd = child;
+                        _ = try new_focus_wnd.?.m_parent.?.set_child_focus(new_focus_wnd.?);
+                        child = _child.m_top_child;
+                        continue;
+                    }
+                }
+                child = child.?.m_next_sibling;
+            }
+            return true;
+        }
+        // Move focus from old wnd to next wnd
+        var next_focus_wnd: ?*Wnd = if (key == KEY_TYPE.KEY_FORWARD) old_focus_wnd.?.m_next_sibling else old_focus_wnd.?.m_prev_sibling;
+        while (next_focus_wnd != null and !next_focus_wnd.?.is_focus_wnd()) {
+            // Search neighbor of old focus wnd
+            next_focus_wnd = if (key == KEY_TYPE.KEY_FORWARD) next_focus_wnd.?.m_next_sibling else next_focus_wnd.?.m_prev_sibling;
+        }
+        if (next_focus_wnd == null) {
+            // Search whole brother wnd
+            next_focus_wnd = if (key == KEY_TYPE.KEY_FORWARD) old_focus_wnd.?.m_parent.?.m_top_child else old_focus_wnd.?.m_parent.?.get_last_child();
+            while (next_focus_wnd != null and !next_focus_wnd.?.is_focus_wnd()) {
+                next_focus_wnd = if (key == KEY_TYPE.KEY_FORWARD) next_focus_wnd.?.m_next_sibling else next_focus_wnd.?.m_prev_sibling;
+            }
+        }
+        if (next_focus_wnd != null) {
+            _ = try next_focus_wnd.?.m_parent.?.set_child_focus(next_focus_wnd.?);
+        }
+        return true;
+    }
     pub fn on_navigate_impl(this: *Wnd, key: NAVIGATION_KEY) !void {
         std.log.debug("wnd.on_navigate_impl", .{});
         const priority_wnd = this.search_priority_sibling(this.m_top_child);
@@ -513,6 +570,9 @@ pub const Wnd = struct {
     pub fn on_touch(this: *Wnd, x: int, y: int, action: TOUCH_ACTION) !void {
         try this.m_vtable.on_touch(this, x, y, action);
     }
+    pub fn on_key(this: *Wnd, key: KEY_TYPE) !bool {
+        return this.m_vtable.on_key(this, key);
+    }
     pub fn on_focus(this: *Wnd) !void {
         try this.m_vtable.on_focus(this);
     }
@@ -534,6 +594,7 @@ pub const Wnd = struct {
         on_kill_focus: *const fn (this: *Wnd) anyerror!void = on_kill_focus_impl,
         on_navigate: *const fn (this: *Wnd, key: NAVIGATION_KEY) anyerror!void = on_navigate_impl,
         pre_create_wnd: *const fn (this: *Wnd) anyerror!void = pre_create_wnd_impl,
+        on_key: *const fn (this: *Wnd, key: KEY_TYPE) anyerror!bool = on_key_impl,
     };
     // protected:
     m_vtable: vtable = .{},
