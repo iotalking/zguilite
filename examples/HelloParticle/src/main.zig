@@ -3,8 +3,8 @@ const zguilite = @import("zguilite");
 const Microsoft_YaHei_28 = @import("./Microsoft_YaHei_28.zig");
 const x11 = @import("x11");
 const random = std.crypto.random;
-const UI_WIDTH: i32 = 400; // 示例值，根据实际情况修改
-const UI_HEIGHT: i32 = 400; // 示例值，根据实际情况修改
+const UI_WIDTH: i32 = 800; // 示例值，根据实际情况修改
+const UI_HEIGHT: i32 = 800; // 示例值，根据实际情况修改
 
 const EMITTER_X: i32 = UI_WIDTH / 2;
 const EMITTER_Y: i32 = UI_HEIGHT / 2;

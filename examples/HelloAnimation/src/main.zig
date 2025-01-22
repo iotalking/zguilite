@@ -69,7 +69,7 @@ const Main = struct {
         try zguilite.Theme.add_bmp(.BITMAP_CUSTOM1, &frame_00_bmp);
         // c_bitmap::draw_bitmap(m_surface, m_z_order, c_theme::get_bmp(BITMAP_CUSTOM1), rect.m_left, rect.m_top);
         if (w.m_surface) |surface| {
-            zguilite.Bitmap.draw_bitmap(surface, w.m_z_order, try zguilite.Theme.get_bmp(.BITMAP_CUSTOM1), rect.m_left, rect.m_top, 0);
+            try zguilite.Bitmap.draw_bitmap(surface, w.m_z_order, try zguilite.Theme.get_bmp(.BITMAP_CUSTOM1), rect.m_left, rect.m_top, 0);
         }
     }
 };
@@ -132,7 +132,7 @@ pub fn main() !void {
             for (s_frames) |bmp| {
                 try zguilite.Theme.add_bmp(.BITMAP_CUSTOM1, bmp);
                 if (w.m_surface) |m_surface| {
-                    zguilite.Bitmap.draw_bitmap(m_surface, w.m_z_order, try zguilite.Theme.get_bmp(.BITMAP_CUSTOM1), 0, 0, 0);
+                    try zguilite.Bitmap.draw_bitmap(m_surface, w.m_z_order, try zguilite.Theme.get_bmp(.BITMAP_CUSTOM1), 0, 0, 0);
                     try x11.refreshApp();
                     std.time.sleep(60 * std.time.ns_per_ms);
                 }
