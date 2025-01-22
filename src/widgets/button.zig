@@ -41,7 +41,7 @@ pub const Button = struct {
     }
     // protected:
     fn on_paint(w: *Wnd) !void {
-        std.log.debug("button on_paint font:{*}", .{w.m_font});
+        std.log.debug("button on_paint font:{*} str:{s}", .{w.m_font,w.m_str.?});
         // const this: *Button = @fieldParentPtr("wnd", w);
         var rect: Rect = Rect.init();
         w.get_screen_rect(&rect);
@@ -107,7 +107,6 @@ pub const Button = struct {
             try w.on_paint();
         } else {
             w.m_status = .STATUS_FOCUSED;
-            try w.on_paint();
             if (this.on_click) |click| {
                 // (m_parent.*(on_click))(m_id, 0);
                 std.log.debug("button call click", .{});
@@ -115,6 +114,7 @@ pub const Button = struct {
             } else {
                 std.log.debug("button on_touch up on_click == null", .{});
             }
+            try w.on_paint();
         }
     }
     pub fn on_navigate(w: *Wnd, key: wnd.NAVIGATION_KEY) !void {

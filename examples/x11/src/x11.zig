@@ -159,12 +159,14 @@ pub fn appLoop() !void {
                     var cb = @constCast(_cb);
                     cb.onTouch(@intCast(xevent.xmotion.x), @intCast(xevent.xmotion.y), .TOUCH_DOWN) catch {};
                 }
+                try refreshApp();
             },
             xlib.ButtonRelease => {
                 if (onTouchCallbackObj) |*_cb| {
                     var cb = @constCast(_cb);
                     cb.onTouch(@intCast(xevent.xmotion.x), @intCast(xevent.xmotion.y), .TOUCH_UP) catch {};
                 }
+                try refreshApp();
             },
             else => {
                 try wave_demo.refrushWaveCtrl();
@@ -172,5 +174,6 @@ pub fn appLoop() !void {
                 std.time.sleep(17 * std.time.ns_per_ms);
             },
         }
+
     }
 }

@@ -140,12 +140,9 @@ pub fn main() !void {
         fn onClick(this: *Self, id: i32, param: i32) !void {
             _ = id; // autofix
             _ = param; // autofix
+            this.sum += 1;    
             const str = try std.fmt.bufPrint(&this.strBuf,"{d}",.{this.sum});
             this.btn.asWnd().set_str(str);
-            std.log.debug("click sun:{s}",.{str});
-            this.sum += 1;    
-            try this.btn.asWnd().on_paint();
-            try x11.refreshApp();
         }
     };
     
