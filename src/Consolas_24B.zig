@@ -3,7 +3,7 @@ const _32 = [_]u8{
     0,
     255,
     0,
-    33,
+    81,
 };
 const _33 = [_]u8{
     0,
@@ -14114,6 +14114,6 @@ const lattice_array = [_]guilite.LATTICE{
 };
 pub const Consolas_24B = guilite.LatticeFontInfo{
     .height = 28, //
-    .count = lattice_array.len,
+    .count = 84,
     .lattice_array = &lattice_array,
 };

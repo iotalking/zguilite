@@ -34,8 +34,7 @@ pub const Label = struct {
         w.get_screen_rect(&rect);
         if (w.m_str) |str| {
             if (w.m_surface) |surface| {
-                const _rect = Rect.init2(rect.m_left, rect.m_top, @as(u32, @bitCast(rect.m_right)), @as(u32, @bitCast(rect.m_bottom)));
-                surface.fill_rect(_rect, bg_color, w.m_z_order);
+                surface.fill_rect(rect, bg_color, w.m_z_order);
                 Word.draw_string_in_rect(surface, w.m_z_order, str, rect, w.m_font, w.m_font_color, bg_color, api.ALIGN_LEFT | api.ALIGN_VCENTER);
             }
         }

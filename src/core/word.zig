@@ -350,10 +350,16 @@ pub const LatticeFontOp = struct {
             // std.log.debug("get_lattice middle:{d}", .{middle});
             const lattice_array: []const LATTICE = font.lattice_array;
             if (lattice_array[middle].utf8_code < utf8_code) {
+                if(middle == last){
+                    break;
+                }
                 first = middle + 1;
             } else if (lattice_array[middle].utf8_code == utf8_code) {
                 return &lattice_array[middle];
             } else {
+                if(middle == first){
+                    break;
+                } 
                 last = middle - 1;
             }
             middle = (first + last) / 2;
