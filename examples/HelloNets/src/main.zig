@@ -26,7 +26,7 @@ const FRICTION: f32 = 0.98;
 const GRAVITY_ACC: f32 = 0.05;
 const DELTA_TIME: f32 = 0.1;
 
-var s_surface:*zguilite.Surface = undefined;
+var s_surface: *zguilite.Surface = undefined;
 pub const c_point = struct {
     x: f32,
     y: f32,
@@ -50,12 +50,12 @@ pub const c_point = struct {
         if (self.fixed) return;
         self.last_x = self.x;
         self.last_y = self.y;
-        s_surface.draw_pixel(@intFromFloat(self.x), @intFromFloat(self.y), zguilite.GL_RGB(0, 0, 0),.Z_ORDER_LEVEL_0);
+        s_surface.draw_pixel(@intFromFloat(self.x), @intFromFloat(self.y), zguilite.GL_RGB(0, 0, 0), .Z_ORDER_LEVEL_0);
         self.vx *= FRICTION;
         self.vy *= FRICTION;
         self.x += self.vx * dt;
         self.y += self.vy * dt;
-        s_surface.draw_pixel(@intFromFloat(self.x), @intFromFloat(self.y), zguilite.GL_RGB(255, 255, 255),.Z_ORDER_LEVEL_0);
+        s_surface.draw_pixel(@intFromFloat(self.x), @intFromFloat(self.y), zguilite.GL_RGB(255, 255, 255), .Z_ORDER_LEVEL_0);
     }
 
     pub fn distance(self: *const c_point, p: *const c_point) f32 {
@@ -101,24 +101,17 @@ pub const c_string = struct {
 
     pub fn draw(self: *c_string) void {
         if (self.p1.x == self.p1.last_x and self.p1.y == self.p1.last_y and
-            self.p2.x == self.p2.last_x and self.p2.y == self.p2.last_y) {
+            self.p2.x == self.p2.last_x and self.p2.y == self.p2.last_y)
+        {
             return;
         }
 
-        s_surface.draw_line(@intFromFloat(self.p1.last_x),
-         @intFromFloat(self.p1.last_y),
-         @intFromFloat(self.p2.last_x),
-         @intFromFloat(self.p2.last_y),
-         zguilite.GL_RGB( 0, 0, 0),Z_ORDER_LEVEL_0);
-        s_surface.draw_line(@intFromFloat(self.p1.x), 
-        @intFromFloat(self.p1.y), 
-        @intFromFloat(self.p2.x), 
-        @intFromFloat(self.p2.y),
-         zguilite.GL_RGB(255, 255, 255),Z_ORDER_LEVEL_0);
+        s_surface.draw_line(@intFromFloat(self.p1.last_x), @intFromFloat(self.p1.last_y), @intFromFloat(self.p2.last_x), @intFromFloat(self.p2.last_y), zguilite.GL_RGB(0, 0, 0), Z_ORDER_LEVEL_0);
+        s_surface.draw_line(@intFromFloat(self.p1.x), @intFromFloat(self.p1.y), @intFromFloat(self.p2.x), @intFromFloat(self.p2.y), zguilite.GL_RGB(255, 255, 255), Z_ORDER_LEVEL_0);
     }
 };
 
-var points:[POINT_COL][POINT_ROW]c_point = undefined;
+var points: [POINT_COL][POINT_ROW]c_point = undefined;
 var strings: [((POINT_COL - 1) * POINT_ROW + POINT_COL * (POINT_ROW - 1))]c_string = undefined;
 
 pub fn trigger(x: i32, y: i32, is_down: bool) void {
@@ -134,8 +127,8 @@ pub fn run() !void {
     // 初始化点
     for (0..POINT_ROW) |y| {
         for (0..POINT_COL) |x| {
-            const fx:f32 = @floatFromInt(x);
-            const fy:f32 = @floatFromInt(y);
+            const fx: f32 = @floatFromInt(x);
+            const fy: f32 = @floatFromInt(y);
             points[x][y].set(X_SPACE * 2 + fx * X_SPACE, Y_SPACE * 2 + fy * Y_SPACE, y == 0);
         }
     }
@@ -201,7 +194,7 @@ pub fn main() !void {
 
     var _display: zguilite.Display = .{};
     try _display.init2(frameBuffer.ptr, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
-    var surface = try _display.alloSurface(.Z_ORDER_LEVEL_1, zguilite.Rect.init2(0, 0, screen_width, screen_height));
+    var surface = try _display.allocSurface(.Z_ORDER_LEVEL_1, zguilite.Rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
     s_surface = surface;
 

@@ -134,20 +134,20 @@ const c_mario = struct {
 
     pub fn draw(self: *c_mario) !void {
         const mario_bmp: *const BITMAP_INFO = if (self.is_jump) &jump_bmp else if (self.step < (FULL_STEP / 3)) &step1_bmp else if (self.step < (FULL_STEP * 2 / 3)) &step2_bmp else &step3_bmp;
-        const mario_rect = Rect.init2(self.x, self.y - @as(i32,@intCast(mario_bmp.height)), @as(u32,@intCast(self.x)) + mario_bmp.width - 1, @as(u32,@intCast(self.y)));
+        const mario_rect = Rect.init2(self.x, self.y - @as(i32, @intCast(mario_bmp.height)), @as(u32, @intCast(self.x)) + mario_bmp.width - 1, @as(u32, @intCast(self.y)));
         s_surface_bottom.activate_layer(mario_rect, Z_ORDER_LEVEL_1);
         try Bitmap.draw_bitmap(s_surface_bottom, Z_ORDER_LEVEL_1, mario_bmp, self.x, self.y - mario_bmp.height, 0xFFFFFF);
     }
 };
 
-var frameBuffer:[]u8 = undefined;
+var frameBuffer: []u8 = undefined;
 
-fn draw_pixel(x: i32, _y: i32, rgb: u32) void{
-    std.log.debug("main draw_pixel ({},{})",.{x,_y});
+fn draw_pixel(x: i32, _y: i32, rgb: u32) void {
+    std.log.debug("main draw_pixel ({},{})", .{ x, _y });
     var y = _y;
     y += 244;
 
-    const phy_fb:[*]u32 = @alignCast(@ptrCast(frameBuffer.ptr));
+    const phy_fb: [*]u32 = @alignCast(@ptrCast(frameBuffer.ptr));
     phy_fb[@intCast(y * UI_WIDTH + x)] = (rgb);
 }
 pub fn main() !void {
@@ -166,25 +166,23 @@ pub fn main() !void {
 
     var _display_top: zguilite.Display = .{};
     try _display_top.init2(frameBuffer.ptr, screen_width, screen_height, screen_width, (screen_height - UI_BOTTOM_HEIGHT), color_bytes, 1, null);
-    s_surface_top = try _display_top.alloSurface(.Z_ORDER_LEVEL_0, zguilite.Rect.init2(0, 0, screen_width, (screen_height - UI_BOTTOM_HEIGHT)));
+    s_surface_top = try _display_top.allocSurface(.Z_ORDER_LEVEL_0, zguilite.Rect.init2(0, 0, screen_width, (screen_height - UI_BOTTOM_HEIGHT)));
     s_surface_top.set_active(true);
     var rect = Rect.init2(0, 0, UI_WIDTH, screen_height - UI_BOTTOM_HEIGHT);
-	s_surface_top.fill_rect(rect, zguilite.GL_RGB(131, 110, 83), Z_ORDER_LEVEL_0);
-    try Bitmap.draw_bitmap(s_surface_top, Z_ORDER_LEVEL_0, &title_bmp, 30, 20,zguilite.DEFAULT_MASK_COLOR);
+    s_surface_top.fill_rect(rect, zguilite.GL_RGB(131, 110, 83), Z_ORDER_LEVEL_0);
+    try Bitmap.draw_bitmap(s_surface_top, Z_ORDER_LEVEL_0, &title_bmp, 30, 20, zguilite.DEFAULT_MASK_COLOR);
     _ = &rect;
 
-    
     var _display_bottom: zguilite.Display = .{};
     try _display_bottom.init2(frameBuffer.ptr, screen_width, screen_height, UI_WIDTH, (UI_BOTTOM_HEIGHT), color_bytes, 1, &.{
         .draw_pixel = draw_pixel,
         .fill_rect = null,
     });
-    s_surface_bottom = try _display_bottom.alloSurface(.Z_ORDER_LEVEL_1, zguilite.Rect.init2(0, 0, screen_width, (UI_BOTTOM_HEIGHT)));
+    s_surface_bottom = try _display_bottom.allocSurface(.Z_ORDER_LEVEL_1, zguilite.Rect.init2(0, 0, screen_width, (UI_BOTTOM_HEIGHT)));
     s_surface_bottom.set_active(true);
     rect = Rect.init2(0, 0, UI_WIDTH, UI_BOTTOM_HEIGHT);
-	s_surface_bottom.fill_rect(rect, 0, Z_ORDER_LEVEL_0);
-	try Bitmap.draw_bitmap(s_surface_bottom, Z_ORDER_LEVEL_0, &background_bmp, 3, 0,zguilite.DEFAULT_MASK_COLOR);
-
+    s_surface_bottom.fill_rect(rect, 0, Z_ORDER_LEVEL_0);
+    try Bitmap.draw_bitmap(s_surface_bottom, Z_ORDER_LEVEL_0, &background_bmp, 3, 0, zguilite.DEFAULT_MASK_COLOR);
 
     x11.onIdleCallback = zguilite.WND_CALLBACK.init(s_surface_top, struct {
         fn onIdle(user: *const Main, id: i32, param: i32) !void {

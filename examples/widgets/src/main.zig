@@ -251,7 +251,7 @@ pub fn main() !void {
     std.log.debug("s_desktop_children[0]:{*},s_desktop_children[0].resource_id:{d}", .{ s_desktop_children[0], s_desktop_children[0].?.resource_id });
     var _display: guilite.Display = .{};
     try _display.init2(fbuf, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
-    const surface = try _display.alloSurface(.Z_ORDER_LEVEL_1, guilite.Rect.init2(0, 0, screen_width, screen_height));
+    const surface = try _display.allocSurface(.Z_ORDER_LEVEL_1, guilite.Rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
 
     // try showFont.showFont(allocator, surface);

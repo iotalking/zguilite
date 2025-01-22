@@ -243,7 +243,7 @@ pub const Pyramid = struct {
 };
 
 pub fn create_ui(display: *guilite.Display) !void {
-    s_surface = try display.alloSurface(.Z_ORDER_LEVEL_0, guilite.Rect.init2(300, 300, UI_WIDTH, UI_HEIGHT));
+    s_surface = try display.allocSurface(.Z_ORDER_LEVEL_0, guilite.Rect.init2(300, 300, UI_WIDTH, UI_HEIGHT));
 
     if (s_surface) |surface| {
         const rect = guilite.Rect.init2(0, 0, UI_WIDTH - 1, UI_HEIGHT - 1);

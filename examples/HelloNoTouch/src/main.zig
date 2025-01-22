@@ -32,7 +32,7 @@ pub fn main() !void {
 
     var _display: zguilite.Display = .{};
     try _display.init2(frameBuffer.ptr, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
-    const surface = try _display.alloSurface(.Z_ORDER_LEVEL_1, zguilite.Rect.init2(0, 0, screen_width, screen_height));
+    const surface = try _display.allocSurface(.Z_ORDER_LEVEL_1, zguilite.Rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
 
     var mainWnd = Main{};
@@ -132,29 +132,29 @@ pub fn main() !void {
         }
     }.onTouch);
 
-    const ButtonOnClick = struct{
-        btn:*zguilite.Button ,
-        sum:u32 = 0,
-        strBuf:[20]u8 = undefined,
+    const ButtonOnClick = struct {
+        btn: *zguilite.Button,
+        sum: u32 = 0,
+        strBuf: [20]u8 = undefined,
         const Self = @This();
         fn onClick(this: *Self, id: i32, param: i32) !void {
             _ = id; // autofix
             _ = param; // autofix
-            this.sum += 1;    
-            const str = try std.fmt.bufPrint(&this.strBuf,"{d}",.{this.sum});
+            this.sum += 1;
+            const str = try std.fmt.bufPrint(&this.strBuf, "{d}", .{this.sum});
             this.btn.asWnd().set_str(str);
         }
     };
-    
+
     button1.set_on_click(zguilite.WND_CALLBACK.init(&ButtonOnClick{
         .btn = &button1,
-    },ButtonOnClick.onClick));
+    }, ButtonOnClick.onClick));
     button2.set_on_click(zguilite.WND_CALLBACK.init(&ButtonOnClick{
         .btn = &button2,
-    },ButtonOnClick.onClick));
+    }, ButtonOnClick.onClick));
     button3.set_on_click(zguilite.WND_CALLBACK.init(&ButtonOnClick{
         .btn = &button3,
-    },ButtonOnClick.onClick));
+    }, ButtonOnClick.onClick));
     try x11.appLoop();
 }
 
