@@ -727,10 +727,11 @@ pub const Surface = struct {
     }
 
     // 激活图层
-    pub fn activate_layer(self: *Surface, active_rect: Rect, active_z_order: u32) void {
+    pub fn activate_layer(self: *Surface, active_rect: Rect, active_z_order: i32) void {
         std.debug.assert(active_z_order > @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_0) and active_z_order <= Z_ORDER_LEVEL_MAX);
         // Show the layers below the current active rect.
-        const current_active_rect = self.m_layers[active_z_order].active_rect;
+        const uactive_z_order:u32 = @intCast(active_z_order);
+        const current_active_rect = self.m_layers[uactive_z_order].active_rect;
         var low_z_order: u32 = @intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_0);
         while (low_z_order < active_z_order) : (low_z_order += 1) {
             const low_layer_rect = self.m_layers[low_z_order].rect;
@@ -748,7 +749,7 @@ pub const Surface = struct {
                 }
             }
         }
-        self.m_layers[active_z_order].active_rect = active_rect;
+        self.m_layers[uactive_z_order].active_rect = active_rect;
     }
 
     pub fn set_active(this: *Surface, flag: bool) void {
@@ -850,18 +851,13 @@ pub const Surface = struct {
                 core.allocator.free(fb_u8[0..fb_size]);
             }
         }
-        // 		for (int i = Z_ORDER_LEVEL_0; i < m_max_zorder; i++)
-        for (@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_0)..@intFromEnum(this.m_max_zorder) + 1) |j| {
+        for (@intFromEnum(Z_ORDER_LEVEL.Z_ORDER_LEVEL_0)..@intFromEnum(this.m_max_zorder)) |j| {
             i = j; //Top layber fb always be 0
             std.log.debug("set_surface alloc layers[{d}] fb m_max_zorder:{} layer_rect:{}",.{i,this.m_max_zorder,layer_rect});
             this.m_layers[i].fb = @ptrCast(try core.allocator.alloc(u8, fb_size));
-            // 			ASSERT(m_layers[i].fb = calloc(layer_rect.width() * layer_rect.height(), m_color_bytes));
-            // 			m_layers[i].rect = layer_rect;
             this.m_layers[i].rect = layer_rect;
             this.m_layers[i].active_rect = layer_rect;
         }
-
-        // 		m_layers[Z_ORDER_LEVEL_0].active_rect = layer_rect;
     }
 
     pub fn draw_pixel(this: *Surface, x: int, y: int, rgb: uint, z_order: Z_ORDER_LEVEL) void {
