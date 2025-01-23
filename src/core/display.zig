@@ -110,20 +110,20 @@ pub const Display = struct {
             return error.ParamInvalid;
         }
 
-        const width: u32 = @intCast(_x1 - _x0 + 1);
+        const width: u32 = @bitCast(_x1 - _x0 + 1);
         if (width < 0 or width > surface_width or width < offset) {
             std.debug.assert(false);
             return error.ParamInvalid;
         }
 
-        const x0: u32 = @intCast(if (_x0 >= self.m_width) self.m_width - 1 else _x0);
-        const x1: u32 = @intCast(if (_x1 >= self.m_width) self.m_width - 1 else _x1);
-        const y0: u32 = @intCast(if (_y0 >= self.m_height) self.m_height - 1 else _y0);
-        const y1: u32 = @intCast(if (_y1 >= self.m_height) self.m_height - 1 else _y1);
-        const um_width: u32 = @intCast(self.m_width);
+        const x0: u32 = @bitCast(if (_x0 >= self.m_width) self.m_width - 1 else _x0);
+        const x1: u32 = @bitCast(if (_x1 >= self.m_width) self.m_width - 1 else _x1);
+        const y0: u32 = @bitCast(if (_y0 >= self.m_height) self.m_height - 1 else _y0);
+        const y1: u32 = @bitCast(if (_y1 >= self.m_height) self.m_height - 1 else _y1);
+        const um_width: u32 = @bitCast(self.m_width);
         if (self.m_phy_fb) |phy_fb| {
             // for (y0..y1) |y| {
-            var y: u32 = @intCast(y0);
+            var y: u32 = @bitCast(y0);
             while (y <= y1) : (y += 1) {
                 // Left surface
                 const addr_s: [*]u8 = @ptrFromInt(@intFromPtr(s0.m_fb) + (y * surface_width + x0 + offset) * self.m_color_bytes);

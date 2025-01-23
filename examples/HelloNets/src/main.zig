@@ -1,6 +1,6 @@
 const std = @import("std");
 const zguilite = @import("zguilite");
-const x11 = @import("x11");
+const X11 = @import("x11");
 const UI_WIDTH: i32 = 480; // 示例值，根据实际情况修改
 const UI_HEIGHT: i32 = 320; // 示例值，根据实际情况修改
 const Z_ORDER_LEVEL_0 = zguilite.Z_ORDER_LEVEL_0;
@@ -175,9 +175,11 @@ pub fn run() !void {
             trigger(0, 0, false);
         }
         count += 1;
-        try x11.refreshApp();
+        try app.refresh();
     }
 }
+var app = X11{};
+
 pub fn main() !void {
     std.log.debug("main begin", .{});
     try loadResource();
@@ -189,8 +191,8 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    const frameBuffer = try x11.createFrameBuffer(allocator, screen_width, screen_height, &color_bytes);
-    defer allocator.free(frameBuffer);
+    const frameBuffer = try app.init(allocator,"main", screen_width, screen_height, &color_bytes);
+    defer app.deinit();
 
     var _display: zguilite.Display = .{};
     try _display.init2(frameBuffer.ptr, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
@@ -209,7 +211,7 @@ pub fn main() !void {
     try mainWnd.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, null);
     try mainWnd.wnd.show_window();
 
-    x11.onIdleCallback = zguilite.WND_CALLBACK.init(&mainWnd, struct {
+    const onIdleCallback = zguilite.WND_CALLBACK.init(&mainWnd, struct {
         fn onIdle(user: *const Main, id: i32, param: i32) !void {
             _ = user; // autofix
             _ = id;
@@ -217,7 +219,8 @@ pub fn main() !void {
             try run();
         }
     }.onIdle);
-    try x11.appLoop();
+    app.setIdleCallback(onIdleCallback);
+    try app.loop();
 
     std.log.err("main exited", .{});
 }

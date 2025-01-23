@@ -70,8 +70,11 @@ var wave_index: usize = 0;
 pub var wave1: ?*guilite.WaveCtrl = null;
 pub var wave2: ?*guilite.WaveCtrl = null;
 pub var wave3: ?*guilite.WaveCtrl = null;
+
+var idx:u32 = 0;
 pub fn refrushWaveCtrl() !void {
-    std.log.debug("refrushWaveCtrl", .{});
+    std.log.debug("refrushWaveCtrl {d}", .{idx});
+    idx +%= 1;
 
     _ = m_wave_buffer1.write_wave_data(s_wave_data1[data_index1]);
     _ = m_wave_buffer1.write_wave_data(s_wave_data1[data_index1]);

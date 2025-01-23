@@ -1,6 +1,6 @@
 const std = @import("std");
 const zguilite = @import("zguilite");
-const x11 = @import("x11");
+const X11 = @import("x11");
 const UI_WIDTH: i32 = 240; // 示例值，根据实际情况修改
 const UI_HEIGHT: i32 = 320; // 示例值，根据实际情况修改
 
@@ -17,6 +17,7 @@ const Main = struct {
         }
     }
 };
+var app = X11{};
 pub fn main() !void {
     std.log.debug("main begin", .{});
     try loadResource();
@@ -27,8 +28,8 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    const frameBuffer = try x11.createFrameBuffer(allocator, screen_width, screen_height, &color_bytes);
-    defer allocator.free(frameBuffer);
+    const frameBuffer = try app.init(allocator,"main", screen_width, screen_height, &color_bytes);
+    defer app.deinit();
 
     var _display: zguilite.Display = .{};
     try _display.init2(frameBuffer.ptr, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
@@ -124,13 +125,14 @@ pub fn main() !void {
     try mainWnd.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, &s_desktop_children);
     try mainWnd.wnd.show_window();
 
-    x11.onTouchCallbackObj = x11.onTouchCallback.init(&mainWnd, &struct {
+    var onTouchCallbackObj = X11.onTouchCallback.init(&mainWnd, &struct {
         pub fn onTouch(user: *const anyopaque, x: usize, y: usize, action: zguilite.TOUCH_ACTION) anyerror!void {
             // std.log.debug("onTouch(x:{},y:{})",.{x,y});
             var _mainWnd: *Main = @constCast(@alignCast(@ptrCast(user)));
             try _mainWnd.wnd.on_touch(@intCast(x), @intCast(y), action);
         }
     }.onTouch);
+    app.setTouchCallback(&onTouchCallbackObj);
 
     const ButtonOnClick = struct {
         btn: *zguilite.Button,
@@ -155,7 +157,7 @@ pub fn main() !void {
     button3.set_on_click(zguilite.WND_CALLBACK.init(&ButtonOnClick{
         .btn = &button3,
     }, ButtonOnClick.onClick));
-    try x11.appLoop();
+    try app.loop();
 }
 
 fn loadResource() !void {

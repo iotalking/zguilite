@@ -1,12 +1,8 @@
 const std = @import("std");
 const zguilite = @import("zguilite");
 const KaiTi_19 = @import("./KaiTi_19.zig");
-const x11 = @import("x11");
-// comptime{
-//     inline for(0..24)|i|{
+const X11 = @import("x11");
 
-//     }
-// }
 const frame_00_bmp = @import("./frame_00_bmp.zig").frame_00_bmp;
 const frame_01_bmp = @import("./frame_01_bmp.zig").frame_01_bmp;
 const frame_02_bmp = @import("./frame_02_bmp.zig").frame_02_bmp;
@@ -62,7 +58,7 @@ const Main = struct {
     wnd: zguilite.Wnd = .{ .m_class = "Main", .m_vtable = .{
         .on_paint = Main.on_paint,
     } },
-
+    app:*X11,
     fn on_paint(w: *zguilite.Wnd) !void {
         var rect = zguilite.Rect.init();
         w.get_screen_rect(&rect);
@@ -75,6 +71,7 @@ const Main = struct {
 };
 pub fn main() !void {
     std.log.debug("main begin", .{});
+    var app = X11{};
     try loadResource();
     // zguilite.init();
 
@@ -84,8 +81,8 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    const frameBuffer = try x11.createFrameBuffer(allocator, screen_width, screen_height, &color_bytes);
-    defer allocator.free(frameBuffer);
+    const frameBuffer = try app.init(allocator,"main", screen_width, screen_height, &color_bytes);
+    defer app.deinit();
 
     var _display: zguilite.Display = .{};
     try _display.init2(frameBuffer.ptr, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
@@ -109,31 +106,34 @@ pub fn main() !void {
         },
     };
 
-    var mainWnd = Main{};
+    var mainWnd = Main{
+        .app = &app,
+    };
     mainWnd.wnd.set_surface(surface);
 
-    x11.onTouchCallbackObj = x11.onTouchCallback.init(&mainWnd, &struct {
-        pub fn onTouch(user: *const anyopaque, x: usize, y: usize, action: zguilite.TOUCH_ACTION) anyerror!void {
+    var onTouchCallbackObj = X11.onTouchCallback.init(&mainWnd, &struct {
+        pub fn onTouch(_mainWnd: *Main, x: usize, y: usize, action: zguilite.TOUCH_ACTION) anyerror!void {
             // std.log.debug("onTouch(x:{},y:{})",.{x,y});
-            var _mainWnd: *Main = @constCast(@alignCast(@ptrCast(user)));
             try _mainWnd.wnd.on_touch(@intCast(x), @intCast(y), action);
         }
     }.onTouch);
+    app.setTouchCallback(&onTouchCallbackObj);
+    
 
     std.log.debug("main set button on_click", .{});
-    btn.set_on_click(zguilite.WND_CALLBACK.init(&btn, struct {
-        fn onClick(this: *zguilite.Button, id: i32, param: i32) !void {
+    btn.set_on_click(zguilite.WND_CALLBACK.init(&mainWnd, struct {
+        fn onClick(_main: *Main, id: i32, param: i32) !void {
             _ = id; // autofix
             _ = param; // autofix
             std.log.debug("btn.on_click ", .{});
-            const w = this.asWnd();
+            const w = &_main.wnd;
             var rect = zguilite.Rect.init();
             w.get_screen_rect(&rect);
             for (s_frames) |bmp| {
                 try zguilite.Theme.add_bmp(.BITMAP_CUSTOM1, bmp);
                 if (w.m_surface) |m_surface| {
                     try zguilite.Bitmap.draw_bitmap(m_surface, w.m_z_order, try zguilite.Theme.get_bmp(.BITMAP_CUSTOM1), 0, 0, 0);
-                    try x11.refreshApp();
+                    try _main.app.refresh();
                     std.time.sleep(60 * std.time.ns_per_ms);
                 }
             }
@@ -141,7 +141,7 @@ pub fn main() !void {
     }.onClick));
     try mainWnd.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, &s_desktop_children);
     try mainWnd.wnd.show_window();
-    try x11.appLoop();
+    try app.loop();
 }
 
 fn loadResource() !void {

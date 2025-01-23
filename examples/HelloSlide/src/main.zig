@@ -1,6 +1,7 @@
 const std = @import("std");
 const zguilite = @import("zguilite");
-const x11 = @import("x11");
+const X11 = @import("x11");
+
 const UI_WIDTH: i32 = 512; // 示例值，根据实际情况修改
 const UI_HEIGHT: i32 = 768; // 示例值，根据实际情况修改
 
@@ -34,7 +35,7 @@ const Page = struct {
         .on_paint = Page.on_paint,
     } },
     // 这里需要根据 Wnd 的具体实现添加更多成员
-    pub fn init(rid: u32) Page {
+    pub fn init(rid: u16) Page {
         var page = Page{};
         page.wnd.m_id = rid;
         return page;
@@ -63,7 +64,6 @@ const Page = struct {
         } else {
             std.debug.assert(false);
         }
-        // try x11.refreshApp();
     }
 
     // 以下是一些占位函数，根据实际情况完善
@@ -71,18 +71,10 @@ const Page = struct {
         self.wnd.get_screen_rect(rect);
     }
 };
-// 定义全局变量
-var s_page1 = Page.init(ID_PAGE1);
-var s_page2 = Page.init(ID_PAGE2);
-var s_page3 = Page.init(ID_PAGE3);
-var s_page4 = Page.init(ID_PAGE4);
-var s_page5 = Page.init(ID_PAGE5);
 
-var s_root: SlideGroup = .{};
 var s_root_children: [1]WND_TREE = [_]WND_TREE{
     WND_TREE{ .ptr = null, .id = 0, .x = 0, .y = 0, .width = 0, .height = 0, .z_order = 0 },
 };
-var s_surface: ?*zguilite.Surface = null;
 
 const ten_bmp = @import("./ten_bmp.zig").ten_bmp;
 const jack_bmp = @import("./jack_bmp.zig").jack_bmp;
@@ -98,67 +90,65 @@ fn load_resource() !void {
     try Theme.add_bmp(.BITMAP_CUSTOM4, &king_bmp);
     try Theme.add_bmp(.BITMAP_CUSTOM5, &ace_bmp);
 }
-pub fn main() !void {
-    std.log.debug("main begin", .{});
-    try load_resource();
+fn subWinMain(idx: u16) !void {
+    // 定义全局变量
+    var s_page1 = Page.init(ID_PAGE1);
+    var s_page2 = Page.init(ID_PAGE2);
+    var s_page3 = Page.init(ID_PAGE3);
+    var s_page4 = Page.init(ID_PAGE4);
+    var s_page5 = Page.init(ID_PAGE5);
 
+    var win = X11{};
+
+    var root: SlideGroup = .{};
     const screen_width: i32 = UI_WIDTH;
     const screen_height: i32 = UI_HEIGHT;
     var color_bytes: u32 = 0;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
     const allocator = gpa.allocator();
-
-    const frameBuffer = try x11.createFrameBuffer(allocator, screen_width, screen_height, &color_bytes);
-    defer allocator.free(frameBuffer);
+    const title = try std.fmt.allocPrintZ(allocator,"{d}",.{idx});
+    defer allocator.free(title);
+    const frameBuffer = try win.init(allocator,title, screen_width, screen_height, &color_bytes);
+    defer win.deinit();
 
     var _display: zguilite.Display = .{};
     try _display.init2(frameBuffer.ptr, screen_width, screen_height, screen_width, screen_height, color_bytes, (1 + 5), null);
-    const flash_screen = _display.flush_screen;
-    _ = flash_screen; // autofix
-    _display.flush_screen = &struct {
-        fn flush_screen(
-            this: *zguilite.Display, //
-            left: i32,
-            top: i32,
-            right: i32,
-            bottom: i32,
-            fb: *anyopaque,
-            fb_width: i32,
-        ) i32 {
-            _ = this; // autofix
-            _ = left; // autofix
-            _ = top; // autofix
-            _ = right; // autofix
-            _ = bottom; // autofix
-            _ = fb; // autofix
-            _ = fb_width; // autofix
-            x11.refreshApp() catch {};
-            return 0;
-        }
-    }.flush_screen;
     const surface = try _display.allocSurface(.Z_ORDER_LEVEL_1, zguilite.Rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
-    s_surface = surface;
 
-    s_root.init();
-    s_root.wnd.set_surface(surface);
+    root.init();
+    root.wnd.set_surface(surface);
+
     const ID_DESKTOP = 1;
 
-    x11.onTouchCallbackObj = x11.onTouchCallback.init(&s_root, &struct {
-        pub fn onTouch(user: *const anyopaque, x: i32, y: i32, action: zguilite.TOUCH_ACTION) anyerror!void {
-            // std.log.debug("onTouch(x:{},y:{})",.{x,y});
-            var root: *SlideGroup = @constCast(@alignCast(@ptrCast(user)));
-            try root.wnd.on_touch(x, y, action);
+    var onTouchCallbackObj = X11.onTouchCallback.init(&root, &struct {
+        pub fn onTouch(_root: *SlideGroup, x: i32, y: i32, action: zguilite.TOUCH_ACTION) anyerror!void {
+            try _root.wnd.on_touch(x, y, action);
         }
     }.onTouch);
-    try s_root.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, null);
+    win.setTouchCallback(&onTouchCallbackObj);
 
-    try s_root.add_slide(&s_page1.wnd, ID_PAGE1, 0, 0, UI_WIDTH, UI_HEIGHT, null, .Z_ORDER_LEVEL_0);
-    try s_root.add_slide(&s_page2.wnd, ID_PAGE2, 0, 0, UI_WIDTH, UI_HEIGHT, null, .Z_ORDER_LEVEL_0);
-    try s_root.add_slide(&s_page3.wnd, ID_PAGE3, 0, 0, UI_WIDTH, UI_HEIGHT, null, .Z_ORDER_LEVEL_0);
-    try s_root.add_slide(&s_page4.wnd, ID_PAGE4, 0, 0, UI_WIDTH, UI_HEIGHT, null, .Z_ORDER_LEVEL_0);
-    try s_root.add_slide(&s_page5.wnd, ID_PAGE5, 0, 0, UI_WIDTH, UI_HEIGHT, null, .Z_ORDER_LEVEL_0);
-    try s_root.set_active_slide(0, true);
-    try s_root.wnd.show_window();
-    try x11.appLoop();
+    try root.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, null);
+
+    try root.add_slide(&s_page1.wnd, ID_PAGE1, 0, 0, UI_WIDTH, UI_HEIGHT, null, .Z_ORDER_LEVEL_0);
+    try root.add_slide(&s_page2.wnd, ID_PAGE2, 0, 0, UI_WIDTH, UI_HEIGHT, null, .Z_ORDER_LEVEL_0);
+    try root.add_slide(&s_page3.wnd, ID_PAGE3, 0, 0, UI_WIDTH, UI_HEIGHT, null, .Z_ORDER_LEVEL_0);
+    try root.add_slide(&s_page4.wnd, ID_PAGE4, 0, 0, UI_WIDTH, UI_HEIGHT, null, .Z_ORDER_LEVEL_0);
+    try root.add_slide(&s_page5.wnd, ID_PAGE5, 0, 0, UI_WIDTH, UI_HEIGHT, null, .Z_ORDER_LEVEL_0);
+    try root.set_active_slide(idx, true);
+    try root.wnd.show_window();
+
+    try win.loop();
+}
+pub fn main() !void {
+    std.log.debug("main begin", .{});
+    X11.initThreads();
+
+    try load_resource();
+
+    const thread = try std.Thread.spawn(.{}, subWinMain, .{0});
+    defer thread.join();
+
+    try subWinMain(1);
 }

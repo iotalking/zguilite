@@ -1,13 +1,14 @@
 const std = @import("std");
-const guilite = @import("zguilite");
+const zguilite = @import("zguilite");
 const _3d = @import("./3d.zig");
-const x11 = @import("x11");
-const wave_demo = x11.wave_demo;
+const X11 = @import("x11");
+const wave_demo = X11.wave_demo;
 const int = c_int;
 const uint = c_uint;
 
 pub fn main() !void {
-    guilite.init();
+    zguilite.init();
+    var app = X11{};
 
     const screen_width: int = 1024;
     const screen_height: int = 800;
@@ -17,24 +18,23 @@ pub fn main() !void {
 
     const i16_height: i16 = @truncate(screen_height);
     const i16_width: i16 = @truncate(screen_width);
-    const frameBuffer = try x11.createFrameBuffer(allocator, screen_width, screen_height, &color_bytes);
-    defer allocator.free(frameBuffer);
-
+    const frameBuffer = try app.init(allocator,"main", screen_width, screen_height, &color_bytes);
+    defer app.deinit();
     const fbuf: [*]u8 = frameBuffer.ptr;
 
     var desktop = Desktop{};
-    var btn: guilite.Button = guilite.Button{};
-    var label: guilite.Label = guilite.Label{};
-    var edit: guilite.Edit = guilite.Edit{};
-    var list_box: guilite.ListBox = guilite.ListBox{};
-    var dialog = guilite.Dialog{};
-    var spin_box: guilite.SpinBox = guilite.SpinBox{};
-    var table: guilite.Table = guilite.Table{};
-    var wave_ctrl = guilite.WaveCtrl.init(allocator);
+    var btn: zguilite.Button = zguilite.Button{};
+    var label: zguilite.Label = zguilite.Label{};
+    var edit: zguilite.Edit = zguilite.Edit{};
+    var list_box: zguilite.ListBox = zguilite.ListBox{};
+    var dialog = zguilite.Dialog{};
+    var spin_box: zguilite.SpinBox = zguilite.SpinBox{};
+    var table: zguilite.Table = zguilite.Table{};
+    var wave_ctrl = zguilite.WaveCtrl.init(allocator);
     defer wave_ctrl.deinit();
-    var wave_ctrl2 = guilite.WaveCtrl.init(allocator);
+    var wave_ctrl2 = zguilite.WaveCtrl.init(allocator);
     defer wave_ctrl2.deinit();
-    var wave_ctrl3 = guilite.WaveCtrl.init(allocator);
+    var wave_ctrl3 = zguilite.WaveCtrl.init(allocator);
     defer wave_ctrl3.deinit();
 
     wave_demo.wave1 = &wave_ctrl;
@@ -56,7 +56,7 @@ pub fn main() !void {
     const ID_WAVE_CTRL3 = 13;
 
     // _ = btn;
-    var s_desktop_children = [_]?*const guilite.WND_TREE{
+    var s_desktop_children = [_]?*const zguilite.WND_TREE{
         &.{
             .p_wnd = dialog.asWnd(), //
             .resource_id = ID_DIALOG,
@@ -106,7 +106,7 @@ pub fn main() !void {
             .width = 200,
             .height = 60,
             .p_child_tree = null,
-            .user_data = @ptrCast(&guilite.ListBoxData{ .items = &[_][]const u8{ "item1", "item2" }, .selected = 1 }),
+            .user_data = @ptrCast(&zguilite.ListBoxData{ .items = &[_][]const u8{ "item1", "item2" }, .selected = 1 }),
         },
         &.{
             .p_wnd = spin_box.asWnd(), //
@@ -127,57 +127,57 @@ pub fn main() !void {
             .width = 500,
             .height = 100,
             .p_child_tree = null,
-            .user_data = @ptrCast(&guilite.TableData{
-                .borderColor = guilite.COLORS.RED,
+            .user_data = @ptrCast(&zguilite.TableData{
+                .borderColor = zguilite.COLORS.RED,
                 .borderSize = 5,
-                .bgColor = guilite.GL_ARGB(255, 0, 0, 0),
+                .bgColor = zguilite.GL_ARGB(255, 0, 0, 0),
                 .items = &.{
                     &.{
                         .{
                             .str = "1",
-                            .color = guilite.COLORS.BLACK,
+                            .color = zguilite.COLORS.BLACK,
                             .w = 60,
                             .h = 40,
                         },
                         .{
                             .str = "2",
-                            .color = guilite.COLORS.RED,
+                            .color = zguilite.COLORS.RED,
                             .w = 40,
                             .h = 40,
                         },
                         .{
                             .str = "3",
-                            .color = guilite.COLORS.BLACK,
+                            .color = zguilite.COLORS.BLACK,
                             .w = 60,
                             .h = 40,
                         },
                         .{
                             .str = "4",
-                            .color = guilite.COLORS.RED,
+                            .color = zguilite.COLORS.RED,
                             .w = 40,
                             .h = 40,
                         },
                         .{
                             .str = "5",
-                            .color = guilite.COLORS.BLACK,
+                            .color = zguilite.COLORS.BLACK,
                             .w = 60,
                             .h = 40,
                         },
                         .{
                             .str = "6",
-                            .color = guilite.COLORS.RED,
+                            .color = zguilite.COLORS.RED,
                             .w = 40,
                             .h = 40,
                         },
                         .{
                             .str = "7",
-                            .color = guilite.COLORS.BLACK,
+                            .color = zguilite.COLORS.BLACK,
                             .w = 60,
                             .h = 40,
                         },
                         .{
                             .str = "8",
-                            .color = guilite.COLORS.RED,
+                            .color = zguilite.COLORS.RED,
                             .w = 100,
                             .h = 40,
                         },
@@ -185,13 +185,13 @@ pub fn main() !void {
                     &.{
                         .{
                             .str = "3",
-                            .color = guilite.COLORS.RED,
+                            .color = zguilite.COLORS.RED,
                             .w = 30,
                             .h = 40,
                         },
                         .{
                             .str = "4",
-                            .color = guilite.GL_ARGB(100, 0, 255, 255),
+                            .color = zguilite.GL_ARGB(100, 0, 255, 255),
                             .w = 40,
                             .h = 60,
                         },
@@ -232,9 +232,9 @@ pub fn main() !void {
         null,
     };
 
-    spin_box.asWnd().m_font = guilite.Theme.get_font(.FONT_CUSTOM1);
-    spin_box.m_bt_down.button.wnd.m_font = guilite.Theme.get_font(.FONT_CUSTOM1);
-    spin_box.m_bt_up.button.wnd.m_font = guilite.Theme.get_font(.FONT_CUSTOM1);
+    spin_box.asWnd().m_font = zguilite.Theme.get_font(.FONT_CUSTOM1);
+    spin_box.m_bt_down.button.wnd.m_font = zguilite.Theme.get_font(.FONT_CUSTOM1);
+    spin_box.m_bt_up.button.wnd.m_font = zguilite.Theme.get_font(.FONT_CUSTOM1);
 
     std.log.debug("main list_box:{*} item0:{s}", .{ &list_box, list_box.m_item_array[0] });
 
@@ -249,14 +249,14 @@ pub fn main() !void {
     }
 
     std.log.debug("s_desktop_children[0]:{*},s_desktop_children[0].resource_id:{d}", .{ s_desktop_children[0], s_desktop_children[0].?.resource_id });
-    var _display: guilite.Display = .{};
+    var _display: zguilite.Display = .{};
     try _display.init2(fbuf, screen_width, screen_height, screen_width, screen_height, color_bytes, 3, null);
-    const surface = try _display.allocSurface(.Z_ORDER_LEVEL_1, guilite.Rect.init2(0, 0, screen_width, screen_height));
+    const surface = try _display.allocSurface(.Z_ORDER_LEVEL_1, zguilite.Rect.init2(0, 0, screen_width, screen_height));
     surface.set_active(true);
 
     // try showFont.showFont(allocator, surface);
 
-    surface.draw_line(0, 0, screen_width - 1, 500, guilite.GL_RGB(255, 200, 100), guilite.Z_ORDER_LEVEL_1);
+    surface.draw_line(0, 0, screen_width - 1, 500, zguilite.GL_RGB(255, 200, 100), zguilite.Z_ORDER_LEVEL_1);
     desktop.asWnd().set_surface(surface);
     try desktop.wnd.connect(null, ID_DESKTOP, null, 0, 0, i16_width, i16_height, &s_desktop_children);
 
@@ -264,10 +264,10 @@ pub fn main() !void {
 
     // try dialog.open_dialog(true);
 
-    var keyboard = guilite.Keyboard{};
+    var keyboard = zguilite.Keyboard{};
 
-    _ = try keyboard.open_keyboard(edit.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD, guilite.WND_CALLBACK.init(&keyboard, &struct {
-        fn onclick(kb: *guilite.Keyboard, id: int, param: int) void {
+    _ = try keyboard.open_keyboard(edit.asWnd(), ID_KEYBOARD, .STYLE_ALL_BOARD, zguilite.WND_CALLBACK.init(&keyboard, &struct {
+        fn onclick(kb: *zguilite.Keyboard, id: int, param: int) void {
             std.log.debug("onkbclick.onclick keyboard:{*}", .{kb});
             // _ = this;
             _ = id;
@@ -278,22 +278,28 @@ pub fn main() !void {
 
     // _ = _display.flush_screen(&_display, 0, 0, screen_width, screen_height, @ptrCast(mem_fb), screen_width);
     // _display.fill_rect(&_display, 0, 0, 100, 100, @as(u32, 0xff_00));
-    // surface.draw_rect_pos(0, 0, 100, 100, guilite.GL_RGB(200, 0, 0), @intFromEnum(guilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1), 10);
-    // surface.fill_rect(guilite.Rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, guilite.GL_RGB(0, 100, 0), 1);
+    // surface.draw_rect_pos(0, 0, 100, 100, zguilite.GL_RGB(200, 0, 0), @intFromEnum(zguilite.Z_ORDER_LEVEL.Z_ORDER_LEVEL_1), 10);
+    // surface.fill_rect(zguilite.Rect{ .m_left = 30, .m_top = 200, .m_right = 400, .m_bottom = 600 }, zguilite.GL_RGB(0, 100, 0), 1);
     // try _3d.create_ui(&_display);
     std.log.debug("main end", .{});
-    try x11.appLoop();
+    const idleCallback = zguilite.WND_CALLBACK.init(&app,struct{
+        fn onIdle()!void{
+            try wave_demo.refrushWaveCtrl();
+        }
+    }.onIdle);
+    app.setIdleCallback(idleCallback);
+    try app.loop();
 }
 
 const Desktop = struct {
-    wnd: guilite.Wnd = .{
+    wnd: zguilite.Wnd = .{
         .m_class = "Desktop",
     },
-    pub fn asWnd(this: *Desktop) *guilite.Wnd {
+    pub fn asWnd(this: *Desktop) *zguilite.Wnd {
         this.wnd.m_vtable.on_paint = Desktop.on_paint;
         return &this.wnd;
     }
-    fn on_paint(this: *guilite.Wnd) !void {
+    fn on_paint(this: *zguilite.Wnd) !void {
         _ = this;
         std.log.debug("Desktop on paint", .{});
     }

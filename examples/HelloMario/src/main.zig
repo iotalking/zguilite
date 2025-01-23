@@ -1,6 +1,6 @@
 const std = @import("std");
 const zguilite = @import("zguilite");
-const x11 = @import("x11");
+const X11 = @import("x11");
 const UI_WIDTH: i32 = 240; // 示例值，根据实际情况修改
 const UI_HEIGHT: i32 = 320; // 示例值，根据实际情况修改
 const UI_BOTTOM_HEIGHT = 76;
@@ -68,7 +68,7 @@ fn draw_easter_egg() !void {
     for (s_frames) |frame| {
         try Theme.add_bmp(.BITMAP_CUSTOM1, &frame);
         try Bitmap.draw_bitmap(s_surface_top, Z_ORDER_LEVEL_0, try Theme.get_bmp(.BITMAP_CUSTOM1), RYU_X, RYU_Y, 0x5588DD);
-        try x11.refreshApp();
+        try app.refresh();
         std.time.sleep(20 * std.time.ns_per_ms);
     }
     const rect = Rect.init2(RYU_X, RYU_Y, RYU_X + frame_00_bmp.width - 1, RYU_Y + frame_00_bmp.height - 1);
@@ -150,6 +150,8 @@ fn draw_pixel(x: i32, _y: i32, rgb: u32) void {
     const phy_fb: [*]u32 = @alignCast(@ptrCast(frameBuffer.ptr));
     phy_fb[@intCast(y * UI_WIDTH + x)] = (rgb);
 }
+var app = X11{};
+
 pub fn main() !void {
     std.log.debug("main begin", .{});
     try loadResource();
@@ -161,8 +163,8 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    frameBuffer = try x11.createFrameBuffer(allocator, screen_width, screen_height, &color_bytes);
-    defer allocator.free(frameBuffer);
+    frameBuffer = try app.init(allocator,"main", screen_width, screen_height, &color_bytes);
+    defer app.deinit();
 
     var _display_top: zguilite.Display = .{};
     try _display_top.init2(frameBuffer.ptr, screen_width, screen_height, screen_width, (screen_height - UI_BOTTOM_HEIGHT), color_bytes, 1, null);
@@ -184,7 +186,7 @@ pub fn main() !void {
     s_surface_bottom.fill_rect(rect, 0, Z_ORDER_LEVEL_0);
     try Bitmap.draw_bitmap(s_surface_bottom, Z_ORDER_LEVEL_0, &background_bmp, 3, 0, zguilite.DEFAULT_MASK_COLOR);
 
-    x11.onIdleCallback = zguilite.WND_CALLBACK.init(s_surface_top, struct {
+    app.onIdleCallback = zguilite.WND_CALLBACK.init(s_surface_top, struct {
         fn onIdle(user: *const Main, id: i32, param: i32) !void {
             _ = user; // autofix
             _ = id;
@@ -193,12 +195,12 @@ pub fn main() !void {
             while (true) {
                 try mario.draw();
                 try mario.move();
-                try x11.refreshApp();
+                try app.refresh();
                 std.time.sleep(50 * std.time.ns_per_ms);
             }
         }
     }.onIdle);
-    try x11.appLoop();
+    try app.loop();
 
     std.log.err("main exited", .{});
 }
