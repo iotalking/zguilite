@@ -3,7 +3,7 @@ const std = @import("std");
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     _ = b.addModule("zguilite", .{
         .root_source_file = b.path("./src/guilite.zig"),
     });
@@ -71,4 +71,42 @@ pub fn build(b: *std.Build) void {
     // running the unit tests.
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
+
+    // try buildExamples(b);
+
+    // const exampleStep = b.step("examples","build examples");
+    // exampleStep.makeFn = buildExamples;
+    buildExamples(b) catch {};
+}
+
+fn buildExamples(b:*std.Build) !void{
+    const examplesDir = try std.fs.cwd().openDir("./examples/",.{
+        .iterate = true,
+    });
+    var it = examplesDir.iterate();
+    const buildExampleStep = b.step("examples","build all examples");
+    while(try it.next())|e|{
+        var buf = std.mem.zeroes([128]u8);
+        const _step = b.step(e.name,try std.fmt.bufPrint(&buf,"examples {s}",.{e.name}));
+        _step.makeFn = buildExamplesMake;
+        buildExampleStep.dependOn(_step);
+    }
+}
+fn buildExamplesMake(step: *std.Build.Step, options: std.Build.Step.MakeOptions) anyerror!void{
+    _ = options; // autofix
+    var buf = std.mem.zeroes([100]u8);
+    const args =  &[_][]const u8{
+        "zig",
+        "build",
+    };
+    const result = try std.process.Child.run(.{
+        .allocator = step.owner.allocator,
+        .argv = args,
+        .cwd = try std.fmt.bufPrint(&buf,"./examples/{s}",.{step.name}),
+    });
+    if (result.term != .Exited or result.term.Exited != 0) {
+        std.debug.print("Failed:({any}) to build example: {s}\n", .{result.term,step.name});
+        return error.ExamplesBuildFailed;
+    }
+    std.debug.print("examples {s} built successfully.\n", .{step.name});
 }

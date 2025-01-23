@@ -1,6 +1,6 @@
 const std = @import("std");
 const zguilite = @import("zguilite");
-const x11 = @import("x11");
+const X11 = @import("x11");
 const UI_WIDTH: i32 = 600; // 示例值，根据实际情况修改
 const UI_HEIGHT: i32 = 800; // 示例值，根据实际情况修改
 
@@ -107,12 +107,14 @@ const Main = struct {
                 for (&stars) |*star| {
                     star.move();
                 }
-                try x11.refreshApp();
+                try app.refresh();
                 std.time.sleep(50 * std.time.ns_per_ms);
             }
         }
     }
 };
+
+var app = X11{};
 pub fn main() !void {
     std.log.debug("main begin", .{});
     try loadResource();
@@ -123,7 +125,7 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    const frameBuffer = try x11.createFrameBuffer(allocator, screen_width, screen_height, &color_bytes);
+    const frameBuffer = try app.init(allocator,"main", screen_width, screen_height, &color_bytes);
     defer allocator.free(frameBuffer);
 
     var _display: zguilite.Display = .{};
@@ -138,7 +140,7 @@ pub fn main() !void {
 
     try mainWnd.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, null);
     try mainWnd.wnd.show_window();
-    try x11.appLoop();
+    try app.loop();
 }
 
 fn loadResource() !void {
