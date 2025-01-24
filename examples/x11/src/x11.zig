@@ -184,6 +184,7 @@ pub fn loop(self:*Self) !void {
             },
             xlib.ClientMessage => {
                 exit = true;
+                std.log.debug("X11 loop ClientMessage exit",.{});
             },
             xlib.MotionNotify => {
                 if (self.onTouchCallbackObj) |_cb| {

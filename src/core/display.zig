@@ -204,12 +204,16 @@ pub const Display = struct {
         return this.m_phy_fb;
     }
 
-    fn get_updated_fb(this: *Display, width: *int, height: *int, force_update: bool) ?*anyopaque {
-        // if (width and height)
-        // 		{
-        width.* = this.m_width;
-        height.* = this.m_height;
-        // 		}
+    pub fn get_updated_fb(this: *Display, width: ?*int, height: ?*int, force_update: bool) ?*anyopaque {
+        if (width != null)
+        {
+            width.?.* = this.m_width;
+        }
+        if (height != null)
+        {
+            height.?.* = this.m_height;
+        }
+        
         if (force_update) {
             return this.m_phy_fb;
         }
@@ -707,7 +711,11 @@ pub const Surface = struct {
     pub fn draw_rect(this: *Surface, rect: Rect, rgb: uint, z_order: int, size: uint) void {
         this.draw_rect_pos(rect.m_left, rect.m_top, rect.m_right, rect.m_bottom, rgb, z_order, size);
     }
-
+    pub fn flush_screen_all(this: *Surface) !void{
+        if(this.flush_screen(0,0,this.m_width - 1,this.m_height - 1) != 0){
+            return error.flush_screen;
+        }
+    }
     pub fn flush_screen(this: *Surface, left: int, top: int, right: int, bottom: int) int {
         if (!this.m_is_active) {
             return -1;
