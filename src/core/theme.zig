@@ -77,12 +77,12 @@ pub const Theme = struct {
         return Theme.s_font_map[uindex];
     }
 
-    pub fn add_image(this: Theme, index: IMAGE_LIST, image_info: *anyopaque) types.int {
-        if (index >= .IMAGE_MAX) {
+    pub fn add_image(index: IMAGE_LIST, image_info: *anyopaque) types.int {
+        if (@intFromEnum(index) >= @intFromEnum(IMAGE_LIST.IMAGE_MAX)) {
             api.ASSERT(false);
             return -1;
         }
-        this.s_image_map[index] = image_info;
+        Theme.s_image_map[@intFromEnum(index)] = image_info;
         return 0;
     }
 

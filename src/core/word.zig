@@ -22,46 +22,144 @@ pub const VALUE_STR_LEN = 16;
 
 // class Surface;
 pub const FontOperator = struct {
+    const Self = @This();
+    
+    virtual_table: struct {
+        const VTable = @This();
+        // public:
+        fn draw_string(
+            surface: *Surface, //
+            z_order: int,
+            string: []const u8,
+            x: int,
+            y: int,
+            font: ?*anyopaque,
+            font_color: uint,
+            bg_color: uint,
+        ) !void {
+            _ = surface; // autofix
+            _ = z_order; // autofix
+            _ = string; // autofix
+            _ = x; // autofix
+            _ = y; // autofix
+            _ = font; // autofix
+            _ = font_color; // autofix
+            _ = bg_color; // autofix
+        }
+        fn draw_string_in_rect(
+            surface: *Surface, //
+            z_order: int,
+            string: []const u8,
+            rect: Rect,
+            font: ?*anyopaque,
+            font_color: uint,
+            bg_color: uint,
+            align_type: uint,
+        ) !void {
+            _ = surface; // autofix
+            _ = z_order; // autofix
+            _ = string; // autofix
+            _ = rect; // autofix
+            _ = font; // autofix
+            _ = font_color; // autofix
+            _ = bg_color; // autofix
+            _ = align_type; // autofix
+        }
+        fn draw_value(
+            surface: *Surface, //
+            z_order: int,
+            value: int,
+            dot_position: int,
+            x: int,
+            y: int,
+            font: ?*anyopaque,
+            font_color: uint,
+            bg_color: uint,
+        ) !void {
+            _ = surface; // autofix
+            _ = z_order; // autofix
+            _ = value; // autofix
+            _ = dot_position; // autofix
+            _ = x; // autofix
+            _ = y; // autofix
+            _ = font; // autofix
+            _ = font_color; // autofix
+            _ = bg_color; // autofix
+        }
+        fn draw_value_in_rect(
+            surface: *Surface, //
+            z_order: int,
+            value: int,
+            dot_position: int,
+            rect: Rect,
+            font: ?*anyopaque,
+            font_color: uint,
+            bg_color: uint,
+            align_type: uint,
+        ) !void {
+            _ = surface; // autofix
+            _ = z_order; // autofix
+            _ = value; // autofix
+            _ = dot_position; // autofix
+            _ = rect; // autofix
+            _ = font; // autofix
+            _ = font_color; // autofix
+            _ = bg_color; // autofix
+            _ = align_type; // autofix
+        }
+        fn get_str_size(string: []const u8, font: ?*anyopaque, width: *i32, height: *i32) !i32{
+            _ = string; // autofix
+            _ = font; // autofix
+            _ = width; // autofix
+            _ = height; // autofix
+            return 0;
+        }
+
+        draw_string: *const fn (
+            surface: *Surface,
+            z_order: int,
+            string: []const u8,
+            x: int,
+            y: int,
+            font: ?*anyopaque,
+            font_color: uint,
+            bg_color: uint,
+        ) anyerror!void = VTable.draw_string,
+        draw_string_in_rect:*const fn (surface: *Surface, z_order: i32, string: []const u8, rect: Rect, font: ?*anyopaque, font_color: u32, bg_color: u32, align_type: u32) anyerror!void = VTable.draw_string_in_rect,
+        get_str_size:*const fn (string: []const u8, font: ?*anyopaque, width: *i32, height: *i32) anyerror!i32 = VTable.get_str_size,
+        draw_value:*const fn (surface: *Surface, z_order: i32, value: i32, dot_position: i32, x: i32, y: i32, font: ?*anyopaque, font_color: u32, bg_color: u32) anyerror!void = VTable.draw_value,
+        draw_value_in_rect:*const fn (surface: *Surface, z_order: i32, value: i32, dot_position: i32, rect: Rect, font: ?*anyopaque, font_color: u32, bg_color: u32, align_type: u32) anyerror!void = VTable.draw_value_in_rect,
+    },
+
     // public:
     fn draw_string(
+        self:*Self,
         surface: *Surface, //
         z_order: int,
-        string: [*]const u8,
+        string: []const u8,
         x: int,
         y: int,
-        font: *anyopaque,
-        font_color: int,
-        bg_color: int,
-    ) void {
-        _ = surface;
-        _ = z_order;
-        _ = string;
-        _ = x;
-        _ = y;
-        _ = font;
-        _ = font_color;
-        _ = bg_color;
+        font: ?*anyopaque,
+        font_color: uint,
+        bg_color: uint,
+    ) !void {
+        return self.virtual_table.draw_string(surface,z_order,string,x,y,font,font_color,bg_color);
     }
     fn draw_string_in_rect(
+        self:*Self,
         surface: *Surface, //
         z_order: int,
-        string: [*]const u8,
+        string: []const u8,
         rect: Rect,
-        font: *anyopaque,
-        font_color: int,
-        bg_color: int,
-        align_type: int,
-    ) void {
-        _ = surface;
-        _ = z_order;
-        _ = string;
-        _ = rect;
-        _ = font_color;
-        _ = bg_color;
-        _ = font;
-        _ = align_type;
+        font: ?*anyopaque,
+        font_color: uint,
+        bg_color: uint,
+        align_type: uint,
+    ) !void {
+        return self.virtual_table.draw_string_in_rect(surface,z_order,string,rect,font,font_color,bg_color,align_type);   
     }
     fn draw_value(
+        self:*Self,
         surface: *Surface, //
         z_order: int,
         value: int,
@@ -71,18 +169,11 @@ pub const FontOperator = struct {
         font: *anyopaque,
         font_color: int,
         bg_color: int,
-    ) void {
-        _ = surface;
-        _ = z_order;
-        _ = x;
-        _ = y;
-        _ = font_color;
-        _ = bg_color;
-        _ = font;
-        _ = value;
-        _ = dot_position;
+    ) !void {
+        return self.virtual_table.draw_value(surface,z_order,value,dot_position,x,y,font,font_color,bg_color);
     }
     fn draw_value_in_rect(
+        self:*Self,
         surface: *Surface, //
         z_order: int,
         value: int,
@@ -92,29 +183,19 @@ pub const FontOperator = struct {
         font_color: int,
         bg_color: int,
         align_type: int,
-    ) void {
-        _ = surface;
-        _ = z_order;
-        _ = font_color;
-        _ = bg_color;
-        _ = font;
-        _ = value;
-        _ = dot_position;
-        _ = rect;
-        _ = align_type;
+    ) !void {
+        return self.virtual_table.draw_value_in_rect(surface,z_order,value,dot_position,rect,font,font_color,bg_color,align_type);
     }
-    fn get_str_size(string: [*]const u8, font: *anyopaque, width: *int, height: *int) int {
-        _ = string;
-        _ = font;
-        _ = width;
-        _ = height;
-        return 0;
+    fn get_str_size(
+        self:*Self,
+        string: []const u8, font: ?*anyopaque, width: *int, height: *int) !int {
+        return self.virtual_table.get_str_size(string,font,width,height);
     }
 
-    pub fn get_string_pos(string: []const u8, font: *anyopaque, rect: Rect, align_type: uint, x: *int, y: *int) void {
+    pub fn get_string_pos(string: []const u8, font: ?*anyopaque, rect: Rect, align_type: uint, x: *int, y: *int) !void {
         var x_size: int = 0;
         var y_size: int = 0;
-        _ = fontOperator.get_str_size(string, font, &x_size, &y_size);
+        _ = try fontOperator.get_str_size(string, font, &x_size, &y_size);
         const height = rect.m_bottom - rect.m_top + 1;
         const width = rect.m_right - rect.m_left + 1;
         x.* = 0;
@@ -166,10 +247,9 @@ pub const FontOperator = struct {
 
 // class LatticeFontOp : public FontOperator
 pub const LatticeFontOp = struct {
-    // parent: FontOperator,
-
+    const Self = @This();
     // public:
-    fn draw_string(surface: *Surface, z_order: int, string: []const u8, x: int, y: int, font: ?*anyopaque, font_color: uint, bg_color: uint) void {
+    fn draw_string(surface: *Surface, z_order: int, string: []const u8, x: int, y: int, font: ?*anyopaque, font_color: uint, bg_color: uint) !void {
         var offset: usize = 0;
         var strcur = string[offset..];
         var xoffset: int = 0;
@@ -183,13 +263,13 @@ pub const LatticeFontOp = struct {
         }
     }
 
-    fn draw_string_in_rect(surface: *Surface, z_order: int, string: []const u8, rect: Rect, font: ?*anyopaque, font_color: uint, bg_color: uint, align_type: uint) void {
+    fn draw_string_in_rect(surface: *Surface, z_order: int, string: []const u8, rect: Rect, font: ?*anyopaque, font_color: uint, bg_color: uint, align_type: uint) !void {
         var x: int = 0;
         var y: int = 0;
         std.log.debug("draw_string_in_rect font:{*}", .{font});
         if (font) |_anyfont| {
             const _font: *LatticeFontInfo = @ptrCast(@alignCast(_anyfont));
-            FontOperator.get_string_pos(string, _font, rect, align_type, &x, &y);
+            try FontOperator.get_string_pos(string, _font, rect, align_type, &x, &y);
             std.log.debug("draw_string_in_rect ({d},{d}) ({d},{d})", .{ rect.m_left, rect.m_top, x, y });
             if (debug_mode) {
                 var textRect = rect;
@@ -197,25 +277,26 @@ pub const LatticeFontOp = struct {
                 textRect.m_top += y;
                 surface.draw_rect(textRect, api.GL_RGB(0, 0, 255), 0, 1);
             }
-            LatticeFontOp.draw_string(surface, z_order, string, rect.m_left + x, rect.m_top + y, font, font_color, bg_color);
+            try LatticeFontOp.draw_string(surface, z_order, string, rect.m_left + x, rect.m_top + y, font, font_color, bg_color);
         }
     }
 
-    fn draw_value(surface: *Surface, z_order: int, value: int, dot_position: int, x: int, y: int, font: *anyopaque, font_color: uint, bg_color: uint) void {
-        const buf: [VALUE_STR_LEN]u8 = undefined;
-        const _font: *LatticeFontInfo = @ptrCast(font);
-        value_2_string(value, dot_position, buf, VALUE_STR_LEN);
-        LatticeFontOp.draw_string(surface, z_order, buf, x, y, _font, font_color, bg_color);
+    fn draw_value(surface: *Surface, z_order: int, value: int, dot_position: int, x: int, y: int, font: ?*anyopaque, font_color: uint, bg_color: uint) !void {
+        var buf: [VALUE_STR_LEN]u8 = undefined;
+        const _font: *LatticeFontInfo = @alignCast(@ptrCast(font));
+        try value_2_string(value, dot_position, &buf);
+        try LatticeFontOp.draw_string(surface, z_order, &buf, x, y, _font, font_color, bg_color);
     }
 
-    fn draw_value_in_rect(surface: *Surface, z_order: int, value: int, dot_position: int, rect: Rect, font: *anyopaque, font_color: uint, bg_color: uint, align_type: uint) !void {
+    fn draw_value_in_rect(surface: *Surface, z_order: int, value: int, dot_position: int, rect: Rect, font: ?*anyopaque, font_color: uint, bg_color: uint, align_type: uint) !void {
         var buf: [VALUE_STR_LEN]u8 = undefined;
         try value_2_string(value, dot_position, &buf);
+
         const _font: *LatticeFontInfo = @alignCast(@ptrCast(@constCast(font)));
-        draw_string_in_rect(surface, z_order, &buf, rect, _font, font_color, bg_color, align_type);
+        try draw_string_in_rect(surface, z_order, &buf, rect, _font, font_color, bg_color, align_type);
     }
 
-    fn get_str_size(string: []const u8, font: *anyopaque, width: *int, height: *int) int {
+    fn get_str_size(string: []const u8, font: ?*anyopaque, width: *int, height: *int) !int {
         var offset: usize = 0;
         var strcur = string[offset..];
         var lattice_width: int = 0;
@@ -367,7 +448,7 @@ pub const LatticeFontOp = struct {
         return null;
     }
 
-    fn get_utf8_code(s: []const u8, output_utf8_code: *uint) int {
+    pub fn get_utf8_code(s: []const u8, output_utf8_code: *uint) int {
         const s_utf8_length_table: [256]u8 =
             .{
             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //
@@ -417,6 +498,18 @@ pub const LatticeFontOp = struct {
         return utf8_bytes;
     }
     fn init() void {}
+
+    fn ToFontOperator()FontOperator{
+        return FontOperator{
+            .virtual_table = .{
+                .draw_string = Self.draw_string,
+                .draw_string_in_rect = Self.draw_string_in_rect,
+                .get_str_size = Self.get_str_size,
+                .draw_value = Self.draw_value,
+                .draw_value_in_rect = Self.draw_value_in_rect,
+            },
+        };
+    }
 };
 
 pub const Word = struct {
@@ -427,11 +520,13 @@ pub const Word = struct {
         string: []const u8,
         x: int,
         y: int,
-        font: *anyopaque,
+        font: ?*anyopaque,
         font_color: uint,
         bg_color: uint,
     ) void {
-        fontOperator.draw_string(surface, z_order, string, x, y, font, font_color, bg_color);
+        fontOperator.draw_string(surface, z_order, string, x, y, font, font_color, bg_color)  catch |e| {
+            std.log.err("Word draw_string error {any}",.{e});
+        };
     }
     pub fn draw_string_in_rect(
         surface: *Surface, //
@@ -444,7 +539,10 @@ pub const Word = struct {
         align_type: uint,
     ) void {
         std.log.debug("word draw_string_in_rect string:{s}", .{string});
-        fontOperator.draw_string_in_rect(surface, z_order, string, rect, font, font_color, bg_color, align_type);
+        fontOperator.draw_string_in_rect(surface, z_order, string, rect, font, font_color, bg_color, align_type) catch |e|{
+            std.log.err("Word draw_string_in_rect error:{any}",.{e});
+            return ;
+        };
     }
     pub fn draw_value_in_rect(
         surface: *Surface, //
@@ -452,7 +550,7 @@ pub const Word = struct {
         value: int,
         dot_position: int,
         rect: Rect,
-        font: *anyopaque,
+        font: ?*anyopaque,
         font_color: int,
         bg_color: int,
         align_type: int,
@@ -466,17 +564,17 @@ pub const Word = struct {
         dot_position: int,
         x: int,
         y: int,
-        font: *anyopaque,
+        font: ?*anyopaque,
         font_color: int,
         bg_color: int,
     ) void {
         fontOperator.draw_value(surface, z_order, value, dot_position, x, y, font, font_color, bg_color);
     }
-    fn get_str_size(string: [*]const u8, font: *anyopaque, width: *int, height: *int) int {
+    fn get_str_size(string: [*]const u8, font: ?*anyopaque, width: *int, height: *int) int {
         return fontOperator.get_str_size(string, font, width, height);
     }
 };
 
-const fontOperator = blk: {
-    break :blk LatticeFontOp;
-};
+
+
+pub var fontOperator:FontOperator = LatticeFontOp.ToFontOperator();
