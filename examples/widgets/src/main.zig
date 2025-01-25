@@ -2,12 +2,37 @@ const std = @import("std");
 const zguilite = @import("zguilite");
 const _3d = @import("./3d.zig");
 const X11 = @import("x11");
+const freetype = @import("freetype");
+
 const wave_demo = X11.wave_demo;
 const int = c_int;
 const uint = c_uint;
 
+fn loadResource() !void {
+    try freetype.FreetypeOperator.init();
+    zguilite.fontOperator = freetype.FreetypeOperator.ToFontOperator();
+
+    // _ = zguilite.Theme.add_font(.FONT_DEFAULT, @ptrCast(@constCast(&zguilite.Consolas_24B.Consolas_24B)));
+    var args = std.process.args();
+    _ = args.skip();
+    var fontPath:[:0]const u8 = "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc";
+    if(args.next())|next|{
+        std.log.debug("args{s}",.{next});
+        fontPath = next;
+    }
+    
+    _ = zguilite.Theme.add_font(.FONT_DEFAULT, @ptrCast(@constCast(try freetype.FreetypeOperator.set_font(fontPath,32,32))));
+    _ = zguilite.Theme.add_font(.FONT_CUSTOM1, @ptrCast(@constCast(try freetype.FreetypeOperator.set_font(fontPath,28,28))));
+    _ = zguilite.Theme.add_color(.COLOR_WND_FONT, zguilite.GL_RGB(255, 255, 255));
+    _ = zguilite.Theme.add_color(.COLOR_WND_NORMAL, zguilite.GL_RGB(59, 75, 94));
+    _ = zguilite.Theme.add_color(.COLOR_WND_PUSHED, zguilite.GL_RGB(33, 42, 53));
+    _ = zguilite.Theme.add_color(.COLOR_WND_FOCUS, zguilite.GL_RGB(43, 118, 219));
+    _ = zguilite.Theme.add_color(.COLOR_WND_BORDER, zguilite.GL_RGB(46, 59, 73));
+}
+
 pub fn main() !void {
-    zguilite.init();
+    try loadResource();
+
     var app = X11{};
 
     const screen_width: int = 1024;
@@ -63,7 +88,7 @@ pub fn main() !void {
             .str = "千里辞",
             .x = 10,
             .y = 10,
-            .width = 500,
+            .width = 600,
             .height = 80,
             .p_child_tree = null,
         },
@@ -73,7 +98,7 @@ pub fn main() !void {
             .str = "吴朝辞",
             .x = 10,
             .y = 10,
-            .width = 500,
+            .width = 600,
             .height = 80,
             .p_child_tree = null,
         },
@@ -83,7 +108,7 @@ pub fn main() !void {
             .str = "123朝辞白帝彩云间千里江陵一日还两岸猿声啼不住轻舟已过万重山",
             .x = 10,
             .y = 100,
-            .width = 500,
+            .width = 900,
             .height = 80,
             .p_child_tree = null,
         },
@@ -93,7 +118,7 @@ pub fn main() !void {
             .str = "edit",
             .x = 10,
             .y = 200,
-            .width = 500,
+            .width = 600,
             .height = 80,
             .p_child_tree = null,
         },

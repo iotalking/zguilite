@@ -109,7 +109,7 @@ pub fn main() !void {
             _ = param; // autofix
             
             if(data.m.wnd.m_surface)|s|{
-                const rect = zguilite.Rect.init2(0,60,UI_WIDTH,140);
+                const rect = zguilite.Rect.init2(0,50,UI_WIDTH,140);
                 s.fill_rect(rect,zguilite.GL_RGB(0,0,0),zguilite.Z_ORDER_LEVEL_0);
                 zguilite.Word.draw_string(s,zguilite.Z_ORDER_LEVEL_0,welcome[data.index],80,50,zguilite.Theme.get_font(.FONT_DEFAULT),zguilite.GL_RGB(172, 226, 9), 0);
                 data.index +%= 1;
