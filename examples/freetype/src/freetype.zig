@@ -43,6 +43,23 @@ pub const FreetypeOperator = struct{
         const lib = Self.library orelse return error.lib;
         try call_c(c.FT_New_Face,.{lib, filepathname.ptr, 0, &face});
         try call_c(c.FT_Set_Pixel_Sizes, .{ face, width_px, height_px });
+        // 设置变换矩阵和偏移量
+        var matrix: c.FT_Matrix = .{
+            .xx = 0x10000, // 1.0 in 16.16 fixed-point notation
+            .xy = 0,
+            .yx = 0,
+            .yy = 0x10000,
+        };
+        _ = &matrix; // autofix
+
+        var pen: c.FT_Vector = .{
+            .x = 0, // 水平偏移量
+            .y = 5  * 64, // 垂直偏移量，向上移动5像素
+        };
+        _ = &pen; // autofix
+
+        // 应用变换
+        c.FT_Set_Transform(face, &matrix, &pen);
         return face;
     }
     pub fn draw_string(
@@ -75,11 +92,10 @@ pub const FreetypeOperator = struct{
             const strcur = string[i..];
             var utf8_code:u32 = 0;
             const uchar = @as(usize, @intCast(zguilite.LatticeFontOp.get_utf8_code(strcur, &utf8_code)));
-            std.log.debug("FreetypeOperator draw_string uchar:{d} utf8_code:{d}",.{uchar,utf8_code});
             i += uchar;
             const u16Char = try std.unicode.utf8Decode(strcur[0..uchar]);
             
-            x_ += try Self.draw_single_char(surface, z_order, @intCast(u16Char), x_, y, face, font_color, bg_color);
+            x_ += try Self.draw_single_char(surface, z_order, @truncate(u16Char), x_, y, face, font_color, bg_color);
         }
     }
     fn draw_single_char(surface: ?*zguilite.Surface, z_order: i32, code: u16, x: i32, y: i32, face: c.FT_Face, font_color: u32, bg_color: u32) !i32 {
@@ -166,14 +182,21 @@ pub const FreetypeOperator = struct{
         _ = bg_color; // autofix
     }
     pub fn get_str_size(string: []const u8, font: ?*anyopaque, width: *i32, height: *i32) !i32 {
-        const face:*c.FT_Face = @ptrCast(font);
-
+        std.log.debug("freetype FontOperator get_str_size",.{});
+        const face:c.FT_Face = @alignCast(@ptrCast(font));
         width.* = 0;
-        height.* = (face.size.metrics.height / 64);
+        height.* = @truncate(@divTrunc(face.*.size.*.metrics.height, 64));
 
         var i: usize = 0;
-        while (string[i] != 0) : (i += 1) {
-            width.* += Self.draw_single_char(null, 0, string[i], 0, 0, face, 0, 0);
+        while (string[i..].len > 0 ) {
+
+            const strcur = string[i..];
+            var utf8_code:u32 = 0;
+            const uchar = @as(usize, @intCast(zguilite.LatticeFontOp.get_utf8_code(strcur, &utf8_code)));
+            i += uchar;
+            const u16Char = try std.unicode.utf8Decode(strcur[0..uchar]);
+
+            width.* += try Self.draw_single_char(null, 0, @truncate(u16Char), 0, 0, face, 0, 0);
         }
         return 0;
     }
@@ -184,6 +207,7 @@ pub const FreetypeOperator = struct{
                 .draw_string_in_rect = Self.draw_string_in_rect,
                 .draw_value = Self.draw_value,
                 .draw_value_in_rect = Self.draw_value_in_rect,
+                .get_str_size = Self.get_str_size,
             },
         };
     }
