@@ -1,6 +1,6 @@
 const std = @import("std");
 const zguilite = @import("zguilite");
-const freetype_operator = @import("./freetype_operator.zig");
+const freetype_operator = @import("freetype");
 const map_bmp = @import("./guilite_map_bmp.zig");
 
 const X11 = @import("x11");

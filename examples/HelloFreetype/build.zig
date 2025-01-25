@@ -24,10 +24,11 @@ pub fn build(b: *std.Build) void {
 
     exe.root_module.addImport("zguilite", b.dependency("zguilite", .{}).module("zguilite"));
     exe.root_module.addImport("x11", b.dependency("x11", .{}).module("x11"));
-    exe.addIncludePath(b.path("./src/freetype_include/"));
-    exe.linkLibC();
-    exe.addLibraryPath(b.path("./src/libs/x86"));
-    exe.linkSystemLibrary("freetype");
+    exe.root_module.addImport("freetype", b.dependency("freetype", .{}).module("freetype"));
+    // exe.addIncludePath(b.path("./src/freetype_include/"));
+    // exe.linkLibC();
+    // exe.addLibraryPath(b.path("./src/libs/x86"));
+    // exe.linkSystemLibrary("freetype");
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
