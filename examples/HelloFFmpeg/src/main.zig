@@ -22,6 +22,7 @@ const Main = struct {
     player:?player.Player = null,
     lastSeconds:f64 = 0,
     isPlayEnd:bool = false,
+    exitApp:bool = false,
     fn init(colorBytes:u32)!Main{
         var m = Main{};
         var p = player.Player.init(UI_WIDTH,UI_HEIGHT,colorBytes);
@@ -65,7 +66,6 @@ const Main = struct {
         }
         // try p.renderRawData(s);
         std.log.debug("main on_paint app refresh ",.{});
-        try app.refresh();
         const curSeconds = try p.currentSeconds();
         if(curSeconds <= m.lastSeconds){
             std.log.debug("main on_paint play end, pts:{d} curSeconds:{d} lastSeconds:{d}",.{p.av_frame.?.pts, curSeconds,m.lastSeconds});
@@ -75,33 +75,20 @@ const Main = struct {
         const end = try std.time.Instant.now();
         const passTime = end.since(start);
         const wantWaitTime  = @as(u64,@intFromFloat((curSeconds - m.lastSeconds)*std.time.ns_per_s));
-        const realWaitTime = wantWaitTime - passTime;
-        std.log.info("Main renderVideoFrame wantWaitTime:{d} realWaitTime:{d}",.{wantWaitTime,realWaitTime});
-        std.time.sleep(realWaitTime);
+        if(wantWaitTime > passTime){
+            const realWaitTime = wantWaitTime - passTime;
+            std.log.info("Main renderVideoFrame wantWaitTime:{d} realWaitTime:{d}",.{wantWaitTime,realWaitTime});
+            std.time.sleep(realWaitTime);
+        }
         m.lastSeconds = curSeconds;
     }
     fn on_paint(w: *zguilite.Wnd) !void {
         const this:*Main = @fieldParentPtr("wnd",w);
+        _ = this; // autofix
         std.log.debug("main on_paint",.{});
         if (w.m_surface) |surface| {
             const rect = zguilite.Rect.init2(0, 0, UI_WIDTH, UI_HEIGHT);
-            surface.fill_rect(rect, 0, 0);
-            if(this.player)|*p|{
-                _ = p; // autofix
-                // while(true){
-                    this.renderVideoFrame()  catch |e|{
-                        switch(e){
-                            error.surface_display_null,error.wnd_surface_null => {
-                                return;
-                            },
-                            else => {
-                                return e;
-                            }
-                        }
-                    };
-                // }
-            }
-            
+            surface.fill_rect(rect, 0, 0);            
         }
     }
 };
@@ -133,12 +120,21 @@ pub fn main() !void {
 
     try mainWnd.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, null);
     try mainWnd.wnd.show_window();
-    const idleCallback = zguilite.WND_CALLBACK.init(&mainWnd,struct{
-        fn onIdle(m:*Main)!void{
-            try m.renderVideoFrame();
+    
+    const t = try std.Thread.spawn(.{},struct{
+        fn run(m:*Main)void{
+            while(!m.exitApp){
+                m.renderVideoFrame()  catch {
+                    break;
+                };
+            }
+            
         }
-    }.onIdle);
-    app.setIdleCallback(idleCallback);
+    }.run,.{&mainWnd});
+    defer {
+        mainWnd.exitApp = true;
+        t.join();
+    }
     try app.loop();
 }
 
