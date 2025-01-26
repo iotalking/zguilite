@@ -172,9 +172,8 @@ pub fn loop(self:*Self) !void {
             if (self.onIdleCallback) |*cb| {
                 try cb.on(0, 0);
             }
-            // try wave_demo.refrushWaveCtrl();
             try self.refresh();
-            std.time.sleep(17 * std.time.ns_per_ms);
+            continue;
         }
 
         switch (xevent.type) {
