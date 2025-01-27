@@ -68,7 +68,6 @@ fn draw_easter_egg() !void {
     for (s_frames) |frame| {
         try Theme.add_bmp(.BITMAP_CUSTOM1, &frame);
         try Bitmap.draw_bitmap(s_surface_top, Z_ORDER_LEVEL_0, try Theme.get_bmp(.BITMAP_CUSTOM1), RYU_X, RYU_Y, 0x5588DD);
-        try app.refresh();
         std.time.sleep(20 * std.time.ns_per_ms);
     }
     const rect = Rect.init2(RYU_X, RYU_Y, RYU_X + frame_00_bmp.width - 1, RYU_Y + frame_00_bmp.height - 1);
@@ -143,7 +142,7 @@ const c_mario = struct {
 var frameBuffer: []u8 = undefined;
 
 fn draw_pixel(x: i32, _y: i32, rgb: u32) void {
-    std.log.debug("main draw_pixel ({},{})", .{ x, _y });
+    // std.log.debug("main draw_pixel ({},{})", .{ x, _y });
     var y = _y;
     y += 244;
 
@@ -191,20 +190,26 @@ pub fn main() !void {
             _ = user; // autofix
             _ = id;
             _ = param;
-            var mario = c_mario.init();
-            while (true) {
-                try mario.draw();
-                try mario.move();
-                try app.refresh();
-                std.time.sleep(50 * std.time.ns_per_ms);
-            }
         }
     }.onIdle);
-    try app.loop();
-
+    const t = try std.Thread.spawn(.{},drawMari,.{});
+    defer {
+        exit = true;
+        t.join();
+    }
     std.log.err("main exited", .{});
+    try app.loop();
 }
 
+var exit = false;
+fn drawMari()!void{
+    var mario = c_mario.init();
+    while (!exit) {
+        try mario.draw();
+        try mario.move();
+        std.time.sleep(50 * std.time.ns_per_ms);
+    }
+}
 fn loadResource() !void {
     _ = zguilite.Theme.add_color(.COLOR_WND_FONT, zguilite.GL_RGB(255, 255, 255));
     _ = zguilite.Theme.add_color(.COLOR_WND_NORMAL, zguilite.GL_RGB(59, 75, 94));
