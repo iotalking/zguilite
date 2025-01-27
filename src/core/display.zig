@@ -235,21 +235,16 @@ pub const Display = struct {
         }
 
         //32 bits framebuffer
-        // unsigned short* p_bmp565_data = new unsigned short[m_width * m_height];
         const p_bmp565_data = try core.allocator.alloc(@sizeOf(*u16) * this.m_width * this.m_height);
         defer core.allocator.free(p_bmp565_data);
-        // 		unsigned int* p_raw_data = (unsigned int*)m_phy_fb;
         const p_raw_data: *uint = @ptrCast(p_bmp565_data);
-        // 		for (int i = 0; i < m_width * m_height; i++)
         for (0..(this.m_width * this.m_height)) |i| {
-            // 			unsigned int rgb = *p_raw_data++;
             const rgb = p_raw_data[0];
             p_raw_data += 1;
             p_bmp565_data[i] = api.GL_RGB_32_to_16(rgb);
         }
 
         const ret = api.build_bmp(file_name, this.m_width, this.m_height, p_bmp565_data);
-        // 		delete[]p_bmp565_data;
         return ret;
     }
 
@@ -291,9 +286,10 @@ pub const Display = struct {
         if (this.m_driver) |driver| {
             // for (int y = y0; y <= y1; y++)
             if (driver.draw_pixel) |draw_pixel| {
-                for (uy0..(uy1 + 1)) |y| {
-                    // for (int x = x0; x <= x1; x++)
-                    for (ux0..(ux1 + 1)) |x| {
+                var y = uy0;
+                while (y <= uy1) : (y += 1) {
+                    var x = ux0;
+                    while (x <= ux1) : (x += 1) {
                         draw_pixel(@intCast(x), @intCast(y), rgb);
                     }
                 }
@@ -303,29 +299,26 @@ pub const Display = struct {
 
         const _width: usize = @intCast(@as(u32, @bitCast(this.m_width)));
         const _height = this.m_height;
-        // 		int x, y;
         if (this.m_color_bytes == 2) {
-            // 			unsigned short* phy_fb;
-            // 			for (y = y0; y <= y1; y++)
             const rgb_16 = api.GL_RGB_32_to_16(rgb);
             var fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_phy_fb.?));
-            for (uy0..(uy1 + 1)) |y| {
-                // 				for (x = x0; x <= x1; x++)
-                for (ux0..(ux1 + 1)) |x| {
+            var y = uy0;
+            while(y <= uy1):(y += 1){
+                var x = ux0;
+                while(x <= ux1):(x += 1){
                     if ((x < _width) and (y < _height)) {
                         fb_u16[y * _width + x] = rgb_16;
                     }
                 }
             }
         } else {
-            // 			unsigned int* phy_fb;
-            // 			for (y = y0; y <= y1; y++)
             const rgb_32: u32 = @bitCast(rgb);
             // std.log.debug("this.m_phy_fb:{*}", .{this.m_phy_fb});
             const phy_fb: [*]u32 = @alignCast(@ptrCast(this.m_phy_fb.?));
-            for (@intCast(y0)..@intCast(y1 + 1)) |y| {
-                // 				for (x = x0; x <= x1; x++)
-                for (ux0..(ux1 + 1)) |x| {
+            var y = uy0;
+            while(y <= y1):(y += 1){
+                var x = ux0;
+                while(x <= ux1):(x += 1){
                     if ((x < _width) and (y < _height)) {
                         // std.log.debug("phy_fb:{*},_width:{} ({},{})={}", .{ phy_fb, _width, x, y, rgb_32 });
                         phy_fb[y * _width + x] = rgb_32;
@@ -540,9 +533,13 @@ pub const Surface = struct {
             const layer_rect = this.m_layers[uz_order].rect;
             const rgb_16 = api.GL_RGB_32_to_16(rgb);
             // 			for (int y = y0; y <= y1; y++)
-            for (@intCast(@as(u32, @bitCast(y0)))..@intCast(@as(u32, @bitCast((y1 + 1))))) |y| {
+            // for (@intCast(@as(u32, @bitCast(y0)))..@intCast(@as(u32, @bitCast((y1 + 1))))) |y| {
+            var y:usize = @intCast(y0);
+            while(y < (y1 + 1)):(y += 1){
                 // 				for (int x = x0; x <= x1; x++)
-                for (@intCast(@as(u32, @bitCast(x0)))..@intCast(@as(u32, @bitCast(x1 + 1)))) |x| {
+                var x:usize = @intCast(x0);
+                // for (@intCast(@as(u32, @bitCast(x0)))..@intCast(@as(u32, @bitCast(x1 + 1)))) |x| {
+                while(x < (x1 + 1)):(x += 1){
                     if (layer_rect.pt_in_rect(@intCast(x), @intCast(y))) {
                         if (this.m_color_bytes == 2) {
                             const fb_u16: [*]u16 = @ptrCast(@alignCast(this.m_layers[uz_order].fb));
@@ -773,10 +770,10 @@ pub const Surface = struct {
     }
     // protected:
     fn fill_rect_low_level_impl(this: *Surface, _x0: int, _y0: int, _x1: int, _y1: int, rgb: uint) void { //fill rect on framebuffer of surface
-        const x0: usize = @as(u32, @bitCast(_x0));
-        const y0: usize = @as(u32, @bitCast(_y0));
-        const x1: usize = @as(u32, @bitCast(_x1));
-        const y1: usize = @as(u32, @bitCast(_y1));
+        const x0: usize = if(_x0 > 0) @as(u32, @bitCast(_x0)) else 0;
+        const y0: usize = if(_y0 > 0) @as(u32, @bitCast(_y0)) else 0;
+        const x1: usize = if(_x1 > 0) @as(u32, @bitCast(_x1)) else 0;
+        const y1: usize = if(_y1 > 0) @as(u32, @bitCast(_y1)) else 0;
         const m_width: usize = @as(u32, @bitCast(this.m_width));
         std.log.debug("fill_rect_low_level_impl x0:{d} y0:{d} x1:{d} y1:{d} rgb:{d} m_color_bytes:{} m_fb:{*}", .{ x0, y0, x1, y1, rgb, this.m_color_bytes, this.m_fb });
         // int x, y;
@@ -784,22 +781,22 @@ pub const Surface = struct {
             if (this.m_color_bytes == 2) {
                 const fb: [*]u16 = @ptrCast(@alignCast(_fb));
                 const rgb_16 = api.GL_RGB_32_to_16(rgb);
-                // for (y = y0; y <= y1; y++)
-                for (y0..(y1 + 1)) |y| {
+                var y = y1;
+                while(y <= y1):(y += 1){
                     const _xfb = fb + y * m_width + x0;
-                    // for (x = x0; x <= x1; x++)
-                    for (x0..(x1 + 1)) |x| {
+                    var x = x1;
+                    while(x <= x1):(x += 1){
                         _xfb[x] = rgb_16;
                         std.log.debug("({},{}) = {}", .{ x, y, rgb_16 });
                     }
                 }
             } else {
                 const fb: [*]uint = @ptrCast(@alignCast(_fb));
-                std.log.debug("_fb:{*} fb:{*}", .{ _fb, fb });
-                // for (y = y0; y <= y1; y++)
-                for (y0..(y1 + 1)) |y| {
-                    // for (x = x0; x <= x1; x++)
-                    for (x0..(x1 + 1)) |ix| {
+                std.log.debug("x1:{d} y1:{d}", .{ x1, y1 });
+                var y = y0;
+                while(y <= y1):(y += 1){
+                    var ix = x0;
+                    while(ix <= x1):(ix += 1){
                         fb[y * m_width + ix] = rgb;
                         // std.log.debug("({},{}) = {}", .{ ix, y, rgb });
                     }
@@ -910,107 +907,3 @@ pub const Surface = struct {
     m_phy_write_index: ?*int = null,
     m_display: ?*Display = null,
 };
-
-// inline Display::Display(void* phy_fb, int display_width, int display_height, Surface* surface, DISPLAY_DRIVER* driver) : m_phy_fb(phy_fb), m_width(display_width), m_height(display_height), m_driver(driver), m_phy_read_index(0), m_phy_write_index(0), m_surface_cnt(1), m_surface_index(0)
-// {
-// 	m_color_bytes = surface->m_color_bytes;
-// 	surface->m_is_active = true;
-// 	(m_surface_group[0] = surface)->attach_display(this);
-// }
-
-// inline Display::Display(void* phy_fb, int display_width, int display_height, int surface_width, int surface_height, unsigned int color_bytes, int surface_cnt, DISPLAY_DRIVER* driver) : m_phy_fb(phy_fb), m_width(display_width), m_height(display_height), m_color_bytes(color_bytes), m_phy_read_index(0), m_phy_write_index(0), m_surface_cnt(surface_cnt), m_driver(driver), m_surface_index(0)
-// {
-// 	ASSERT(color_bytes == 2 or color_bytes == 4);
-// 	ASSERT(m_surface_cnt <= SURFACE_CNT_MAX);
-// 	memset(m_surface_group, 0, sizeof(m_surface_group));
-
-// 	for (int i = 0; i < m_surface_cnt; i++)
-// 	{
-// 		m_surface_group[i] = new Surface(surface_width, surface_height, color_bytes);
-// 		m_surface_group[i]->attach_display(this);
-// 	}
-// }
-
-// inline Surface* Display::allocSurface(Z_ORDER_LEVEL max_zorder, Rect layer_rect)
-// {
-// 	ASSERT(max_zorder < Z_ORDER_LEVEL_MAX and m_surface_index < m_surface_cnt);
-// 	(layer_rect == Rect()) ? m_surface_group[m_surface_index]->set_surface(max_zorder, Rect(0, 0, m_width, m_height)) : m_surface_group[m_surface_index]->set_surface(max_zorder, layer_rect);
-// 	return m_surface_group[m_surface_index++];
-// }
-
-// inline int Display::swipe_surface(Surface* s0, Surface* s1, int x0, int x1, int y0, int y1, int offset)
-// {
-// 	int surface_width = s0->m_width;
-// 	int surface_height = s0->m_height;
-
-// 	if (offset < 0 or offset > surface_width or y0 < 0 or y0 >= surface_height or
-// 		y1 < 0 or y1 >= surface_height or x0 < 0 or x0 >= surface_width or x1 < 0 or x1 >= surface_width)
-// 	{
-// 		ASSERT(false);
-// 		return -1;
-// 	}
-
-// 	int width = (x1 - x0 + 1);
-// 	if (width < 0 or width > surface_width or width < offset)
-// 	{
-// 		ASSERT(false);
-// 		return -1;
-// 	}
-
-// 	x0 = (x0 >= m_width) ? (m_width - 1) : x0;
-// 	x1 = (x1 >= m_width) ? (m_width - 1) : x1;
-// 	y0 = (y0 >= m_height) ? (m_height - 1) : y0;
-// 	y1 = (y1 >= m_height) ? (m_height - 1) : y1;
-
-// 	if (m_phy_fb)
-// 	{
-// 		for (int y = y0; y <= y1; y++)
-// 		{
-// 			//Left surface
-// 			char* addr_s = ((char*)(s0->m_fb) + (y * surface_width + x0 + offset) * m_color_bytes);
-// 			char* addr_d = ((char*)(m_phy_fb)+(y * m_width + x0) * m_color_bytes);
-// 			memcpy(addr_d, addr_s, (width - offset) * m_color_bytes);
-// 			//Right surface
-// 			addr_s = ((char*)(s1->m_fb) + (y * surface_width + x0) * m_color_bytes);
-// 			addr_d = ((char*)(m_phy_fb)+(y * m_width + x0 + (width - offset)) * m_color_bytes);
-// 			memcpy(addr_d, addr_s, offset * m_color_bytes);
-// 		}
-// 	}
-// 	else if (m_color_bytes == 2)
-// 	{
-// 		void(*draw_pixel)(int x, int y, unsigned int rgb) = m_driver->draw_pixel;
-// 		for (int y = y0; y <= y1; y++)
-// 		{
-// 			//Left surface
-// 			for (int x = x0; x <= (x1 - offset); x++)
-// 			{
-// 				draw_pixel(x, y, GL_RGB_16_to_32(((unsigned short*)s0->m_fb)[y * m_width + x + offset]));
-// 			}
-// 			//Right surface
-// 			for (int x = x1 - offset; x <= x1; x++)
-// 			{
-// 				draw_pixel(x, y, GL_RGB_16_to_32(((unsigned short*)s1->m_fb)[y * m_width + x + offset - x1 + x0]));
-// 			}
-// 		}
-// 	}
-// 	else //m_color_bytes == 3/4...
-// 	{
-// 		void(*draw_pixel)(int x, int y, unsigned int rgb) = m_driver->draw_pixel;
-// 		for (int y = y0; y <= y1; y++)
-// 		{
-// 			//Left surface
-// 			for (int x = x0; x <= (x1 - offset); x++)
-// 			{
-// 				draw_pixel(x, y, ((unsigned int*)s0->m_fb)[y * m_width + x + offset]);
-// 			}
-// 			//Right surface
-// 			for (int x = x1 - offset; x <= x1; x++)
-// 			{
-// 				draw_pixel(x, y, ((unsigned int*)s1->m_fb)[y * m_width + x + offset - x1 + x0]);
-// 			}
-// 		}
-// 	}
-
-// 	m_phy_write_index++;
-// 	return 0;
-// }
