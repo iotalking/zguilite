@@ -238,40 +238,36 @@ pub fn main() !void {
     try mainWnd.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, null);
     try mainWnd.wnd.show_window();
 
-    const onIdleCallback = zguilite.WND_CALLBACK.init(&mainWnd, struct {
-        fn onIdle(user: *const Main, id: i32, param: i32) !void {
-            _ = user; // autofix
-            _ = id;
-            _ = param;
-
-            var theCube: [SHAPE_CNT]Cube = undefined;
-            // for(0..SHAPE_CNT)|i|{
-            //     theCube[i] = Cube.init();
-            // }
-            var thePyramid: [SHAPE_CNT]Pyramid = undefined;
-
-            while (true) {
-                for (0..SHAPE_CNT) |i| {
-                    const ii = @as(i32, @intCast(@as(u32, @truncate(i))));
-                    theCube[i].draw(120 + ii * 240, 100, true); // erase footprint
-                    theCube[i].rotate();
-                    theCube[i].draw(120 + ii * 240, 100, false); // refresh cube
-
-                    thePyramid[i].draw(120 + ii * 240, 250, true); // erase footprint
-                    thePyramid[i].rotate();
-                    thePyramid[i].draw(120 + ii * 240, 250, false); // refresh pyramid
-                }
-                try app.refresh();
-                std.time.sleep(50 * std.time.ns_per_ms);
-            }
-        }
-    }.onIdle);
+    
     s_surface = surface;
-    app.setIdleCallback(onIdleCallback);
-
+    
+    var exite = false;
+    const t = try std.Thread.spawn(.{},draw3d,.{&exite});
+    defer {
+        exite = true;
+        t.join();
+    }
     try app.loop();
 }
 
+fn draw3d(exit:*bool)!void{
+    var theCube: [SHAPE_CNT]Cube = undefined;
+    var thePyramid: [SHAPE_CNT]Pyramid = undefined;
+
+    while (!exit.*) {
+        for (0..SHAPE_CNT) |i| {
+            const ii = @as(i32, @intCast(@as(u32, @truncate(i))));
+            theCube[i].draw(120 + ii * 240, 100, true); // erase footprint
+            theCube[i].rotate();
+            theCube[i].draw(120 + ii * 240, 100, false); // refresh cube
+
+            thePyramid[i].draw(120 + ii * 240, 250, true); // erase footprint
+            thePyramid[i].rotate();
+            thePyramid[i].draw(120 + ii * 240, 250, false); // refresh pyramid
+        }
+        std.time.sleep(50 * std.time.ns_per_ms);
+    }
+}
 fn loadResource() !void {
     _ = zguilite.Theme.add_color(.COLOR_WND_FONT, zguilite.GL_RGB(255, 255, 255));
     _ = zguilite.Theme.add_color(.COLOR_WND_NORMAL, zguilite.GL_RGB(59, 75, 94));

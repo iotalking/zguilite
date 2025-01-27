@@ -122,7 +122,7 @@ pub fn trigger(x: i32, y: i32, is_down: bool) void {
     }
 }
 
-pub fn run() !void {
+pub fn run(exit:*bool) !void {
 
     // 初始化点
     for (0..POINT_ROW) |y| {
@@ -152,7 +152,7 @@ pub fn run() !void {
     var count: usize = 0;
 
     // 更新
-    while (true) {
+    while (!exit.*) {
         for (0..sum) |i| {
             strings[i].update_point_velocity();
         }
@@ -175,7 +175,6 @@ pub fn run() !void {
             trigger(0, 0, false);
         }
         count += 1;
-        try app.refresh();
     }
 }
 var app = X11{};
@@ -211,15 +210,12 @@ pub fn main() !void {
     try mainWnd.wnd.connect(null, ID_DESKTOP, null, 0, 0, screen_width, screen_height, null);
     try mainWnd.wnd.show_window();
 
-    const onIdleCallback = zguilite.WND_CALLBACK.init(&mainWnd, struct {
-        fn onIdle(user: *const Main, id: i32, param: i32) !void {
-            _ = user; // autofix
-            _ = id;
-            _ = param;
-            try run();
-        }
-    }.onIdle);
-    app.setIdleCallback(onIdleCallback);
+    var exit = false;
+    const t = try std.Thread.spawn(.{},run,.{&exit});
+    defer {
+        exit = true;
+        t.join();
+    }
     try app.loop();
 
     std.log.err("main exited", .{});
